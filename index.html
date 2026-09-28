@@ -19,11 +19,11 @@
             <img src="cookie-ai-icon.png" alt="" width="28" height="28">
             <span>Cookie</span>
           </a>
-          <button class="icon-btn sidebar-close" type="button" aria-label="Close sidebar" data-action="close-sidebar">×</button>
+          <button class="icon-btn sidebar-close" type="button" aria-label="Close sidebar" data-action="close-sidebar"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
         </div>
-        <button class="new-chat" type="button" data-action="new-chat"><span class="plus">+</span><span>New chat</span><kbd>⌘ K</kbd></button>
-        <button class="nav-item active" type="button" data-view="chat"><span class="nav-icon">⌕</span><span>Chat</span></button>
-        <button class="nav-item" type="button" data-view="search"><span class="nav-icon">⌕</span><span>Search</span></button>
+        <button class="new-chat" type="button" data-action="new-chat"><span class="plus" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>New chat</span><kbd>⌘ K</kbd></button>
+        <button class="nav-item active" type="button" data-view="chat"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 3v-3.15A2.5 2.5 0 0 1 5 13.5z"/></svg></span><span>Chat</span></button>
+        <button class="nav-item" type="button" data-view="search"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></span><span>Search</span></button>
       </div>
       <div class="recent-block">
         <div class="section-label">Recent</div>
@@ -33,8 +33,8 @@
         <button class="recent-item" type="button" data-chat="Weekend plans">Weekend plans</button>
       </div>
       <div class="sidebar-bottom">
-        <button class="nav-item" type="button" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
-        <button class="nav-item" type="button" data-view="help"><span class="nav-icon">?</span><span>Help</span></button>
+        <button class="nav-item" type="button" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.4 1.4 1.1-1.8 3.1-1.7-.6a7.6 7.6 0 0 1-1.8 1l-.3 1.8h-3.6l-.3-1.8a7.6 7.6 0 0 1-1.8-1l-1.7.6-1.8-3.1 1.4-1.1a7.7 7.7 0 0 1 0-2.8L5.7 9.5l1.8-3.1 1.7.6a7.6 7.6 0 0 1 1.8-1l.3-1.8h3.6l.3 1.8a7.6 7.6 0 0 1 1.8 1l1.7-.6 1.8 3.1-1.4 1.1a7.7 7.7 0 0 1 0 2.8Z"/></svg></span><span>Settings</span></button>
+        <button class="nav-item" type="button" data-view="help"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.2a2.4 2.4 0 1 1 4.1 1.7c-.9.9-1.9 1.2-1.9 2.6"/><path d="M12 16.8h.01"/></svg></span><span>Help</span></button>
         <button class="account" type="button" data-view="profile">
           <span class="avatar">D</span>
           <span class="account-copy"><strong>Dan</strong><small>Free plan</small></span>
@@ -47,11 +47,18 @@
 
     <main class="main" id="main">
       <header class="topbar">
-        <button class="icon-btn menu-btn" type="button" aria-label="Open sidebar" data-action="open-sidebar">☰</button>
+        <button class="icon-btn menu-btn" type="button" aria-label="Open sidebar" data-action="open-sidebar"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         <div class="mobile-brand"><img src="cookie-ai-icon.png" alt="" width="25" height="25"><strong>Cookie</strong></div>
         <div class="topbar-spacer"></div>
-        <button class="model-picker" type="button" aria-label="Select model"><span class="status-dot"></span><span>Cookie</span><span class="chevron">⌄</span></button>
-        <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat">＋</button>
+        <div class="model-control">
+          <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">Cookie</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
+          <div class="model-menu" id="modelMenu" role="menu" aria-label="AI models">
+            <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="Cookie"><span><strong>Cookie</strong><small>Balanced · everyday chat</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Cookie Fast"><span><strong>Cookie Fast</strong><small>Quick · lightweight tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Cookie Reasoning"><span><strong>Cookie Reasoning</strong><small>Deeper · complex tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+          </div>
+        </div>
+        <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
       </header>
 
       <section class="view view-chat is-visible" data-panel="chat">
@@ -61,12 +68,6 @@
               <img class="welcome-logo" src="cookie-ai-icon.png" alt="" width="46" height="46">
               <h1>How can I help?</h1>
               <p>Ask anything. Write, learn, plan, or just think out loud.</p>
-            </div>
-            <div class="suggestions" aria-label="Suggestions">
-              <button class="suggestion" type="button" data-prompt="Help me plan my week"><span class="suggestion-icon">↗</span><span><strong>Plan my week</strong><small>Turn a busy week into a simple plan</small></span></button>
-              <button class="suggestion" type="button" data-prompt="Explain something to me simply"><span class="suggestion-icon">Aa</span><span><strong>Explain something</strong><small>Make a difficult topic easy to understand</small></span></button>
-              <button class="suggestion" type="button" data-prompt="Give me ideas for a project"><span class="suggestion-icon">✦</span><span><strong>Brainstorm ideas</strong><small>Explore possibilities together</small></span></button>
-              <button class="suggestion" type="button" data-prompt="Help me write something"><span class="suggestion-icon">✎</span><span><strong>Help me write</strong><small>Draft, rewrite, or polish your words</small></span></button>
             </div>
             <div class="conversation" id="conversation" aria-live="polite"></div>
           </div>
@@ -79,12 +80,12 @@
             </div>
             <div class="composer-toolbar">
               <div class="toolbar-left">
-                <button class="round-tool" type="button" aria-label="Attach a file">+</button>
-                <button class="tool-label" type="button"><span>◉</span> Tools <span class="tiny-chevron">⌄</span></button>
+                <button class="round-tool" type="button" aria-label="Attach a file"><svg viewBox="0 0 24 24"><path d="m9 17 6.8-6.8a3 3 0 0 0-4.2-4.2L4.8 12.8a4.5 4.5 0 0 0 6.4 6.4l6.1-6.1"/></svg></button>
+                <button class="tool-label" type="button"><span class="tool-glyph"><svg viewBox="0 0 24 24"><path d="M7 4h10v4H7zM5 10h14v10H5zM9 14h6"/></svg></span> Tools <span class="tiny-chevron"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></span></button>
               </div>
               <div class="toolbar-right">
                 <span class="shortcut-hint">Enter to send</span>
-                <button class="send-btn" id="sendBtn" type="submit" aria-label="Send message">↑</button>
+                <button class="send-btn" id="sendBtn" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
               </div>
             </div>
           </form>
@@ -95,7 +96,7 @@
       <section class="view" data-panel="search">
         <div class="page-container search-page">
           <div class="page-heading"><span class="eyebrow">Search</span><h2>Find a conversation</h2><p>Search your recent Cookie chats.</p></div>
-          <label class="large-search"><span>⌕</span><input id="searchInput" type="search" placeholder="Search conversations" aria-label="Search conversations"></label>
+          <label class="large-search"><span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></span><input id="searchInput" type="search" placeholder="Search conversations" aria-label="Search conversations"></label>
           <div class="search-results" id="searchResults"></div>
         </div>
       </section>
@@ -174,7 +175,6 @@
     const conversation = $('#conversation');
     const input = $('#messageInput');
     const welcome = $('#welcome');
-    const suggestions = $('.suggestions');
 
     function showView(name) {
       views.forEach(v => v.classList.toggle('is-visible', v.dataset.panel === name));
@@ -190,7 +190,6 @@
     function resetChat() {
       conversation.innerHTML = '';
       welcome.hidden = false;
-      suggestions.hidden = false;
       input.value = '';
       input.focus();
       showView('chat');
@@ -220,24 +219,21 @@
       text = text.trim();
       if (!text) return;
       welcome.hidden = true;
-      suggestions.hidden = true;
       addMessage(text, 'user');
       input.value = '';
       input.style.height = 'auto';
-      setTimeout(() => {
-        addMessage(answerFor(text), 'assistant');
-      }, 420);
+      const typing = document.createElement('article'); typing.className='message-row assistant typing-row'; typing.innerHTML='<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="typing-indicator" aria-label="Cookie is thinking"><span></span><span></span><span></span></div></div>'; conversation.appendChild(typing); typing.scrollIntoView({behavior:'smooth',block:'nearest'});
+      setTimeout(() => { typing.remove(); addMessage(answerFor(text), 'assistant'); }, 650);
     }
 
     $('#composer').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
     input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
     input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); }});
-    $$('.suggestion').forEach(b => b.addEventListener('click', () => send(b.dataset.prompt)));
 
     recent.forEach(item => item.addEventListener('click', () => {
       recent.forEach(x=>x.classList.remove('active')); item.classList.add('active');
       showView('chat');
-      welcome.hidden = true; suggestions.hidden = true; conversation.innerHTML='';
+      welcome.hidden = true; conversation.innerHTML='';
       addMessage(item.dataset.chat, 'user');
       setTimeout(()=>addMessage('Got it. We can pick this conversation up from here. Tell me what you want to do next.', 'assistant'), 380);
     }));
@@ -255,13 +251,27 @@
       $$('.accent-swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); document.documentElement.dataset.accent=s.dataset.accent;
     }));
     $$('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
-    $('#clearData').addEventListener('click', () => { conversation.innerHTML=''; welcome.hidden=false; suggestions.hidden=false; alert('Local demo chats cleared.'); });
+    $('#clearData').addEventListener('click', () => { conversation.innerHTML=''; welcome.hidden=false; alert('Local demo chats cleared.'); });
+
+    const modelPicker = $('#modelPicker');
+    const modelMenu = $('#modelMenu');
+    const activeModel = $('#activeModel');
+    const modelOptions = $$('.model-option');
+    function closeModelMenu(){ modelMenu.classList.remove('open'); modelPicker.setAttribute('aria-expanded','false'); }
+    modelPicker.addEventListener('click', e => { e.stopPropagation(); const open = modelMenu.classList.toggle('open'); modelPicker.setAttribute('aria-expanded', String(open)); });
+    modelOptions.forEach(option => option.addEventListener('click', () => {
+      modelOptions.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-checked','false'); });
+      option.classList.add('active'); option.setAttribute('aria-checked','true');
+      activeModel.textContent = option.dataset.model;
+      closeModelMenu();
+    }));
+    document.addEventListener('click', e => { if(!e.target.closest('.model-control')) closeModelMenu(); });
 
     const searchInput = $('#searchInput');
     const resultBox = $('#searchResults');
     function renderSearch(q='') {
       const names = recent.map(x=>x.dataset.chat).filter(n=>n.toLowerCase().includes(q.toLowerCase()));
-      resultBox.innerHTML = names.length ? names.map(n=>'<button class="search-result" type="button"><span>◷</span><strong>'+n+'</strong><small>Recent conversation</small></button>').join('') : '<div class="empty-search">No conversations found.</div>';
+      resultBox.innerHTML = names.length ? names.map(n=>'<button class="search-result" type="button"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span><strong>'+n+'</strong><small>Recent conversation</small></button>').join('') : '<div class="empty-search">No conversations found.</div>';
       $$('.search-result', resultBox).forEach(b=>b.addEventListener('click',()=>{ const n=$('strong',b).textContent; const target=recent.find(x=>x.dataset.chat===n); if(target) target.click(); }));
     }
     searchInput.addEventListener('input',()=>renderSearch(searchInput.value)); renderSearch();
