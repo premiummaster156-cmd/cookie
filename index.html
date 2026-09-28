@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#171412">
+  <meta name="description" content="Cookie — a simple, thoughtful AI workspace.">
+  <title>Cookie — AI</title>
+  <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="sidebar-top">
+        <div class="brand-row">
+          <a class="brand" href="#" aria-label="Cookie home">
+            <img src="cookie-ai-icon.png" alt="" width="28" height="28">
+            <span>Cookie</span>
+          </a>
+          <button class="icon-btn sidebar-close" type="button" aria-label="Close sidebar" data-action="close-sidebar">×</button>
+        </div>
+        <button class="new-chat" type="button" data-action="new-chat"><span class="plus">+</span><span>New chat</span><kbd>⌘ K</kbd></button>
+        <button class="nav-item active" type="button" data-view="chat"><span class="nav-icon">⌕</span><span>Chat</span></button>
+        <button class="nav-item" type="button" data-view="search"><span class="nav-icon">⌕</span><span>Search</span></button>
+      </div>
+      <div class="recent-block">
+        <div class="section-label">Recent</div>
+        <button class="recent-item active" type="button" data-chat="Planning a study routine">Planning a study routine</button>
+        <button class="recent-item" type="button" data-chat="Ideas for my website">Ideas for my website</button>
+        <button class="recent-item" type="button" data-chat="Explain this simply">Explain this simply</button>
+        <button class="recent-item" type="button" data-chat="Weekend plans">Weekend plans</button>
+      </div>
+      <div class="sidebar-bottom">
+        <button class="nav-item" type="button" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+        <button class="nav-item" type="button" data-view="help"><span class="nav-icon">?</span><span>Help</span></button>
+        <button class="account" type="button" data-view="profile">
+          <span class="avatar">D</span>
+          <span class="account-copy"><strong>Dan</strong><small>Free plan</small></span>
+          <span class="account-more">•••</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" data-action="close-sidebar"></div>
+
+    <main class="main" id="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" type="button" aria-label="Open sidebar" data-action="open-sidebar">☰</button>
+        <div class="mobile-brand"><img src="cookie-ai-icon.png" alt="" width="25" height="25"><strong>Cookie</strong></div>
+        <div class="topbar-spacer"></div>
+        <button class="model-picker" type="button" aria-label="Select model"><span class="status-dot"></span><span>Cookie</span><span class="chevron">⌄</span></button>
+        <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat">＋</button>
+      </header>
+
+      <section class="view view-chat is-visible" data-panel="chat">
+        <div class="chat-scroll" id="chatScroll">
+          <div class="chat-content">
+            <div class="welcome" id="welcome">
+              <img class="welcome-logo" src="cookie-ai-icon.png" alt="" width="46" height="46">
+              <h1>How can I help?</h1>
+              <p>Ask anything. Write, learn, plan, or just think out loud.</p>
+            </div>
+            <div class="suggestions" aria-label="Suggestions">
+              <button class="suggestion" type="button" data-prompt="Help me plan my week"><span class="suggestion-icon">↗</span><span><strong>Plan my week</strong><small>Turn a busy week into a simple plan</small></span></button>
+              <button class="suggestion" type="button" data-prompt="Explain something to me simply"><span class="suggestion-icon">Aa</span><span><strong>Explain something</strong><small>Make a difficult topic easy to understand</small></span></button>
+              <button class="suggestion" type="button" data-prompt="Give me ideas for a project"><span class="suggestion-icon">✦</span><span><strong>Brainstorm ideas</strong><small>Explore possibilities together</small></span></button>
+              <button class="suggestion" type="button" data-prompt="Help me write something"><span class="suggestion-icon">✎</span><span><strong>Help me write</strong><small>Draft, rewrite, or polish your words</small></span></button>
+            </div>
+            <div class="conversation" id="conversation" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <form class="composer" id="composer">
+            <div class="composer-main">
+              <textarea id="messageInput" rows="1" aria-label="Message Cookie" placeholder="Message Cookie..." autocomplete="off"></textarea>
+            </div>
+            <div class="composer-toolbar">
+              <div class="toolbar-left">
+                <button class="round-tool" type="button" aria-label="Attach a file">+</button>
+                <button class="tool-label" type="button"><span>◉</span> Tools <span class="tiny-chevron">⌄</span></button>
+              </div>
+              <div class="toolbar-right">
+                <span class="shortcut-hint">Enter to send</span>
+                <button class="send-btn" id="sendBtn" type="submit" aria-label="Send message">↑</button>
+              </div>
+            </div>
+          </form>
+          <p class="disclaimer">Cookie can make mistakes. Check important information.</p>
+        </div>
+      </section>
+
+      <section class="view" data-panel="search">
+        <div class="page-container search-page">
+          <div class="page-heading"><span class="eyebrow">Search</span><h2>Find a conversation</h2><p>Search your recent Cookie chats.</p></div>
+          <label class="large-search"><span>⌕</span><input id="searchInput" type="search" placeholder="Search conversations" aria-label="Search conversations"></label>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+      </section>
+
+      <section class="view" data-panel="settings">
+        <div class="page-container settings-page">
+          <div class="page-heading"><span class="eyebrow">Settings</span><h2>Make Cookie yours</h2><p>Preferences for how Cookie looks and behaves.</p></div>
+          <div class="settings-layout">
+            <nav class="settings-nav" aria-label="Settings sections">
+              <button class="setting-tab active" type="button" data-setting="appearance">Appearance</button>
+              <button class="setting-tab" type="button" data-setting="general">General</button>
+              <button class="setting-tab" type="button" data-setting="privacy">Privacy</button>
+            </nav>
+            <div class="settings-content">
+              <div class="setting-panel active" data-setting-panel="appearance">
+                <div class="setting-group"><h3>Theme</h3><p>Choose how Cookie appears on this device.</p><div class="theme-options"><button class="theme-card active" type="button" data-theme="dark"><span class="theme-preview dark-preview"></span><strong>Dark</strong><small>Easy on the eyes</small></button><button class="theme-card" type="button" data-theme="light"><span class="theme-preview light-preview"></span><strong>Light</strong><small>Bright and clean</small></button><button class="theme-card" type="button" data-theme="system"><span class="theme-preview system-preview"></span><strong>System</strong><small>Follow your device</small></button></div></div>
+                <div class="setting-group"><h3>Accent</h3><p>Cookie's warm accent color.</p><div class="accent-row"><button class="accent-swatch selected" type="button" data-accent="cookie" aria-label="Cookie orange"></button><button class="accent-swatch cream" type="button" data-accent="cream" aria-label="Cream"></button><button class="accent-swatch cocoa" type="button" data-accent="cocoa" aria-label="Cocoa"></button></div></div>
+              </div>
+              <div class="setting-panel" data-setting-panel="general">
+                <div class="setting-group"><div class="toggle-row"><span><strong>Send with Enter</strong><small>Press Enter to send. Shift + Enter creates a new line.</small></span><button class="toggle on" type="button" aria-label="Toggle send with Enter"><span></span></button></div></div>
+                <div class="setting-group"><div class="toggle-row"><span><strong>Chat history</strong><small>Keep conversations in your recent list.</small></span><button class="toggle on" type="button" aria-label="Toggle chat history"><span></span></button></div></div>
+              </div>
+              <div class="setting-panel" data-setting-panel="privacy">
+                <div class="setting-group"><h3>Your data</h3><p>Manage local conversation data stored by this demo.</p><button class="danger-btn" type="button" id="clearData">Clear local chats</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-panel="profile">
+        <div class="page-container profile-page">
+          <div class="page-heading"><span class="eyebrow">Profile</span><h2>Your account</h2><p>Personal details and your Cookie plan.</p></div>
+          <div class="profile-card"><div class="profile-avatar">D</div><div class="profile-info"><h3>Dan</h3><p>dan@example.com</p><span class="plan-badge">Free plan</span></div><button class="secondary-btn" type="button">Edit profile</button></div>
+          <div class="account-section"><div><h3>Plan</h3><p>Free · 20 messages per day</p></div><button class="primary-btn" type="button" data-view="upgrade">View plans</button></div>
+        </div>
+      </section>
+
+      <section class="view" data-panel="usage">
+        <div class="page-container usage-page">
+          <div class="page-heading"><span class="eyebrow">Usage</span><h2>Your usage</h2><p>A simple look at your current plan.</p></div>
+          <div class="usage-card"><div class="usage-number"><strong>12</strong><span>/ 20 messages</span></div><div class="progress"><span style="width:60%"></span></div><p>8 messages remaining today.</p></div>
+          <div class="usage-grid"><div><strong>Free</strong><span>Current plan</span></div><div><strong>Today</strong><span>12 messages</span></div><div><strong>Reset</strong><span>Tomorrow</span></div></div>
+        </div>
+      </section>
+
+      <section class="view" data-panel="upgrade">
+        <div class="page-container upgrade-page">
+          <div class="page-heading center"><span class="eyebrow">Upgrade</span><h2>More room to think.</h2><p>Pick the plan that fits how you use Cookie.</p></div>
+          <div class="plans">
+            <article class="plan"><span class="plan-label">Free</span><h3>$0</h3><p>For trying Cookie out.</p><ul><li>20 messages / day</li><li>Standard model</li><li>Chat history</li></ul><button class="secondary-btn full" type="button">Current plan</button></article>
+            <article class="plan featured"><span class="plan-label">Plus</span><h3>$10 <small>/ month</small></h3><p>For everyday use.</p><ul><li>Unlimited everyday chats</li><li>Faster responses</li><li>Longer context</li></ul><button class="primary-btn full" type="button">Choose Plus</button></article>
+            <article class="plan"><span class="plan-label">Pro</span><h3>$25 <small>/ month</small></h3><p>For heavy workflows.</p><ul><li>Higher limits</li><li>Advanced models</li><li>Priority access</li></ul><button class="secondary-btn full" type="button">Choose Pro</button></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-panel="help">
+        <div class="page-container help-page">
+          <div class="page-heading"><span class="eyebrow">Help</span><h2>How can we help?</h2><p>Quick answers for the things you may need.</p></div>
+          <div class="faq-list">
+            <details open><summary>What is Cookie?</summary><p>Cookie is a simple AI workspace designed to help you write, learn, plan, and explore ideas without getting in the way.</p></details>
+            <details><summary>How do I start a new chat?</summary><p>Tap New chat in the sidebar, or use the new-chat button in the top bar on mobile.</p></details>
+            <details><summary>Can I change the appearance?</summary><p>Yes. Open Settings and choose Dark, Light, or System mode.</p></details>
+            <details><summary>Is my data stored?</summary><p>This frontend demo keeps only the small amount of state needed for the interface in your browser. A production backend can later add secure account storage.</p></details>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const $ = (s, root=document) => root.querySelector(s);
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+    const views = $$('.view');
+    const recent = $$('.recent-item');
+    const conversation = $('#conversation');
+    const input = $('#messageInput');
+    const welcome = $('#welcome');
+    const suggestions = $('.suggestions');
+
+    function showView(name) {
+      views.forEach(v => v.classList.toggle('is-visible', v.dataset.panel === name));
+      $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+      document.body.classList.remove('sidebar-open');
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    $$('[data-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+    $('[data-action="open-sidebar"]').addEventListener('click', () => document.body.classList.add('sidebar-open'));
+    $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
+
+    function resetChat() {
+      conversation.innerHTML = '';
+      welcome.hidden = false;
+      suggestions.hidden = false;
+      input.value = '';
+      input.focus();
+      showView('chat');
+    }
+    $$('[data-action="new-chat"]').forEach(b => b.addEventListener('click', resetChat));
+
+    function addMessage(text, role) {
+      const row = document.createElement('article');
+      row.className = 'message-row ' + role;
+      row.innerHTML = role === 'user'
+        ? '<div class="message-avatar">D</div><div class="message-body"><p></p></div>'
+        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><p></p></div>';
+      $('.message-body p', row).textContent = text;
+      conversation.appendChild(row);
+      row.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+
+    function answerFor(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes('week')) return 'Absolutely. Start with the three things that matter most, then place smaller tasks around them. If you give me your schedule, I can turn it into a realistic plan.';
+      if (lower.includes('write')) return 'Sure. Send me what you have and tell me the tone you want. I can make it clearer while keeping it sounding like you.';
+      if (lower.includes('idea')) return 'Let’s explore it. Tell me what you are building, who it is for, and any limits you have. I’ll help you generate a few directions.';
+      return 'I’m here. This is the Cookie frontend demo, so the reply is intentionally local for now. The real AI connection can be added to the backend later.';
+    }
+
+    function send(text) {
+      text = text.trim();
+      if (!text) return;
+      welcome.hidden = true;
+      suggestions.hidden = true;
+      addMessage(text, 'user');
+      input.value = '';
+      input.style.height = 'auto';
+      setTimeout(() => {
+        addMessage(answerFor(text), 'assistant');
+      }, 420);
+    }
+
+    $('#composer').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+    input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
+    input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); }});
+    $$('.suggestion').forEach(b => b.addEventListener('click', () => send(b.dataset.prompt)));
+
+    recent.forEach(item => item.addEventListener('click', () => {
+      recent.forEach(x=>x.classList.remove('active')); item.classList.add('active');
+      showView('chat');
+      welcome.hidden = true; suggestions.hidden = true; conversation.innerHTML='';
+      addMessage(item.dataset.chat, 'user');
+      setTimeout(()=>addMessage('Got it. We can pick this conversation up from here. Tell me what you want to do next.', 'assistant'), 380);
+    }));
+
+    $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
+      $$('.setting-tab').forEach(x=>x.classList.remove('active')); tab.classList.add('active');
+      $$('.setting-panel').forEach(p=>p.classList.toggle('active', p.dataset.settingPanel===tab.dataset.setting));
+    }));
+    $$('.theme-card').forEach(card => card.addEventListener('click', () => {
+      $$('.theme-card').forEach(x=>x.classList.remove('active')); card.classList.add('active');
+      const theme = card.dataset.theme;
+      document.documentElement.dataset.theme = theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark') : theme;
+    }));
+    $$('.accent-swatch').forEach(s => s.addEventListener('click', () => {
+      $$('.accent-swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); document.documentElement.dataset.accent=s.dataset.accent;
+    }));
+    $$('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
+    $('#clearData').addEventListener('click', () => { conversation.innerHTML=''; welcome.hidden=false; suggestions.hidden=false; alert('Local demo chats cleared.'); });
+
+    const searchInput = $('#searchInput');
+    const resultBox = $('#searchResults');
+    function renderSearch(q='') {
+      const names = recent.map(x=>x.dataset.chat).filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+      resultBox.innerHTML = names.length ? names.map(n=>'<button class="search-result" type="button"><span>◷</span><strong>'+n+'</strong><small>Recent conversation</small></button>').join('') : '<div class="empty-search">No conversations found.</div>';
+      $$('.search-result', resultBox).forEach(b=>b.addEventListener('click',()=>{ const n=$('strong',b).textContent; const target=recent.find(x=>x.dataset.chat===n); if(target) target.click(); }));
+    }
+    searchInput.addEventListener('input',()=>renderSearch(searchInput.value)); renderSearch();
+
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='k') { e.preventDefault(); resetChat(); }
+      if (e.key==='Escape') document.body.classList.remove('sidebar-open');
+    });
+  </script>
+</body>
+</html>
