@@ -233,9 +233,9 @@
     recent.forEach(item => item.addEventListener('click', () => {
       recent.forEach(x=>x.classList.remove('active')); item.classList.add('active');
       showView('chat');
+      chatMessages = [{role:'user', content:item.dataset.chat}];
       welcome.hidden = true; conversation.innerHTML='';
       addMessage(item.dataset.chat, 'user');
-      setTimeout(()=>addMessage('Got it. We can pick this conversation up from here. Tell me what you want to do next.', 'assistant'), 380);
     }));
 
     $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
