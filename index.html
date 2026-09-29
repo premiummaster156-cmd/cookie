@@ -22,6 +22,20 @@
 .workspace-editor{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px}.workspace-editor.open{display:flex}.workspace-editor-card{width:min(900px,100%);height:min(760px,92dvh);background:#201b18;border:1px solid rgba(255,255,255,.1);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.45)}.workspace-editor-head{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}.workspace-editor-head strong{flex:1;font-size:13px}.workspace-editor textarea{flex:1;width:100%;resize:none;border:0;outline:0;background:#171412;color:#f4eee8;padding:18px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.workspace-editor-actions{padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:8px}.workspace-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer}.workspace-btn.primary{background:#e5a15a;color:#1a120c;border-color:transparent;font-weight:700}
 @media(max-width:600px){.workspace-more-btn{top:11px;right:11px}.workspace-panel{top:7px;right:7px;bottom:7px;width:calc(100vw - 14px);border-radius:16px}.workspace-options{grid-template-columns:1fr 1fr}.workspace-file-actions{opacity:1}}
 </style>
+
+<style id="no-motion-global">
+*,*::before,*::after{
+  animation:none !important;
+  transition:none !important;
+  scroll-behavior:auto !important;
+  transform:none !important;
+}
+html{scroll-behavior:auto !important}
+.view-entering,.view-leaving{animation:none !important;transform:none !important;opacity:1 !important}
+.workspace-panel{transform:none !important;display:none !important}
+.workspace-panel.open{display:flex !important;transform:none !important}
+.workspace-more-btn:hover,.workspace-option:hover{transform:none !important}
+</style>
 </head>
 <body>
   <canvas id="cookieTrail" class="cookie-trail" aria-hidden="true"></canvas>
