@@ -675,11 +675,10 @@
       if (!text || isSending) return;
 
       welcome.hidden = true;
+      const sentAt = Date.now();
       addMessage(text, 'user', sentAt);
       input.value = '';
       input.style.height = 'auto';
-
-      const sentAt = Date.now();
       chatMessages.push({role:'user', content:text, timestamp:sentAt});
       saveCurrentChat();
       const typing = addTyping();
