@@ -57,7 +57,7 @@ const profiles = {
 export async function onRequestPost({ request, env }) {
   try {
     const apiKey = String(env.OLLAMA_API_KEY || "").trim();
-    const model = String(env.OLLAMA_MODEL || "gpt-oss:120b-cloud").trim();
+    let model = String(env.OLLAMA_MODEL || "gpt-oss:120b-cloud").trim();
     const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
 
     if (!apiKey) {
@@ -66,6 +66,11 @@ export async function onRequestPost({ request, env }) {
 
     const body = await readJson(request);
     const preferences = body?.preferences || {};
+    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
+    const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
+    if (imageAttachments.length && env.OLLAMA_VISION_MODEL) {
+      model = String(env.OLLAMA_VISION_MODEL).trim();
+    }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
       : "standard";
@@ -109,6 +114,23 @@ export async function onRequestPost({ request, env }) {
       length === "detailed" ? "Give a thorough, well-structured response." : ""
     ].filter(Boolean).join("\n");
 
+    const imageData = imageAttachments.slice(0, 4).map(a => {
+      const match = a.data.match(/^data:[^;]+;base64,(.+)$/);
+      return match ? match[1] : a.data;
+    });
+
+    if (imageAttachments.length && !env.OLLAMA_VISION_MODEL) {
+      return json({
+        error: "Image upload is ready, but the current Ollama model is text-only. Add an OLLAMA_VISION_MODEL Pages secret to enable image analysis."
+      }, 422);
+    }
+
+    const apiMessages = [{ role: "system", content: system }, ...messages];
+    if (imageData.length) {
+      const last = apiMessages.at(-1);
+      if (last?.role === "user") last.images = imageData;
+    }
+
     const upstream = await fetch(ollamaUrl, {
       method: "POST",
       headers: {
@@ -118,7 +140,7 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify({
         model,
         stream: false,
-        messages: [{ role: "system", content: system }, ...messages],
+        messages: apiMessages,
         options: {
           temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35)
         }
