@@ -409,16 +409,141 @@
     }
     $$('[data-action="new-chat"]').forEach(b => b.addEventListener('click', resetChat));
 
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function inlineMarkdown(value) {
+      let out = escapeHtml(value);
+      out = out.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+      out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      out = out.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      out = out.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+      out = out.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>');
+      return out;
+    }
+
+    function renderMarkdown(markdown) {
+      const source = String(markdown || '').replace(/\\r/g, '').trim();
+      if (!source) return '<p></p>';
+
+      const lines = source.split('\\n');
+      const blocks = [];
+      let paragraph = [];
+      let listType = null;
+      let listItems = [];
+      let code = null;
+
+      function flushParagraph() {
+        if (!paragraph.length) return;
+        blocks.push('<p>' + paragraph.map(inlineMarkdown).join('<br>') + '</p>');
+        paragraph = [];
+      }
+
+      function flushList() {
+        if (!listItems.length) return;
+        const tag = listType === 'ol' ? 'ol' : 'ul';
+        blocks.push('<' + tag + '>' + listItems.map(item => '<li>' + inlineMarkdown(item) + '</li>').join('') + '</' + tag + '>');
+        listItems = [];
+        listType = null;
+      }
+
+      function flushCode() {
+        if (!code) return;
+        const language = code.language ? escapeHtml(code.language) : '';
+        const encoded = encodeURIComponent(code.text);
+        blocks.push(
+          '<div class="code-block" data-code="' + encoded + '">' +
+            '<div class="code-toolbar"><span>' + (language || 'Code') + '</span><button class="copy-code" type="button" data-copy-code="' + encoded + '">Copy</button></div>' +
+            '<pre><code>' + escapeHtml(code.text) + '</code></pre>' +
+          '</div>'
+        );
+        code = null;
+      }
+
+      for (const line of lines) {
+        const fence = line.match(/^\\s*\\`\\`\\`\\s*([\\w#+.-]*)\\s*$/);
+        if (fence) {
+          if (code) flushCode();
+          else {
+            flushParagraph();
+            flushList();
+            code = {language: fence[1], text: ''};
+          }
+          continue;
+        }
+        if (code) {
+          code.text += (code.text ? '\\n' : '') + line;
+          continue;
+        }
+
+        if (/^\\s*$/.test(line)) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+
+        const heading = line.match(/^\\s*(#{1,6})\\s+(.+)$/);
+        if (heading) {
+          flushParagraph();
+          flushList();
+          const level = Math.min(6, heading[1].length);
+          blocks.push('<h' + level + '>' + inlineMarkdown(heading[2]) + '</h' + level + '>');
+          continue;
+        }
+
+        const ordered = line.match(/^\\s*\\d+[.)]\\s+(.+)$/);
+        const unordered = line.match(/^\\s*[-*+]\\s+(.+)$/);
+        if (ordered || unordered) {
+          flushParagraph();
+          const type = ordered ? 'ol' : 'ul';
+          if (listType && listType !== type) flushList();
+          listType = type;
+          listItems.push((ordered || unordered)[1]);
+          continue;
+        }
+
+        flushList();
+        paragraph.push(line);
+      }
+
+      if (code) flushCode();
+      flushParagraph();
+      flushList();
+      return blocks.join('');
+    }
+
     function addMessage(text, role) {
       const row = document.createElement('article');
       row.className = 'message-row ' + role;
       row.innerHTML = role === 'user'
-        ? '<div class="message-avatar">D</div><div class="message-body"><p></p></div>'
-        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><p></p></div>';
-      $('.message-body p', row).textContent = text;
+        ? '<div class="message-avatar">D</div><div class="message-body"></div>'
+        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"></div>';
+      const body = $('.message-body', row);
+      body.innerHTML = renderMarkdown(text);
       conversation.appendChild(row);
       if (settings.autoScroll) row.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
+
+    conversation.addEventListener('click', async event => {
+      const button = event.target.closest('[data-copy-code]');
+      if (!button) return;
+      try {
+        const value = decodeURIComponent(button.dataset.copyCode || '');
+        await navigator.clipboard.writeText(value);
+        const previous = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = previous; }, 1400);
+      } catch {
+        button.textContent = 'Copy failed';
+        setTimeout(() => { button.textContent = 'Copy'; }, 1400);
+      }
+    });
 
     function addTyping() {
       const row = document.createElement('article');
