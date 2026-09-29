@@ -1,7 +1,7 @@
 const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
 const TOKEN_TTL = 30 * 60 * 1000;
 
-function json(data, status = 200, headers = {}) {
+export function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8", ...headers }
