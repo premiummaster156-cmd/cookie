@@ -8,6 +8,35 @@
   <title>Cookie — AI</title>
   <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+
+<style id="workspace-styles">
+.workspace-panel{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--panel,#211c19);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 70px rgba(0,0,0,.32);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
+.workspace-panel.open{transform:translateX(0)}
+.workspace-head{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.workspace-head h3{margin:0;font-size:17px;flex:1}
+.workspace-head small{display:block;color:rgba(255,255,255,.5);font-size:11px;margin-top:3px}
+.workspace-close{border:0;background:transparent;color:inherit;font-size:22px;cursor:pointer}
+.workspace-list{padding:12px;overflow:auto;flex:1}
+.workspace-empty{padding:28px 14px;text-align:center;color:rgba(255,255,255,.5);font-size:13px}
+.workspace-file{width:100%;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);border-radius:12px;padding:11px;margin-bottom:8px;display:flex;align-items:center;gap:9px;color:inherit;text-align:left}
+.workspace-file:hover{background:rgba(255,255,255,.055)}
+.workspace-file-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.workspace-file-size{font-size:10px;color:rgba(255,255,255,.42)}
+.workspace-file-actions{display:flex;gap:4px}
+.workspace-mini{border:0;background:transparent;color:rgba(255,255,255,.65);padding:5px;cursor:pointer;border-radius:7px}
+.workspace-mini:hover{background:rgba(255,255,255,.08);color:#fff}
+.workspace-foot{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.48)}
+.workspace-editor{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.58);display:none;align-items:center;justify-content:center;padding:18px}
+.workspace-editor.open{display:flex}
+.workspace-editor-card{width:min(900px,100%);height:min(760px,92dvh);background:#201b18;border:1px solid rgba(255,255,255,.1);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.45)}
+.workspace-editor-head{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.workspace-editor-head strong{flex:1;font-size:13px}
+.workspace-editor textarea{flex:1;width:100%;resize:none;border:0;outline:0;background:#171412;color:#f4eee8;padding:18px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.workspace-editor-actions{padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:8px}
+.workspace-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer}
+.workspace-btn.primary{background:#e5a15a;color:#1a120c;border-color:transparent;font-weight:700}
+.workspace-action-note{padding:8px 11px;margin:8px 0;border-radius:9px;background:rgba(224,161,90,.09);color:rgba(255,255,255,.72);font-size:11px}
+</style>
 </head>
 <body>
   <canvas id="cookieTrail" class="cookie-trail" aria-hidden="true"></canvas>
@@ -88,7 +117,7 @@
             <div class="composer-toolbar">
               <div class="toolbar-left">
                 <button class="round-tool" id="attachBtn" type="button" aria-label="Attach files or images"><svg viewBox="0 0 24 24"><path d="m9 17 6.8-6.8a3 3 0 0 0-4.2-4.2L4.8 12.8a4.5 4.5 0 0 0 6.4 6.4l6.1-6.1"/></svg></button>
-                <button class="tool-label" type="button"><span class="tool-glyph"><svg viewBox="0 0 24 24"><path d="M7 4h10v4H7zM5 10h14v10H5zM9 14h6"/></svg></span> Tools <span class="tiny-chevron"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></span></button>
+                <button class="tool-label" id="workspaceBtn" type="button"><span class="tool-glyph"><svg viewBox="0 0 24 24"><path d="M7 4h10v4H7zM5 10h14v10H5zM9 14h6"/></svg></span> Workspace <span class="tiny-chevron"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></span></button>
               </div>
               <div class="toolbar-right">
                 <span class="shortcut-hint">Enter to send</span>
@@ -97,6 +126,22 @@
             </div>
           </form>
           <p class="disclaimer">Cookie can make mistakes. Check important information.</p>
+        </div>
+
+        <aside class="workspace-panel" id="workspacePanel" aria-label="Cookie project workspace">
+          <div class="workspace-head">
+            <div><h3>Project workspace</h3><small id="workspaceCount">0 files · saved on this device</small></div>
+            <button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
+          </div>
+          <div class="workspace-list" id="workspaceList"></div>
+          <div class="workspace-foot">Cookie can create and edit these files through its agent tools. Files stay in this browser preview until you download them.</div>
+        </aside>
+        <div class="workspace-editor" id="workspaceEditor">
+          <div class="workspace-editor-card">
+            <div class="workspace-editor-head"><strong id="workspaceEditorTitle">File</strong><button class="workspace-close" id="workspaceEditorClose" type="button" aria-label="Close editor">×</button></div>
+            <textarea id="workspaceEditorText" spellcheck="false"></textarea>
+            <div class="workspace-editor-actions"><button class="workspace-btn" id="workspaceEditorCancel" type="button">Cancel</button><button class="workspace-btn primary" id="workspaceEditorSave" type="button">Save file</button></div>
+          </div>
         </div>
       </section>
 
@@ -302,6 +347,71 @@
     let isSending = false;
     let requestController = null;
     let currentUser = { id:null, name:'Account', email:'', plan:'free' };
+
+    let workspace = readLocal('cookie_workspace', []);
+    if (!Array.isArray(workspace)) workspace = [];
+    workspace = workspace.filter(f => f && typeof f.path === 'string' && typeof f.content === 'string');
+
+    function saveWorkspace() { writeLocal('cookie_workspace', workspace); renderWorkspace(); }
+
+    function formatBytes(n) {
+      n = Number(n) || 0;
+      if (n < 1024) return n + ' B';
+      if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+      return (n/1024/1024).toFixed(1) + ' MB';
+    }
+
+    function renderWorkspace() {
+      const list = $('#workspaceList');
+      const count = $('#workspaceCount');
+      if (!list) return;
+      if (count) count.textContent = workspace.length + ' file' + (workspace.length === 1 ? '' : 's') + ' · saved on this device';
+      if (!workspace.length) {
+        list.innerHTML = '<div class="workspace-empty">No project files yet.<br>Ask Cookie: “Create a Discord bot project.”</div>';
+        return;
+      }
+      list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map((file,i) =>
+        '<div class="workspace-file">' +
+          '<span class="workspace-file-name" title="' + escapeHtml(file.path) + '">' + escapeHtml(file.path) + '</span>' +
+          '<span class="workspace-file-size">' + formatBytes(file.content.length) + '</span>' +
+          '<span class="workspace-file-actions">' +
+            '<button class="workspace-mini" type="button" data-workspace-open="' + i + '" aria-label="Edit file">✎</button>' +
+            '<button class="workspace-mini" type="button" data-workspace-download="' + i + '" aria-label="Download file">↓</button>' +
+            '<button class="workspace-mini" type="button" data-workspace-delete="' + i + '" aria-label="Delete file">×</button>' +
+          '</span>' +
+        '</div>'
+      ).join('');
+    }
+
+    function openWorkspace() { $('#workspacePanel')?.classList.add('open'); renderWorkspace(); }
+    function closeWorkspace() { $('#workspacePanel')?.classList.remove('open'); }
+
+    let workspaceEditIndex = -1;
+    function openWorkspaceEditor(index) {
+      const file = workspace[index];
+      if (!file) return;
+      workspaceEditIndex = index;
+      $('#workspaceEditorTitle').textContent = file.path;
+      $('#workspaceEditorText').value = file.content;
+      $('#workspaceEditor').classList.add('open');
+      setTimeout(()=>$('#workspaceEditorText').focus(),0);
+    }
+    function closeWorkspaceEditor() {
+      workspaceEditIndex = -1;
+      $('#workspaceEditor').classList.remove('open');
+    }
+    function downloadWorkspaceFile(index) {
+      const file = workspace[index];
+      if (!file) return;
+      const blob = new Blob([file.content], {type:'text/plain;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=file.path.split('/').pop() || 'file.txt'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    renderWorkspace();
+
 
     function formatMessageTime(timestamp) {
       const date = new Date(timestamp || Date.now());
@@ -732,46 +842,91 @@
       input.style.height = 'auto';
       chatMessages.push({role:'user', content:apiText, timestamp:sentAt});
       saveCurrentChat();
+
       const typing = addTyping();
       setSending(true);
       requestController = new AbortController();
 
       try {
         const response = await fetch('/api/cookie-chat', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({messages: chatMessages, attachments: attachments.map(({name,type,kind,data}) => ({name,type,kind,data})), preferences: {
-            plan: currentUser?.plan || 'free',
-            language: settings.language,
-            responseMode: settings.responseMode,
-            creativity: Number(settings.creativity),
-            answerLength: settings.answerLength
-          }}),
-          signal: requestController.signal
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            messages:chatMessages,
+            workspace,
+            attachments:attachments.map(({name,type,kind,data})=>({name,type,kind,data})),
+            preferences:{
+              plan:currentUser?.plan||'free',
+              language:settings.language,
+              responseMode:settings.responseMode,
+              creativity:Number(settings.creativity),
+              answerLength:settings.answerLength
+            }
+          }),
+          signal:requestController.signal
         });
 
-        const data = await response.json().catch(() => ({}));
+        const data=await response.json().catch(()=>({}));
         typing.remove();
+        if(!response.ok) throw new Error(data.error||'Cookie could not answer right now.');
+        const reply=typeof data.message==='string'?data.message.trim():'';
+        if(!reply) throw new Error('Cookie returned an empty response.');
 
-        if (!response.ok) throw new Error(data.error || 'Cookie could not answer right now.');
-        const reply = typeof data.message === 'string' ? data.message.trim() : '';
-        if (!reply) throw new Error('Cookie returned an empty response.');
+        if(Array.isArray(data.workspace)){
+          workspace=data.workspace.filter(f=>f&&typeof f.path==='string'&&typeof f.content==='string');
+          writeLocal('cookie_workspace',workspace);
+          renderWorkspace();
+          if(Array.isArray(data.workspaceActions)&&data.workspaceActions.length){
+            const successful=data.workspaceActions.filter(x=>x.ok).length;
+            addMessage('Workspace updated · ' + successful + ' file operation' + (successful===1?'':'s') + '.', 'assistant', Date.now());
+          }
+        }
 
-        const repliedAt = Date.now();
-        chatMessages.push({role:'assistant', content:reply, timestamp:repliedAt});
-        addMessage(reply, 'assistant', repliedAt);
+        const repliedAt=Date.now();
+        chatMessages.push({role:'assistant',content:reply,timestamp:repliedAt});
+        addMessage(reply,'assistant',repliedAt);
         saveCurrentChat();
-      } catch (error) {
+      } catch(error) {
         typing.remove();
-        if (error.name !== 'AbortError') addMessage(error.message || 'Something went wrong. Please try again.', 'assistant error-message');
+        if(error.name!=='AbortError') addMessage(error.message||'Something went wrong. Please try again.','assistant error-message');
       } finally {
-        requestController = null;
+        requestController=null;
         setSending(false);
         input.focus();
       }
     }
 
-        // Settings controls
+    
+    $('#workspaceBtn')?.addEventListener('click', () => {
+      const panel=$('#workspacePanel');
+      if(panel?.classList.contains('open')) closeWorkspace(); else openWorkspace();
+    });
+    $('#workspaceClose')?.addEventListener('click', closeWorkspace);
+    $('#workspaceEditorClose')?.addEventListener('click', closeWorkspaceEditor);
+    $('#workspaceEditorCancel')?.addEventListener('click', closeWorkspaceEditor);
+    $('#workspaceEditorSave')?.addEventListener('click', () => {
+      if(workspaceEditIndex<0 || !workspace[workspaceEditIndex]) return;
+      workspace[workspaceEditIndex].content=$('#workspaceEditorText').value;
+      writeLocal('cookie_workspace',workspace);
+      renderWorkspace();
+      closeWorkspaceEditor();
+    });
+    $('#workspaceEditor')?.addEventListener('click', e => { if(e.target.id==='workspaceEditor') closeWorkspaceEditor(); });
+    $('#workspaceList')?.addEventListener('click', e => {
+      const open=e.target.closest('[data-workspace-open]');
+      const dl=e.target.closest('[data-workspace-download]');
+      const del=e.target.closest('[data-workspace-delete]');
+      if(open){ openWorkspaceEditor(Number(open.dataset.workspaceOpen)); return; }
+      if(dl){ downloadWorkspaceFile(Number(dl.dataset.workspaceDownload)); return; }
+      if(del){
+        const i=Number(del.dataset.workspaceDelete);
+        if(workspace[i] && confirm('Delete '+workspace[i].path+' from the workspace?')){
+          workspace.splice(i,1); saveWorkspace();
+        }
+      }
+    });
+
+    // Settings controls
     $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
       $$('.setting-tab').forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
