@@ -8,6 +8,7 @@
   <title>Cookie — AI</title>
   <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 
 <style id="workspace-styles">
 .workspace-panel{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--panel,#211c19);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 70px rgba(0,0,0,.32);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
@@ -131,7 +132,7 @@
         <aside class="workspace-panel" id="workspacePanel" aria-label="Cookie project workspace">
           <div class="workspace-head">
             <div><h3>Project workspace</h3><small id="workspaceCount">0 files · saved on this device</small></div>
-            <button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
+            <button class="workspace-btn primary" id="workspaceZip" type="button">Download ZIP</button><button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
           </div>
           <div class="workspace-list" id="workspaceList"></div>
           <div class="workspace-foot">Cookie can create and edit these files through its agent tools. Files stay in this browser preview until you download them.</div>
@@ -365,22 +366,25 @@
       const list = $('#workspaceList');
       const count = $('#workspaceCount');
       if (!list) return;
-      if (count) count.textContent = workspace.length + ' file' + (workspace.length === 1 ? '' : 's') + ' · saved on this device';
+      const files = workspace.filter(x => x && x.kind !== 'folder');
+      const folders = workspace.filter(x => x && x.kind === 'folder');
+      if (count) count.textContent = files.length + ' file' + (files.length === 1 ? '' : 's') + (folders.length ? ' · ' + folders.length + ' folder' + (folders.length === 1 ? '' : 's') : '') + ' · saved on this device';
       if (!workspace.length) {
-        list.innerHTML = '<div class="workspace-empty">No project files yet.<br>Ask Cookie: “Create a Discord bot project.”</div>';
+        list.innerHTML = '<div class="workspace-empty">No project files yet.<br>Ask Cookie: “Build me a complete project.”</div>';
         return;
       }
-      list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map((file,i) =>
-        '<div class="workspace-file">' +
-          '<span class="workspace-file-name" title="' + escapeHtml(file.path) + '">' + escapeHtml(file.path) + '</span>' +
-          '<span class="workspace-file-size">' + formatBytes(file.content.length) + '</span>' +
+      list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map((item,i) => {
+        const folder = item.kind === 'folder' || /\\/$/.test(item.path);
+        return '<div class="workspace-file">' +
+          '<span style="font-size:15px">' + (folder ? '📁' : '📄') + '</span>' +
+          '<span class="workspace-file-name" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span>' +
+          '<span class="workspace-file-size">' + (folder ? 'folder' : formatBytes(item.content.length)) + '</span>' +
           '<span class="workspace-file-actions">' +
-            '<button class="workspace-mini" type="button" data-workspace-open="' + i + '" aria-label="Edit file">✎</button>' +
-            '<button class="workspace-mini" type="button" data-workspace-download="' + i + '" aria-label="Download file">↓</button>' +
-            '<button class="workspace-mini" type="button" data-workspace-delete="' + i + '" aria-label="Delete file">×</button>' +
+            (!folder ? '<button class="workspace-mini" type="button" data-workspace-open="' + i + '" aria-label="Edit file">✎</button><button class="workspace-mini" type="button" data-workspace-download="' + i + '" aria-label="Download file">↓</button>' : '') +
+            '<button class="workspace-mini" type="button" data-workspace-delete="' + i + '" aria-label="Delete item">×</button>' +
           '</span>' +
-        '</div>'
-      ).join('');
+        '</div>';
+      }).join('');
     }
 
     function openWorkspace() { $('#workspacePanel')?.classList.add('open'); renderWorkspace(); }
@@ -402,7 +406,7 @@
     }
     function downloadWorkspaceFile(index) {
       const file = workspace[index];
-      if (!file) return;
+      if (!file || file.kind === 'folder') return;
       const blob = new Blob([file.content], {type:'text/plain;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -897,6 +901,7 @@
     }
 
     
+    $('#workspaceZip')?.addEventListener('click', downloadWorkspaceZip);
     $('#workspaceBtn')?.addEventListener('click', () => {
       const panel=$('#workspacePanel');
       if(panel?.classList.contains('open')) closeWorkspace(); else openWorkspace();
@@ -925,6 +930,50 @@
         }
       }
     });
+
+
+    async function downloadWorkspaceZip() {
+      if (!workspace.length) {
+        alert('There are no project files to download yet.');
+        return;
+      }
+      if (!window.JSZip) {
+        alert('ZIP support is still loading. Please try again in a moment.');
+        return;
+      }
+      const button = $('#workspaceZip');
+      const previous = button?.textContent || 'Download ZIP';
+      if (button) { button.disabled = true; button.textContent = 'Building ZIP…'; }
+      try {
+        const zip = new JSZip();
+        const root = zip.folder('cookie-project');
+        workspace.forEach(item => {
+          const path = String(item.path || '').replace(/^\/+/, '');
+          if (!path) return;
+          if (item.kind === 'folder' || /\/$/.test(path)) root.folder(path.replace(/\/+$/,''));
+          else root.file(path, String(item.content || ''), {createFolders:true});
+        });
+        const blob = await zip.generateAsync({
+          type:'blob',
+          mimeType:'application/zip',
+          compression:'DEFLATE',
+          compressionOptions:{level:6}
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cookie-project.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1500);
+      } catch (error) {
+        console.error(error);
+        alert('Could not build the ZIP: ' + (error.message || error));
+      } finally {
+        if (button) { button.disabled = false; button.textContent = previous; }
+      }
+    }
 
     // Settings controls
     $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
