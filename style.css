@@ -38,7 +38,7 @@
   z-index:3;
 }
 @media(pointer:coarse){
-  .cookie-trail{display:none}
+  .cookie-trail{opacity:.58}
 }
 @media(prefers-reduced-motion:reduce){
   .cookie-trail{display:none}
