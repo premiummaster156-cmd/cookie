@@ -11,7 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 
 <style id="workspace-styles">
-.workspace-panel{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--panel,#211c19);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 70px rgba(0,0,0,.32);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
+.workspace-more-btn{border:0;background:transparent;color:rgba(255,255,255,.78);font-size:26px;line-height:1;width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:fixed;right:14px;top:14px;z-index:79;transition:background .15s ease,color .15s ease}.workspace-more-btn:hover{background:rgba(255,255,255,.08);color:#fff}.workspace-options{display:flex;flex-direction:column;gap:8px;padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.workspace-option{width:100%;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:inherit;border-radius:12px;padding:12px;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer}.workspace-option:hover{background:rgba(255,255,255,.075)}.workspace-option>span{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:16px}.workspace-option strong{display:block;font-size:13px}.workspace-option small{display:block;color:rgba(255,255,255,.45);font-size:10px;margin-top:2px}.workspace-panel{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--panel,#211c19);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 70px rgba(0,0,0,.32);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
 .workspace-panel.open{transform:translateX(0)}
 .workspace-head{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
 .workspace-head h3{margin:0;font-size:17px;flex:1}
@@ -118,7 +118,7 @@
             <div class="composer-toolbar">
               <div class="toolbar-left">
                 <button class="round-tool" id="attachBtn" type="button" aria-label="Attach files or images"><svg viewBox="0 0 24 24"><path d="m9 17 6.8-6.8a3 3 0 0 0-4.2-4.2L4.8 12.8a4.5 4.5 0 0 0 6.4 6.4l6.1-6.1"/></svg></button>
-                <button class="tool-label" id="workspaceBtn" type="button"><span class="tool-glyph"><svg viewBox="0 0 24 24"><path d="M7 4h10v4H7zM5 10h14v10H5zM9 14h6"/></svg></span> Workspace <span class="tiny-chevron"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></span></button>
+                
               </div>
               <div class="toolbar-right">
                 <span class="shortcut-hint">Enter to send</span>
@@ -130,6 +130,10 @@
         </div>
 
         <aside class="workspace-panel" id="workspacePanel" aria-label="Cookie project workspace">
+          <div class="workspace-options" id="workspaceOptions" aria-label="Workspace options">
+            <button type="button" class="workspace-option" id="workspaceOptionZip"><span>↓</span><div><strong>Download as ZIP</strong><small>Export the entire project</small></div></button>
+            <button type="button" class="workspace-option" id="workspaceOptionFiles"><span>▣</span><div><strong>View project files</strong><small>Open the workspace file list</small></div></button>
+          </div>
           <div class="workspace-head">
             <div><h3>Project workspace</h3><small id="workspaceCount">0 files · saved on this device</small></div>
             <button class="workspace-btn primary" id="workspaceZip" type="button">Download ZIP</button><button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
@@ -903,9 +907,14 @@
 
     
     $('#workspaceZip')?.addEventListener('click', downloadWorkspaceZip);
-    $('#workspaceBtn')?.addEventListener('click', () => {
+    $('#workspaceMoreBtn')?.addEventListener('click', () => {
       const panel=$('#workspacePanel');
       if(panel?.classList.contains('open')) closeWorkspace(); else openWorkspace();
+    });
+    $('#workspaceOptionZip')?.addEventListener('click', downloadWorkspaceZip);
+    $('#workspaceOptionFiles')?.addEventListener('click', () => {
+      $('#workspaceOptions')?.classList.remove('show');
+      $('#workspaceList')?.scrollIntoView({behavior:'smooth',block:'start'});
     });
     $('#workspaceClose')?.addEventListener('click', closeWorkspace);
     $('#workspaceEditorClose')?.addEventListener('click', closeWorkspaceEditor);
