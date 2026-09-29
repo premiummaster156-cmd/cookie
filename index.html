@@ -181,8 +181,27 @@
     let requestController = null;
 
     function showView(name) {
-      views.forEach(v => v.classList.toggle('is-visible', v.dataset.panel === name));
-      $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+      const next = views.find(v => v.dataset.panel === name);
+      const current = views.find(v => v.classList.contains('is-visible'));
+      if (!next || next === current) return;
+
+      if (current) {
+        current.classList.remove('is-visible', 'view-entering');
+        current.classList.add('view-leaving');
+        window.setTimeout(() => current.classList.remove('view-leaving'), 260);
+      }
+
+      next.classList.remove('view-leaving');
+      next.classList.add('view-entering');
+      void next.offsetWidth;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          next.classList.remove('view-entering');
+          next.classList.add('is-visible');
+        });
+      });
+
+      $('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
       document.body.classList.remove('sidebar-open');
       window.scrollTo({top:0, behavior:'smooth'});
     }
