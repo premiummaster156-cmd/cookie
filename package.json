@@ -1,11 +1,1 @@
-{
-  "name": "cookie",
-  "private": true,
-  "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "nodemailer": "10.0.11"
-  }
-}
+{"name":"cookie-next","private":true,"version":"1.0.0","scripts":{"dev":"next dev","build":"next build","start":"next start","lint":"next lint"},"dependencies":{"framer-motion":"latest","next":"latest","react":"latest","react-dom":"latest","typescript":"latest","@types/node":"latest","@types/react":"latest","@types/react-dom":"latest"}}
