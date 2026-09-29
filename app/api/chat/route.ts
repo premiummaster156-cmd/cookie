@@ -1,0 +1,1 @@
+import { onRequestPost } from "../../../../functions/api/chat.js";\nexport async function POST(request:Request){return onRequestPost({request,env:{OLLAMA_API_KEY:process.env.OLLAMA_API_KEY,OLLAMA_URL:process.env.OLLAMA_URL||"https://ollama.com/api/chat"}})}
