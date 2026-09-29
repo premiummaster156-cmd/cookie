@@ -65,7 +65,7 @@ export async function onRequestPost(context) {
               language === "russian" ? "Prefer Russian responses." : "",
               answerLength === "short" ? "Keep the answer short." : "",
               answerLength === "detailed" ? "Give a detailed answer with clear structure." : ""
-            ].filter(Boolean).join(" ")
+            ].filter(Boolean).join(" ") || "Follow the user's configured Cookie preferences."
           },
           ...messages
         ],
