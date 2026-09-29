@@ -57,6 +57,8 @@
       </button>
       <p class="auth-error" id="authError" role="alert" hidden></p>
     </form>
+
+    <p class="auth-note">We use your email only for account verification and password recovery.</p>
   </section>
 
   <div class="error-modal-backdrop" id="errorModal" hidden>
@@ -72,7 +74,6 @@
     </section>
   </div>
 
-    <p class="auth-note">We use your email only for account verification and password recovery.</p>
   <p class="auth-footer">Cookie · AI workspace</p>
 </main>
 
@@ -90,6 +91,7 @@
   const error = $('#authError');
   const nameField = $('#nameField');
   const params = new URLSearchParams(location.search);
+  const formNote = $('#formNote');
   const errorModal = $('#errorModal');
   const errorModalMessage = $('#errorModalMessage');
   const errorCancel = $('#errorCancel');
