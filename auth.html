@@ -26,6 +26,7 @@
       <label class="field"><span>Email</span><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
       <label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" minlength="8" required></label>
       <label class="remember"><input id="remember" type="checkbox" checked><span>Keep me signed in</span></label>
+      <button class="forgot" type="button" id="forgotBtn">Forgot password?</button>
       <button class="auth-submit" type="submit"><span id="submitText">Sign in</span><span class="arrow">→</span></button>
       <p class="auth-error" id="authError" role="alert" hidden></p>
     </form>
@@ -40,38 +41,39 @@
 (() => {
   const $ = s => document.querySelector(s);
   let mode = 'login';
-  const form = $('#authForm'), name = $('#name'), email = $('#email'), password = $('#password');
-  const title = $('#auth-title'), subtitle = $('#authSubtitle'), submit = $('#submitText'), error = $('#authError');
-  document.querySelectorAll('[data-auth-mode]').forEach(btn => btn.addEventListener('click', () => {
-    mode = btn.dataset.authMode;
-    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x === btn));
-    const signup = mode === 'signup';
-    name.hidden = !signup;
-    name.required = signup;
-    name.closest('.field').classList.toggle('hidden', !signup);
-    title.textContent = signup ? 'Create your account' : 'Welcome back';
-    subtitle.textContent = signup ? 'Create your Cookie account to save your workspace.' : 'Sign in to continue to Cookie.';
-    submit.textContent = signup ? 'Create account' : 'Sign in';
-    password.autocomplete = signup ? 'new-password' : 'current-password';
-    error.hidden = true;
+  const form=$('#authForm'), name=$('#name'), email=$('#email'), password=$('#password');
+  const title=$('#auth-title'), subtitle=$('#authSubtitle'), submit=$('#submitText'), error=$('#authError');
+  const params=new URLSearchParams(location.search);
+  if(params.get('verified')==='1'){ error.hidden=false; error.className='auth-success'; error.textContent='Email verified. You can sign in now.'; }
+  if(params.get('reset')){ mode='reset'; document.querySelectorAll('[data-auth-mode]').forEach(x=>x.classList.remove('active')); title.textContent='Set a new password'; subtitle.textContent='Choose a new password for your Cookie account.'; name.closest('.field').classList.add('hidden'); name.hidden=true; name.required=false; email.closest('.field').classList.add('hidden'); email.hidden=true; email.required=false; password.autocomplete='new-password'; submit.textContent='Update password'; $('#forgotBtn').hidden=true; }
+  async function api(path, body){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Something went wrong.');return data;}
+  document.querySelectorAll('[data-auth-mode]').forEach(btn=>btn.addEventListener('click',()=>{
+    mode=btn.dataset.authMode;
+    document.querySelectorAll('[data-auth-mode]').forEach(x=>x.classList.toggle('active',x===btn));
+    const signup=mode==='signup'; name.hidden=!signup; name.required=signup; name.closest('.field').classList.toggle('hidden',!signup);
+    title.textContent=signup?'Create your account':'Welcome back'; subtitle.textContent=signup?'Create your Cookie account to save your workspace.':'Sign in to continue to Cookie.';
+    submit.textContent=signup?'Create account':'Sign in'; password.autocomplete=signup?'new-password':'current-password'; error.hidden=true;
   }));
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    error.hidden = true;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const account = {
-      name: (name.value || email.value.split('@')[0]).trim(),
-      email: email.value.trim().toLowerCase(),
-      signedIn: true,
-      createdAt: new Date().toISOString()
-    };
-    localStorage.setItem('cookie_account', JSON.stringify(account));
-    window.location.href = 'index.html';
+  form.addEventListener('submit',async e=>{
+    e.preventDefault(); error.hidden=true;
+    if(mode==='reset'){
+      try{await api('/api/auth/reset',{token:params.get('reset'),password:password.value}); location.href='auth.html';}
+      catch(err){error.hidden=false;error.textContent=err.message} return;
+    }
+    if(!form.checkValidity()){form.reportValidity();return}
+    submit.textContent=mode==='signup'?'Creating…':'Signing in…';
+    try{
+      const data=await api(mode==='signup'?'/api/auth/register':'/api/auth/login',{name:name.value,email:email.value,password:password.value});
+      if(mode==='signup'){error.hidden=false;error.className='auth-success';error.textContent=data.message||'Check your email to verify your account.';form.reset();submit.textContent='Create account';}
+      else location.href='index.html';
+    }catch(err){error.hidden=false;error.className='auth-error';error.textContent=err.message;submit.textContent=mode==='signup'?'Create account':'Sign in';}
   });
-  $('#guestBtn').addEventListener('click', () => {
-    localStorage.setItem('cookie_guest', '1');
-    window.location.href = 'index.html';
+  $('#forgotBtn').addEventListener('click',async()=>{
+    const value=email.value.trim(); if(!value){email.focus();error.hidden=false;error.textContent='Enter your email first.';return}
+    try{const data=await api('/api/auth/forgot',{email:value});error.hidden=false;error.className='auth-success';error.textContent=data.message;}
+    catch(err){error.hidden=false;error.className='auth-error';error.textContent=err.message;}
   });
+  $('#guestBtn').addEventListener('click',()=>{localStorage.setItem('cookie_guest','1');location.href='index.html';});
 })();
 </script>
 </body>
