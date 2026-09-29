@@ -10,7 +10,16 @@ function baseUrl(request) {
   return new URL(request.url).origin;
 }
 
-export async function onRequestGet({ request, env, params }) {
+export async function onRequestGet(ctx) {
+  try {
+    return await onRequestGetImpl(ctx);
+  } catch (error) {
+    console.error('[Cookie auth GET]', error);
+    return json({ error: error?.message || 'Authentication service error.' }, 500);
+  }
+}
+
+async function onRequestGetImpl({ request, env, params }) {
   await ensure(env);
   const action = params?.action || "";
   if (action === "me") return json({ user: publicUser(await getUser(request, env)) });
@@ -27,7 +36,16 @@ export async function onRequestGet({ request, env, params }) {
   return json({ error: "Auth route not found." }, 404);
 }
 
-export async function onRequestPost({ request, env, params }) {
+export async function onRequestPost(ctx) {
+  try {
+    return await onRequestPostImpl(ctx);
+  } catch (error) {
+    console.error('[Cookie auth POST]', error);
+    return json({ error: error?.message || 'Authentication service error.' }, 500);
+  }
+}
+
+async function onRequestPostImpl({ request, env, params }) {
   await ensure(env);
   const action = params?.action || "";
   const body = await readJson(request);
