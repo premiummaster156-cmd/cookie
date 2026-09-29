@@ -24,6 +24,12 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
+  const preferences = body?.preferences && typeof body.preferences === "object" ? body.preferences : {};
+  const responseMode = ["balanced", "concise", "deep"].includes(preferences.responseMode) ? preferences.responseMode : "balanced";
+  const language = ["auto", "english", "uzbek", "russian"].includes(preferences.language) ? preferences.language : "auto";
+  const answerLength = ["auto", "short", "detailed"].includes(preferences.answerLength) ? preferences.answerLength : "auto";
+  const creativity = Number.isFinite(Number(preferences.creativity)) ? Math.min(1, Math.max(0, Number(preferences.creativity))) : 0.7;
+
   const incoming = Array.isArray(body?.messages) ? body.messages : [];
   const messages = incoming
     .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -49,10 +55,22 @@ export async function onRequestPost(context) {
         stream: false,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "system",
+            content: [
+              responseMode === "concise" ? "Prefer concise answers unless detail is necessary." : "",
+              responseMode === "deep" ? "Give more complete explanations and useful reasoning when appropriate." : "",
+              language === "english" ? "Prefer English responses." : "",
+              language === "uzbek" ? "Prefer Uzbek responses." : "",
+              language === "russian" ? "Prefer Russian responses." : "",
+              answerLength === "short" ? "Keep the answer short." : "",
+              answerLength === "detailed" ? "Give a detailed answer with clear structure." : ""
+            ].filter(Boolean).join(" ")
+          },
           ...messages
         ],
         options: {
-          temperature: 0.7
+          temperature: creativity
         }
       })
     });
