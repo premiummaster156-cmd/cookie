@@ -128,9 +128,10 @@ export async function deleteSession(request, env) {
 export async function sendMail(env, { to, subject, html, text }) {
   const host = env.SMTP_HOST || "smtp.gmail.com";
   const port = Number(env.SMTP_PORT || 465);
-  const username = env.SMTP_USER;
-  const password = env.SMTP_PASS;
-  const from = env.AUTH_FROM_EMAIL || username;
+  const username = String(env.SMTP_USER || "").trim();
+  // Google displays App Passwords with spaces; Gmail expects the 16-character value without spaces.
+  const password = String(env.SMTP_PASS || "").replace(/\s+/g, "");
+  const from = String(env.AUTH_FROM_EMAIL || username).trim();
   if (!username || !password || !from) throw new Error("SMTP settings are missing.");
 
   const { connect } = await import("cloudflare:sockets");
