@@ -388,7 +388,7 @@
 
     applySettings();
     renderRecent();
-    syncLocalAccount();
+    // Authentication is disabled for the current MVP; keep the app usable without an account backend.
 
     function showView(name) {
       const next = views.find(v => v.dataset.panel === name);
