@@ -303,6 +303,9 @@
       try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
     }
     settings = {...settingsDefaults, ...readLocal('cookie_settings', {})};
+    if (!['standard','max','ultra'].includes(settings.responseMode)) settings.responseMode = 'standard';
+    const cookiePlan = localStorage.getItem('cookie_plan') || 'free';
+    if (cookiePlan === 'free' && settings.responseMode !== 'standard') settings.responseMode = 'standard';
     savedChats = readLocal('cookie_chats', []);
     if (!Array.isArray(savedChats)) savedChats = [];
 
@@ -610,6 +613,7 @@
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({messages: chatMessages, preferences: {
+            plan: localStorage.getItem('cookie_plan') || 'free',
             language: settings.language,
             responseMode: settings.responseMode,
             creativity: Number(settings.creativity),
@@ -744,6 +748,13 @@
       closeModelMenu();
     }));
     document.addEventListener('click', e => { if(!e.target.closest('.model-control')) closeModelMenu(); });
+
+    $('.plan button').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.textContent.includes('Current')) return;
+        showView('upgrade');
+      });
+    });
 
     const searchInput = $('#searchInput');
     const resultBox = $('#searchResults');
