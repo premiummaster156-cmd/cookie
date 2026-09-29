@@ -126,90 +126,46 @@ export async function deleteSession(request, env) {
 }
 
 export async function sendMail(env, { to, subject, html, text }) {
-  const host = env.SMTP_HOST || "smtp.gmail.com";
+  const host = String(env.SMTP_HOST || "smtp.gmail.com").trim();
   const port = Number(env.SMTP_PORT || 465);
   const username = String(env.SMTP_USER || "").trim();
-  // Google displays App Passwords with spaces; Gmail expects the 16-character value without spaces.
+  // Google App Passwords are sometimes displayed with spaces.
   const password = String(env.SMTP_PASS || "").replace(/\s+/g, "");
   const from = String(env.AUTH_FROM_EMAIL || username).trim();
-  if (!username || !password || !from) throw new Error("SMTP settings are missing.");
 
-  const { connect } = await import("cloudflare:sockets");
-  const socket = connect({ hostname: host, port }, { secureTransport: "on" });
-  await socket.opened;
+  if (!username || !password || !from) {
+    throw new Error("SMTP settings are missing.");
+  }
 
-  const reader = socket.readable.getReader();
-  const writer = socket.writable.getWriter();
-  const decoder = new TextDecoder();
-  let buffer = "";
+  const { default: nodemailer } = await import("nodemailer");
 
-  async function readResponse() {
-    while (true) {
-      const idx = buffer.indexOf("\r\n");
-      if (idx !== -1) {
-        const line = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
-        if (/^\d{3} /.test(line)) {
-          const code = Number(line.slice(0, 3));
-          if (code >= 400) throw new Error("SMTP " + code + ": " + line.slice(4));
-          return line;
-        }
-      }
-      const { value, done } = await reader.read();
-      if (done) throw new Error("SMTP connection closed unexpectedly.");
-      buffer += decoder.decode(value, { stream: true });
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user: username,
+      pass: password
+    },
+    tls: {
+      servername: host
     }
-  }
-
-  async function command(line) {
-    await writer.write(new TextEncoder().encode(line + "\r\n"));
-    return readResponse();
-  }
-
-  function b64(value) {
-    const bytes = new TextEncoder().encode(String(value));
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }
+  });
 
   try {
-    await readResponse();
-    await command("EHLO cookie.ai");
-    await command("AUTH LOGIN");
-    await command(b64(username));
-    await command(b64(password));
-    await command("MAIL FROM:<" + from.replace(/^.*<|>.*$/g, "") + ">");
-    await command("RCPT TO:<" + to + ">");
-    await writer.write(new TextEncoder().encode(
-      "DATA\r\n"
-    ));
-    await readResponse();
-
-    const safeSubject = subject.replace(/[\r\n]/g, " ");
-    const fromHeader = from.includes("<") ? from : "Cookie <" + from + ">";
-    const body =
-      "From: " + fromHeader + "\r\n" +
-      "To: " + to + "\r\n" +
-      "Subject: " + safeSubject + "\r\n" +
-      "MIME-Version: 1.0\r\n" +
-      "Content-Type: multipart/alternative; boundary=\"COOKIE_BOUNDARY\"\r\n" +
-      "\r\n" +
-      "--COOKIE_BOUNDARY\r\n" +
-      "Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-      text + "\r\n\r\n" +
-      "--COOKIE_BOUNDARY\r\n" +
-      "Content-Type: text/html; charset=UTF-8\r\n\r\n" +
-      html + "\r\n\r\n" +
-      "--COOKIE_BOUNDARY--\r\n";
-    const stuffed = body.split("\r\n").map(line => line.startsWith(".") ? "." + line : line).join("\r\n");
-    await writer.write(new TextEncoder().encode(stuffed + "\r\n.\r\n"));
-    await readResponse();
-    await command("QUIT");
+    await transporter.sendMail({
+      from: from.includes("<") ? from : `Cookie <${from}>`,
+      to,
+      subject: String(subject || "").replace(/[\\r\\n]/g, " "),
+      text,
+      html
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+    throw new Error(code ? `Nodemailer ${code}: ${message}` : `Nodemailer: ${message}`);
   } finally {
-    try { writer.releaseLock(); } catch {}
-    try { reader.releaseLock(); } catch {}
-    try { socket.close(); } catch {}
+    try { transporter.close(); } catch {}
   }
 }
 
