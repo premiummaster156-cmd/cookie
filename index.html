@@ -11,32 +11,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 
 <style id="workspace-styles">
-.workspace-more-btn{border:0;background:transparent;color:rgba(255,255,255,.78);font-size:26px;line-height:1;width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:fixed;right:14px;top:14px;z-index:79;transition:background .15s ease,color .15s ease}.workspace-more-btn:hover{background:rgba(255,255,255,.08);color:#fff}.workspace-options{display:flex;flex-direction:column;gap:8px;padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.workspace-option{width:100%;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:inherit;border-radius:12px;padding:12px;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer}.workspace-option:hover{background:rgba(255,255,255,.075)}.workspace-option>span{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:16px}.workspace-option strong{display:block;font-size:13px}.workspace-option small{display:block;color:rgba(255,255,255,.45);font-size:10px;margin-top:2px}.workspace-panel{position:fixed;z-index:80;top:0;right:0;width:min(390px,92vw);height:100dvh;background:var(--panel,#211c19);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 70px rgba(0,0,0,.32);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}
-.workspace-panel.open{transform:translateX(0)}
-.workspace-head{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
-.workspace-head h3{margin:0;font-size:17px;flex:1}
-.workspace-head small{display:block;color:rgba(255,255,255,.5);font-size:11px;margin-top:3px}
-.workspace-close{border:0;background:transparent;color:inherit;font-size:22px;cursor:pointer}
-.workspace-list{padding:12px;overflow:auto;flex:1}
-.workspace-empty{padding:28px 14px;text-align:center;color:rgba(255,255,255,.5);font-size:13px}
-.workspace-file{width:100%;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);border-radius:12px;padding:11px;margin-bottom:8px;display:flex;align-items:center;gap:9px;color:inherit;text-align:left}
-.workspace-file:hover{background:rgba(255,255,255,.055)}
-.workspace-file-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.workspace-file-size{font-size:10px;color:rgba(255,255,255,.42)}
-.workspace-file-actions{display:flex;gap:4px}
-.workspace-mini{border:0;background:transparent;color:rgba(255,255,255,.65);padding:5px;cursor:pointer;border-radius:7px}
-.workspace-mini:hover{background:rgba(255,255,255,.08);color:#fff}
-.workspace-foot{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.48)}
-.workspace-editor{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.58);display:none;align-items:center;justify-content:center;padding:18px}
-.workspace-editor.open{display:flex}
-.workspace-editor-card{width:min(900px,100%);height:min(760px,92dvh);background:#201b18;border:1px solid rgba(255,255,255,.1);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.45)}
-.workspace-editor-head{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
-.workspace-editor-head strong{flex:1;font-size:13px}
-.workspace-editor textarea{flex:1;width:100%;resize:none;border:0;outline:0;background:#171412;color:#f4eee8;padding:18px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.workspace-editor-actions{padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:8px}
-.workspace-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer}
-.workspace-btn.primary{background:#e5a15a;color:#1a120c;border-color:transparent;font-weight:700}
-.workspace-action-note{padding:8px 11px;margin:8px 0;border-radius:9px;background:rgba(224,161,90,.09);color:rgba(255,255,255,.72);font-size:11px}
+.workspace-more-btn{position:fixed;top:16px;right:18px;z-index:79;width:34px;height:34px;padding:0;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(27,23,21,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:rgba(255,255,255,.72);font:600 22px/1 system-ui,sans-serif;display:grid;place-items:center;cursor:pointer;transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease}.workspace-more-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff;transform:translateY(-1px)}.workspace-more-btn:active{transform:scale(.96)}
+.workspace-panel{position:fixed;z-index:90;top:10px;right:10px;bottom:10px;width:min(420px,calc(100vw - 20px));height:auto;background:rgba(28,24,22,.97);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.48),0 0 0 1px rgba(0,0,0,.15);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);transform:translateX(calc(100% + 24px));transition:transform .24s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow:hidden}.workspace-panel.open{transform:translateX(0)}
+.workspace-head{padding:17px 17px 15px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px}.workspace-head h3{margin:0;font-size:14px;letter-spacing:-.01em}.workspace-head small{display:block;color:rgba(255,255,255,.4);font-size:10px;margin-top:4px}.workspace-head>div:first-child{flex:1;min-width:0}.workspace-close{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.55);font-size:21px;line-height:1;cursor:pointer}.workspace-close:hover{background:rgba(255,255,255,.07);color:#fff}
+.workspace-options{padding:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px;border-bottom:1px solid rgba(255,255,255,.07)}.workspace-option{min-height:72px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.025);color:inherit;border-radius:12px;padding:12px;display:flex;align-items:flex-start;gap:10px;text-align:left;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}.workspace-option:hover{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.13);transform:translateY(-1px)}.workspace-option>span{width:28px;height:28px;flex:0 0 28px;border-radius:8px;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:13px;color:rgba(255,255,255,.72)}.workspace-option strong{display:block;font-size:11px;font-weight:650;line-height:1.3}.workspace-option small{display:block;color:rgba(255,255,255,.38);font-size:9px;line-height:1.35;margin-top:4px}
+.workspace-list{padding:13px;overflow:auto;flex:1;min-height:0}.workspace-list::-webkit-scrollbar{width:7px}.workspace-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}.workspace-empty{padding:42px 20px;text-align:center;color:rgba(255,255,255,.4);font-size:11px;line-height:1.6}
+.workspace-file{width:100%;min-height:48px;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 9px;margin-bottom:3px;display:flex;align-items:center;gap:9px;color:inherit;text-align:left;transition:background .13s,border-color .13s}.workspace-file:hover{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.055)}.workspace-file>span:first-child{width:25px;text-align:center;opacity:.72}.workspace-file-name{font:500 11px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:rgba(255,255,255,.78)}.workspace-file-size{font-size:9px;color:rgba(255,255,255,.3)}.workspace-file-actions{display:flex;gap:2px;opacity:.15;transition:opacity .13s}.workspace-file:hover .workspace-file-actions{opacity:1}.workspace-mini{width:25px;height:25px;border:0;background:transparent;color:rgba(255,255,255,.6);padding:0;cursor:pointer;border-radius:6px}.workspace-mini:hover{background:rgba(255,255,255,.08);color:#fff}
+.workspace-foot{padding:11px 14px;border-top:1px solid rgba(255,255,255,.07);font-size:9px;line-height:1.5;color:rgba(255,255,255,.3)}
+.workspace-panel>.workspace-head .workspace-btn{display:none}
+.workspace-editor{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px}.workspace-editor.open{display:flex}.workspace-editor-card{width:min(900px,100%);height:min(760px,92dvh);background:#201b18;border:1px solid rgba(255,255,255,.1);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.45)}.workspace-editor-head{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}.workspace-editor-head strong{flex:1;font-size:13px}.workspace-editor textarea{flex:1;width:100%;resize:none;border:0;outline:0;background:#171412;color:#f4eee8;padding:18px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.workspace-editor-actions{padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:8px}.workspace-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer}.workspace-btn.primary{background:#e5a15a;color:#1a120c;border-color:transparent;font-weight:700}
+@media(max-width:600px){.workspace-more-btn{top:11px;right:11px}.workspace-panel{top:7px;right:7px;bottom:7px;width:calc(100vw - 14px);border-radius:16px}.workspace-options{grid-template-columns:1fr 1fr}.workspace-file-actions{opacity:1}}
 </style>
 </head>
 <body>
@@ -132,17 +116,17 @@
         </div>
 
         <aside class="workspace-panel" id="workspacePanel" aria-label="Cookie project workspace">
-          <div class="workspace-options" id="workspaceOptions" aria-label="Workspace options">
-            <button type="button" class="workspace-option" id="workspaceOptionZip"><span>↓</span><div><strong>Download as ZIP</strong><small>Export the entire project</small></div></button>
-            <button type="button" class="workspace-option" id="workspaceOptionFiles"><span>▣</span><div><strong>View project files</strong><small>Open the workspace file list</small></div></button>
-          </div>
-          <div class="workspace-head">
-            <div><h3>Project workspace</h3><small id="workspaceCount">0 files · saved on this device</small></div>
-            <button class="workspace-btn primary" id="workspaceZip" type="button">Download ZIP</button><button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
-          </div>
-          <div class="workspace-list" id="workspaceList"></div>
-          <div class="workspace-foot">Cookie can create and edit these files through its agent tools. Files stay in this browser preview until you download them.</div>
-        </aside>
+  <div class="workspace-head">
+    <div><h3>Project</h3><small id="workspaceCount">0 files · saved on this device</small></div>
+    <button class="workspace-close" id="workspaceClose" type="button" aria-label="Close workspace">×</button>
+  </div>
+  <div class="workspace-options" id="workspaceOptions" aria-label="Project actions">
+    <button type="button" class="workspace-option" id="workspaceOptionZip"><span>↓</span><div><strong>Download ZIP</strong><small>Export the whole project</small></div></button>
+    <button type="button" class="workspace-option" id="workspaceOptionFiles"><span>⌘</span><div><strong>Project files</strong><small>Browse and edit files</small></div></button>
+  </div>
+  <div class="workspace-list" id="workspaceList"></div>
+  <div class="workspace-foot">Cookie workspace · changes are saved locally in this browser.</div>
+</aside>
         <div class="workspace-editor" id="workspaceEditor">
           <div class="workspace-editor-card">
             <div class="workspace-editor-head"><strong id="workspaceEditorTitle">File</strong><button class="workspace-close" id="workspaceEditorClose" type="button" aria-label="Close editor">×</button></div>
