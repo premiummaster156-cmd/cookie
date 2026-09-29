@@ -29,36 +29,33 @@ export async function onRequestPost(context) {
   }
 
   const preferences = body?.preferences && typeof body.preferences === "object" ? body.preferences : {};
-  const responseMode = ["ultra", "code", "writer", "tutor", "fast"].includes(preferences.responseMode) ? preferences.responseMode : "ultra";
-
+  const responseMode = ["standard", "max", "ultra"].includes(preferences.responseMode) ? preferences.responseMode : "standard";
+  const plan = ["free", "plus", "pro"].includes(preferences.plan) ? preferences.plan : "free";
   const modelProfiles = {
-    ultra: {
-      name: "CPT Ultra 1",
-      temperature: 0.65,
-      instructions: "You are CPT Ultra 1, Cookie's strongest general-purpose model. Handle research, analysis, planning, problem solving, everyday questions, and complex mixed tasks. Be accurate, structured, and capable across domains."
-    },
-    code: {
-      name: "CPT Code 1",
-      temperature: 0.35,
-      instructions: "You are CPT Code 1, Cookie's software engineering specialist. Focus on programming, debugging, architecture, APIs, databases, DevOps, testing, security-aware engineering, and production-quality code. Prefer complete working solutions and explain important implementation choices."
-    },
-    writer: {
-      name: "CPT Writer 1",
-      temperature: 0.85,
-      instructions: "You are CPT Writer 1, Cookie's writing specialist. Focus on writing, rewriting, editing, storytelling, scripts, copywriting, tone, structure, and polished communication. Preserve the user's intent while improving clarity and style."
-    },
-    tutor: {
-      name: "CPT Tutor 1",
-      temperature: 0.55,
-      instructions: "You are CPT Tutor 1, Cookie's teaching specialist. Teach step by step, adapt to the learner's level, use examples and practice, explain difficult ideas simply, and help the user learn rather than only giving an answer."
-    },
-    fast: {
-      name: "CPT Fast 1",
+    standard: {
+      name: "CPT-1",
+      requiredPlan: "free",
       temperature: 0.45,
-      instructions: "You are CPT Fast 1, Cookie's quick-task specialist. Give direct, useful answers for simple questions, quick edits, short translations, calculations, summaries, and everyday tasks. Avoid unnecessary detail."
+      instructions: "You are CPT-1, Cookie's free everyday model. Be fast, clear, practical, and useful for normal questions, translations, summaries, simple planning, and everyday chat."
+    },
+    max: {
+      name: "CPT-2 MAX",
+      requiredPlan: "plus",
+      temperature: 0.75,
+      instructions: "You are CPT-2 MAX, Cookie's advanced Plus model. Handle creative work, deeper analysis, difficult writing, planning, brainstorming, and complex everyday tasks with more depth and creativity than CPT-1."
+    },
+    ultra: {
+      name: "CPT-3 ULTRA",
+      requiredPlan: "pro",
+      temperature: 0.9,
+      instructions: "You are CPT-3 ULTRA, Cookie's latest and strongest model. Use maximum useful creativity, broad reasoning, complex analysis, research-style thinking, advanced writing, difficult problem solving, and sophisticated multi-step assistance. Give high-quality structured answers."
     }
   };
   const profile = modelProfiles[responseMode];
+  const planRank = {free: 0, plus: 1, pro: 2};
+  if ((planRank[plan] || 0) < (planRank[profile.requiredPlan] || 0)) {
+    return Response.json({ error: profile.name + " requires the " + profile.requiredPlan.toUpperCase() + " plan." }, { status: 403 });
+  }
   const language = ["auto", "english", "uzbek", "russian"].includes(preferences.language) ? preferences.language : "auto";
   const answerLength = ["auto", "short", "detailed"].includes(preferences.answerLength) ? preferences.answerLength : "auto";
   const creativity = Number.isFinite(Number(preferences.creativity)) ? Math.min(1, Math.max(0, Number(preferences.creativity))) : 0.7;
