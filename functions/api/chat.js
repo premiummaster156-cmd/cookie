@@ -84,11 +84,19 @@ export async function onRequestPost({ request, env }) {
       })
     });
 
-    const data = await upstream.json().catch(() => null);
+    const responseText = await upstream.text();
+    let data = null;
+    try { data = responseText ? JSON.parse(responseText) : null; } catch {}
     if (!upstream.ok) {
+      const upstreamMessage = typeof data?.error === "string"
+        ? data.error
+        : responseText?.trim()
+          ? responseText.trim().slice(0, 500)
+          : "No error details were returned by Ollama Cloud.";
+      console.error("[Cookie Ollama]", upstream.status, upstreamMessage);
       return json(
-        { error: data?.error || "Ollama Cloud returned an error." },
-        upstream.status >= 500 ? 502 : upstream.status
+        { error: "Ollama Cloud error (" + upstream.status + "): " + upstreamMessage },
+        502
       );
     }
 
