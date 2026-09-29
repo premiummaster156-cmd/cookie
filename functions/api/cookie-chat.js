@@ -71,7 +71,7 @@ export async function onRequestPost({ request, env }) {
     if (imageAttachments.length) {
       // Use Ollama's dedicated cloud vision model.
       // Qwen3-VL is explicitly documented by Ollama as a cloud multimodal model.
-      model = "qwen3.5:122b-cloud";
+      model = "gemma4:cloud";
     }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
