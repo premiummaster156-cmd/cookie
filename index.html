@@ -373,15 +373,15 @@
         list.innerHTML = '<div class="workspace-empty">No project files yet.<br>Ask Cookie: “Build me a complete project.”</div>';
         return;
       }
-      list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map((item,i) => {
+      list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map(item => {
         const folder = item.kind === 'folder' || /\\/$/.test(item.path);
         return '<div class="workspace-file">' +
           '<span style="font-size:15px">' + (folder ? '📁' : '📄') + '</span>' +
           '<span class="workspace-file-name" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span>' +
           '<span class="workspace-file-size">' + (folder ? 'folder' : formatBytes(item.content.length)) + '</span>' +
           '<span class="workspace-file-actions">' +
-            (!folder ? '<button class="workspace-mini" type="button" data-workspace-open="' + i + '" aria-label="Edit file">✎</button><button class="workspace-mini" type="button" data-workspace-download="' + i + '" aria-label="Download file">↓</button>' : '') +
-            '<button class="workspace-mini" type="button" data-workspace-delete="' + i + '" aria-label="Delete item">×</button>' +
+            (!folder ? '<button class="workspace-mini" type="button" data-workspace-open="' + encodeURIComponent(item.path) + '" aria-label="Edit file">✎</button><button class="workspace-mini" type="button" data-workspace-download="' + encodeURIComponent(item.path) + '" aria-label="Download file">↓</button>' : '') +
+            '<button class="workspace-mini" type="button" data-workspace-delete="' + encodeURIComponent(item.path) + '" aria-label="Delete item">×</button>' +
           '</span>' +
         '</div>';
       }).join('');
@@ -391,9 +391,10 @@
     function closeWorkspace() { $('#workspacePanel')?.classList.remove('open'); }
 
     let workspaceEditIndex = -1;
-    function openWorkspaceEditor(index) {
+    function openWorkspaceEditor(path) {
+      const index = workspace.findIndex(x => x.path === path);
       const file = workspace[index];
-      if (!file) return;
+      if (!file || file.kind === 'folder') return;
       workspaceEditIndex = index;
       $('#workspaceEditorTitle').textContent = file.path;
       $('#workspaceEditorText').value = file.content;
@@ -404,8 +405,8 @@
       workspaceEditIndex = -1;
       $('#workspaceEditor').classList.remove('open');
     }
-    function downloadWorkspaceFile(index) {
-      const file = workspace[index];
+    function downloadWorkspaceFile(path) {
+      const file = workspace.find(x => x.path === path);
       if (!file || file.kind === 'folder') return;
       const blob = new Blob([file.content], {type:'text/plain;charset=utf-8'});
       const url = URL.createObjectURL(blob);
@@ -921,11 +922,12 @@
       const open=e.target.closest('[data-workspace-open]');
       const dl=e.target.closest('[data-workspace-download]');
       const del=e.target.closest('[data-workspace-delete]');
-      if(open){ openWorkspaceEditor(Number(open.dataset.workspaceOpen)); return; }
-      if(dl){ downloadWorkspaceFile(Number(dl.dataset.workspaceDownload)); return; }
+      if(open){ openWorkspaceEditor(decodeURIComponent(open.dataset.workspaceOpen)); return; }
+      if(dl){ downloadWorkspaceFile(decodeURIComponent(dl.dataset.workspaceDownload)); return; }
       if(del){
-        const i=Number(del.dataset.workspaceDelete);
-        if(workspace[i] && confirm('Delete '+workspace[i].path+' from the workspace?')){
+        const path=decodeURIComponent(del.dataset.workspaceDelete);
+        const i=workspace.findIndex(x => x.path === path);
+        if(i >= 0 && confirm('Delete '+workspace[i].path+' from the workspace?')){
           workspace.splice(i,1); saveWorkspace();
         }
       }
