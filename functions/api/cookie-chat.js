@@ -44,6 +44,7 @@ const agentTools = [
   { type:"function", function:{ name:"workspace_read", description:"Read one complete file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
   { type:"function", function:{ name:"workspace_write", description:"Create a new file or replace an existing file in Cookie's project workspace.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
   { type:"function", function:{ name:"workspace_delete", description:"Delete one file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
+  { type:"function", function:{ name:"workspace_mkdir", description:"Create a folder in Cookie's project workspace. Folder entries are kept so empty folders can also be included in ZIP exports.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
   { type:"function", function:{ name:"workspace_rename", description:"Rename a file inside Cookie's project workspace.", parameters:{type:"object",required:["from","to"],properties:{from:{type:"string"},to:{type:"string"}}} } }
 ];
 
@@ -58,7 +59,7 @@ function normalizeWorkspace(input) {
 function executeWorkspaceTool(workspace, name, args) {
   const a = args && typeof args === "object" ? args : {};
   if (name === "workspace_list") {
-    return {workspace, result:JSON.stringify({ok:true,files:workspace.map(f=>({path:f.path,size:f.content.length}))})};
+    return {workspace, result:JSON.stringify({ok:true,files:workspace.map(f=>({path:f.path,size:f.content.length,kind:f.kind||"file"}))})};
   }
   if (name === "workspace_read") {
     const path=String(a.path||"").replace(/^\/+/,"");
@@ -73,11 +74,21 @@ function executeWorkspaceTool(workspace, name, args) {
     if (content.length>WORKSPACE_LIMITS.maxFileChars) return {workspace,result:JSON.stringify({ok:false,error:"File is too large for the preview workspace."})};
     const i=workspace.findIndex(f=>f.path===path);
     const action=i>=0 ? "updated" : "created";
-    if(i>=0) workspace[i]={path,content}; else {
+    if(i>=0 && workspace[i].kind === "folder") return {workspace,result:JSON.stringify({ok:false,error:"That path is a folder."})};
+    if(i>=0) workspace[i]={path,content,kind:"file"}; else {
       if(workspace.length>=WORKSPACE_LIMITS.maxFiles) return {workspace,result:JSON.stringify({ok:false,error:"Workspace file limit reached."})};
       workspace.push({path,content});
     }
     return {workspace,result:JSON.stringify({ok:true,action,path,size:content.length})};
+  }
+  if (name === "workspace_mkdir") {
+    const path=String(a.path||"").replace(/^\/+|\/+$/g,"");
+    if(!path || path.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid folder path."})};
+    const folderPath=path+"/";
+    if(workspace.some(f=>f.path===folderPath || f.path.startsWith(folderPath))) return {workspace,result:JSON.stringify({ok:true,action:"exists",path:folderPath})};
+    if(workspace.length>=WORKSPACE_LIMITS.maxFiles) return {workspace,result:JSON.stringify({ok:false,error:"Workspace entry limit reached."})};
+    workspace.push({path:folderPath,content:"",kind:"folder"});
+    return {workspace,result:JSON.stringify({ok:true,action:"created",path:folderPath,folder:true})};
   }
   if (name === "workspace_delete") {
     const path=String(a.path||"").replace(/^\/+/,"");
@@ -89,10 +100,10 @@ function executeWorkspaceTool(workspace, name, args) {
   if (name === "workspace_rename") {
     const from=String(a.from||"").replace(/^\/+/,""), to=String(a.to||"").replace(/^\/+/,"");
     if(!from||!to||from.includes("..")||to.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid workspace path."})};
-    const source=workspace.find(f=>f.path===from);
+    const source=workspace.find(f=>f.path===from || f.path===from+"/");
     if(!source) return {workspace,result:JSON.stringify({ok:false,error:"File not found: "+from})};
     if(workspace.some(f=>f.path===to)) return {workspace,result:JSON.stringify({ok:false,error:"Destination already exists: "+to})};
-    source.path=to;
+    source.path=source.kind === "folder" ? to.replace(/\/+$/,"")+"/" : to;
     return {workspace,result:JSON.stringify({ok:true,action:"renamed",from,to})};
   }
   return {workspace,result:JSON.stringify({ok:false,error:"Unknown workspace tool: "+name})};
@@ -164,7 +175,7 @@ export async function onRequestPost({ request, env }) {
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
       "During the preview, all Cookie model profiles are free to use. Do not tell users to buy credits or upgrade to access a Cookie profile.",
-      "You have real project workspace tools. When the user asks you to create, edit, rename, or delete project files, use the workspace tools instead of merely pasting code. Inspect existing files before changing them when useful. Never claim a file was changed unless the workspace tool succeeded.",
+      "You have real project workspace tools. When the user asks you to build a project, create the folders and files needed for the complete project, using workspace_mkdir and workspace_write. Use workspace_list/workspace_read before editing when useful. You can create nested paths such as src/commands/ping.js. When the project is complete, tell the user it is ready to download as a ZIP. Never claim a file or folder was changed unless the workspace tool succeeded.",
       "You are Cookie, a polished general-purpose AI assistant.",
       "Be genuinely useful rather than overly enthusiastic or repetitive.",
       "Follow the user's instructions precisely and preserve important constraints.",
