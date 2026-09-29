@@ -20,7 +20,11 @@ const profiles = {
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env.OLLAMA_API_KEY) {
+    const apiKey = String(env.OLLAMA_API_KEY || "").trim();
+    const model = String(env.OLLAMA_MODEL || "gpt-oss:120b-cloud").trim();
+    const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
+
+    if (!apiKey) {
       return json({ error: "Cookie AI is not configured yet. Add OLLAMA_API_KEY in Pages secrets." }, 503);
     }
 
@@ -68,14 +72,14 @@ export async function onRequestPost({ request, env }) {
       length === "detailed" ? "Give a thorough, well-structured response." : ""
     ].filter(Boolean).join("\n");
 
-    const upstream = await fetch(env.OLLAMA_URL || "https://ollama.com/api/chat", {
+    const upstream = await fetch(ollamaUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + env.OLLAMA_API_KEY
+        "Authorization": "Bearer " + apiKey
       },
       body: JSON.stringify({
-        model: env.OLLAMA_MODEL || "gpt-oss:120b-cloud",
+        model,
         stream: false,
         messages: [{ role: "system", content: system }, ...messages],
         options: {
