@@ -50,11 +50,13 @@
         <div class="mobile-brand"><img src="cookie-ai-icon.png" alt="" width="25" height="25"><strong>Cookie</strong></div>
         <div class="topbar-spacer"></div>
         <div class="model-control">
-          <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">Balanced</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
+          <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">CPT Ultra 1</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
           <div class="model-menu" id="modelMenu" role="menu" aria-label="AI models">
-            <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="Balanced" data-mode="balanced"><span><strong>Balanced</strong><small>Natural · everyday chat</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Concise" data-mode="concise"><span><strong>Concise</strong><small>Short · direct answers</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Deep" data-mode="deep"><span><strong>Deep</strong><small>More detailed answers</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="CPT Ultra 1" data-mode="ultra"><span><strong>CPT Ultra 1</strong><small>General · strongest all-rounder</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT Code 1" data-mode="code"><span><strong>CPT Code 1</strong><small>Coding · debugging · architecture</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT Writer 1" data-mode="writer"><span><strong>CPT Writer 1</strong><small>Writing · rewriting · creative work</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT Tutor 1" data-mode="tutor"><span><strong>CPT Tutor 1</strong><small>Learning · explanations · practice</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT Fast 1" data-mode="fast"><span><strong>CPT Fast 1</strong><small>Quick · simple everyday tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
           </div>
         </div>
         <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -167,9 +169,11 @@
                   <h3>Response style</h3>
                   <p>Tell Cookie how you want answers to feel.</p>
                   <div class="choice-grid">
-                    <button class="choice-card selected" type="button" data-ai-choice="responseMode" data-value="balanced"><strong>Balanced</strong><small>Natural detail for most tasks</small></button>
-                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="concise"><strong>Concise</strong><small>Short, direct answers</small></button>
-                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="deep"><strong>Deep</strong><small>More explanation and reasoning</small></button>
+                    <button class="choice-card selected" type="button" data-ai-choice="responseMode" data-value="ultra"><strong>CPT Ultra 1</strong><small>General-purpose · strongest all-rounder</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="code"><strong>CPT Code 1</strong><small>Programming · debugging · engineering</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="writer"><strong>CPT Writer 1</strong><small>Writing · editing · creative work</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="tutor"><strong>CPT Tutor 1</strong><small>Teaching · study · step-by-step learning</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="fast"><strong>CPT Fast 1</strong><small>Quick answers · simple tasks</small></button>
                   </div>
                 </div>
                 <div class="setting-group">
@@ -276,7 +280,7 @@
       autoScroll: true,
       chatHistory: true,
       language: 'auto',
-      responseMode: 'balanced',
+      responseMode: 'ultra',
       creativity: 0.7,
       answerLength: 'auto',
       animations: true,
