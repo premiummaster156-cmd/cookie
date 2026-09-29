@@ -28,10 +28,8 @@
       </div>
       <div class="recent-block">
         <div class="section-label">Recent</div>
-        <button class="recent-item active" type="button" data-chat="Planning a study routine">Planning a study routine</button>
-        <button class="recent-item" type="button" data-chat="Ideas for my website">Ideas for my website</button>
-        <button class="recent-item" type="button" data-chat="Explain this simply">Explain this simply</button>
-        <button class="recent-item" type="button" data-chat="Weekend plans">Weekend plans</button>
+        <div class="recent-list" id="recentList"></div>
+        <div class="recent-empty" id="recentEmpty">Your chats will appear here.</div>
       </div>
       <div class="sidebar-bottom">
         <button class="nav-item" type="button" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.4 1.4 1.1-1.8 3.1-1.7-.6a7.6 7.6 0 0 1-1.8 1l-.3 1.8h-3.6l-.3-1.8a7.6 7.6 0 0 1-1.8-1l-1.7.6-1.8-3.1 1.4-1.1a7.7 7.7 0 0 1 0-2.8L5.7 9.5l1.8-3.1 1.7.6a7.6 7.6 0 0 1 1.8-1l.3-1.8h3.6l.3 1.8a7.6 7.6 0 0 1 1.8 1l1.7-.6 1.8 3.1-1.4 1.1a7.7 7.7 0 0 1 0 2.8Z"/></svg></span><span>Settings</span></button>
@@ -104,24 +102,116 @@
 
       <section class="view" data-panel="settings">
         <div class="page-container settings-page">
-          <div class="page-heading"><span class="eyebrow">Settings</span><h2>Make Cookie yours</h2><p>Preferences for how Cookie looks and behaves.</p></div>
+          <div class="page-heading">
+            <span class="eyebrow">Settings</span>
+            <h2>Make Cookie yours</h2>
+            <p>Control how Cookie looks, responds, and stores information on this device.</p>
+          </div>
           <div class="settings-layout">
             <nav class="settings-nav" aria-label="Settings sections">
               <button class="setting-tab active" type="button" data-setting="appearance">Appearance</button>
-              <button class="setting-tab" type="button" data-setting="general">General</button>
+              <button class="setting-tab" type="button" data-setting="chat">Chat</button>
+              <button class="setting-tab" type="button" data-setting="ai">AI</button>
+              <button class="setting-tab" type="button" data-setting="interface">Interface</button>
               <button class="setting-tab" type="button" data-setting="privacy">Privacy</button>
             </nav>
             <div class="settings-content">
               <div class="setting-panel active" data-setting-panel="appearance">
-                <div class="setting-group"><h3>Theme</h3><p>Choose how Cookie appears on this device.</p><div class="theme-options"><button class="theme-card active" type="button" data-theme="dark"><span class="theme-preview dark-preview"></span><strong>Dark</strong><small>Easy on the eyes</small></button><button class="theme-card" type="button" data-theme="light"><span class="theme-preview light-preview"></span><strong>Light</strong><small>Bright and clean</small></button><button class="theme-card" type="button" data-theme="system"><span class="theme-preview system-preview"></span><strong>System</strong><small>Follow your device</small></button></div></div>
-                <div class="setting-group"><h3>Accent</h3><p>Cookie's warm accent color.</p><div class="accent-row"><button class="accent-swatch selected" type="button" data-accent="cookie" aria-label="Cookie orange"></button><button class="accent-swatch cream" type="button" data-accent="cream" aria-label="Cream"></button><button class="accent-swatch cocoa" type="button" data-accent="cocoa" aria-label="Cocoa"></button></div></div>
+                <div class="setting-group">
+                  <h3>Theme</h3>
+                  <p>Choose how Cookie appears on this device.</p>
+                  <div class="theme-options">
+                    <button class="theme-card active" type="button" data-theme="dark"><span class="theme-preview dark-preview"></span><strong>Dark</strong><small>Cookie's default</small></button>
+                    <button class="theme-card" type="button" data-theme="light"><span class="theme-preview light-preview"></span><strong>Light</strong><small>Bright and clean</small></button>
+                    <button class="theme-card" type="button" data-theme="system"><span class="theme-preview system-preview"></span><strong>System</strong><small>Follow your device</small></button>
+                  </div>
+                </div>
+                <div class="setting-group">
+                  <h3>Accent</h3>
+                  <p>Choose the warm color used for buttons, selections, and highlights.</p>
+                  <div class="accent-row">
+                    <button class="accent-swatch selected" type="button" data-accent="cookie" aria-label="Cookie orange"></button>
+                    <button class="accent-swatch cream" type="button" data-accent="cream" aria-label="Cream"></button>
+                    <button class="accent-swatch cocoa" type="button" data-accent="cocoa" aria-label="Cocoa"></button>
+                  </div>
+                </div>
+                <div class="setting-group">
+                  <div class="control-row">
+                    <span><strong>Text size</strong><small>Adjust the reading size across Cookie.</small></span>
+                    <select class="setting-select" id="textSizeSelect" aria-label="Text size">
+                      <option value="small">Small</option>
+                      <option value="medium" selected>Medium</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div class="setting-panel" data-setting-panel="general">
-                <div class="setting-group"><div class="toggle-row"><span><strong>Send with Enter</strong><small>Press Enter to send. Shift + Enter creates a new line.</small></span><button class="toggle on" type="button" aria-label="Toggle send with Enter"><span></span></button></div></div>
-                <div class="setting-group"><div class="toggle-row"><span><strong>Chat history</strong><small>Keep conversations in your recent list.</small></span><button class="toggle on" type="button" aria-label="Toggle chat history"><span></span></button></div></div>
+
+              <div class="setting-panel" data-setting-panel="chat">
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Send with Enter</strong><small>Press Enter to send. Shift + Enter creates a new line.</small></span><button class="toggle on" type="button" data-setting-toggle="enterToSend" aria-label="Toggle send with Enter"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Auto-scroll</strong><small>Keep the latest response in view while Cookie replies.</small></span><button class="toggle on" type="button" data-setting-toggle="autoScroll" aria-label="Toggle auto-scroll"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Save chat history</strong><small>Keep your conversations in the Recent list on this device.</small></span><button class="toggle on" type="button" data-setting-toggle="chatHistory" aria-label="Toggle chat history"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="control-row"><span><strong>Default response language</strong><small>Cookie will follow this preference unless you write in another language.</small></span><select class="setting-select" id="languageSelect" aria-label="Default response language"><option value="auto">Auto</option><option value="english">English</option><option value="uzbek">Uzbek</option><option value="russian">Russian</option></select></div>
+                </div>
               </div>
+
+              <div class="setting-panel" data-setting-panel="ai">
+                <div class="setting-group">
+                  <h3>Response style</h3>
+                  <p>Tell Cookie how you want answers to feel.</p>
+                  <div class="choice-grid">
+                    <button class="choice-card selected" type="button" data-ai-choice="responseMode" data-value="balanced"><strong>Balanced</strong><small>Natural detail for most tasks</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="concise"><strong>Concise</strong><small>Short, direct answers</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="deep"><strong>Deep</strong><small>More explanation and reasoning</small></button>
+                  </div>
+                </div>
+                <div class="setting-group">
+                  <div class="range-row"><span><strong>Creativity</strong><small>Higher values make writing more varied.</small></span><output id="creativityValue">0.7</output></div>
+                  <input class="range-input" id="creativityRange" type="range" min="0" max="1" step="0.1" value="0.7" aria-label="Creativity">
+                </div>
+                <div class="setting-group">
+                  <div class="control-row"><span><strong>Answer length</strong><small>Choose the default amount of detail.</small></span><select class="setting-select" id="answerLengthSelect" aria-label="Answer length"><option value="auto">Auto</option><option value="short">Short</option><option value="detailed">Detailed</option></select></div>
+                </div>
+              </div>
+
+              <div class="setting-panel" data-setting-panel="interface">
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Page animations</strong><small>Use subtle transitions when moving around Cookie.</small></span><button class="toggle on" type="button" data-setting-toggle="animations" aria-label="Toggle page animations"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Flowing cursor ribbons</strong><small>Show Cookie's warm ribbon animation on touch and pointer movement.</small></span><button class="toggle on" type="button" data-setting-toggle="cursorRibbons" aria-label="Toggle cursor ribbons"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Compact messages</strong><small>Reduce spacing between messages for longer conversations.</small></span><button class="toggle" type="button" data-setting-toggle="compactMessages" aria-label="Toggle compact messages"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Show keyboard hints</strong><small>Show small shortcuts such as Enter to send and ⌘ K.</small></span><button class="toggle on" type="button" data-setting-toggle="keyboardHints" aria-label="Toggle keyboard hints"><span></span></button></div>
+                </div>
+              </div>
+
               <div class="setting-panel" data-setting-panel="privacy">
-                <div class="setting-group"><h3>Your data</h3><p>Manage local conversation data stored by this demo.</p><button class="danger-btn" type="button" id="clearData">Clear local chats</button></div>
+                <div class="setting-group">
+                  <h3>Local data</h3>
+                  <p>Cookie can keep chat history and preferences in your browser. Nothing here exposes your API key.</p>
+                  <div class="data-status"><span class="status-dot"></span><strong id="localDataStatus">Local storage enabled</strong></div>
+                </div>
+                <div class="setting-group">
+                  <h3>Chat history</h3>
+                  <p>Remove conversations saved on this device. This does not delete anything from a future account backend.</p>
+                  <button class="danger-btn" type="button" id="clearData">Clear all local chats</button>
+                </div>
+                <div class="setting-group">
+                  <h3>Reset Cookie</h3>
+                  <p>Restore appearance and behavior settings to their defaults.</p>
+                  <button class="secondary-btn" type="button" id="resetSettings">Reset settings</button>
+                </div>
               </div>
             </div>
           </div>
@@ -172,14 +262,108 @@
     const $ = (s, root=document) => root.querySelector(s);
     const $$ = (s, root=document) => [...root.querySelectorAll(s)];
     const views = $$('.view');
-    const recent = $$('.recent-item');
+    const recentList = $('#recentList');
+    const recentEmpty = $('#recentEmpty');
     const conversation = $('#conversation');
     const input = $('#messageInput');
     const welcome = $('#welcome');
     const sendBtn = $('#sendBtn');
+    const settingsDefaults = {
+      theme: 'dark',
+      accent: 'cookie',
+      textSize: 'medium',
+      enterToSend: true,
+      autoScroll: true,
+      chatHistory: true,
+      language: 'auto',
+      responseMode: 'balanced',
+      creativity: 0.7,
+      answerLength: 'auto',
+      animations: true,
+      cursorRibbons: true,
+      compactMessages: false,
+      keyboardHints: true
+    };
+    let settings = {...settingsDefaults};
+    let savedChats = [];
+    let currentChatId = null;
     let chatMessages = [];
     let isSending = false;
     let requestController = null;
+
+    function readLocal(key, fallback) {
+      try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+    }
+    function writeLocal(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+    settings = {...settingsDefaults, ...readLocal('cookie_settings', {})};
+    savedChats = readLocal('cookie_chats', []);
+    if (!Array.isArray(savedChats)) savedChats = [];
+
+    function saveSettings() { writeLocal('cookie_settings', settings); }
+
+    function applySettings() {
+      const root = document.documentElement;
+      const systemTheme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      root.dataset.theme = settings.theme === 'system' ? systemTheme : settings.theme;
+      root.dataset.accent = settings.accent;
+      root.dataset.textSize = settings.textSize;
+      document.body.classList.toggle('animations-off', !settings.animations);
+      document.body.classList.toggle('compact-messages', settings.compactMessages);
+      document.body.classList.toggle('cursor-ribbons-off', !settings.cursorRibbons);
+      $('.theme-card').forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
+      $('.accent-swatch').forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
+      const textSize = $('#textSizeSelect'); if (textSize) textSize.value = settings.textSize;
+      const lang = $('#languageSelect'); if (lang) lang.value = settings.language;
+      const length = $('#answerLengthSelect'); if (length) length.value = settings.answerLength;
+      const range = $('#creativityRange'); if (range) { range.value = settings.creativity; $('#creativityValue').textContent = Number(settings.creativity).toFixed(1); }
+      $('[data-setting-toggle]').forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
+      $('.choice-card[data-ai-choice]').forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
+    }
+
+    function saveCurrentChat() {
+      if (!settings.chatHistory || !chatMessages.length) return;
+      const first = chatMessages.find(m => m.role === 'user');
+      if (!first) return;
+      const title = first.content.trim().replace(/\s+/g, ' ').slice(0, 48) || 'New chat';
+      if (!currentChatId) currentChatId = String(Date.now());
+      const existing = savedChats.find(c => c.id === currentChatId);
+      const chat = {id: currentChatId, title, messages: chatMessages.slice(-40), updatedAt: Date.now()};
+      if (existing) Object.assign(existing, chat); else savedChats.unshift(chat);
+      savedChats = savedChats.slice(0, 30);
+      writeLocal('cookie_chats', savedChats);
+      renderRecent();
+    }
+
+    function renderRecent() {
+      if (!recentList || !recentEmpty) return;
+      recentList.innerHTML = '';
+      recentEmpty.hidden = savedChats.length > 0;
+      savedChats.slice().sort((a,b) => b.updatedAt - a.updatedAt).forEach(chat => {
+        const button = document.createElement('button');
+        button.className = 'recent-item' + (chat.id === currentChatId ? ' active' : '');
+        button.type = 'button';
+        button.textContent = chat.title;
+        button.addEventListener('click', () => loadChat(chat.id));
+        recentList.appendChild(button);
+      });
+    }
+
+    function loadChat(id) {
+      const chat = savedChats.find(c => c.id === id);
+      if (!chat) return;
+      currentChatId = chat.id;
+      chatMessages = Array.isArray(chat.messages) ? chat.messages.slice() : [];
+      conversation.innerHTML = '';
+      welcome.hidden = true;
+      chatMessages.forEach(m => addMessage(m.content, m.role));
+      renderRecent();
+      showView('chat');
+    }
+
+    applySettings();
+    renderRecent();
 
     function showView(name) {
       const next = views.find(v => v.dataset.panel === name);
@@ -215,6 +399,7 @@
       if (requestController) requestController.abort();
       setSending(false);
       chatMessages = [];
+      currentChatId = null;
       conversation.innerHTML = '';
       welcome.hidden = false;
       input.value = '';
@@ -231,7 +416,7 @@
         : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><p></p></div>';
       $('.message-body p', row).textContent = text;
       conversation.appendChild(row);
-      row.scrollIntoView({behavior:'smooth', block:'nearest'});
+      if (settings.autoScroll) row.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
 
     function addTyping() {
@@ -266,7 +451,7 @@
     });
 
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey && settings.enterToSend) {
         e.preventDefault();
         send(input.value);
       }
@@ -282,6 +467,7 @@
       input.style.height = 'auto';
 
       chatMessages.push({role:'user', content:text});
+      saveCurrentChat();
       const typing = addTyping();
       setSending(true);
       requestController = new AbortController();
@@ -290,7 +476,12 @@
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({messages: chatMessages}),
+          body: JSON.stringify({messages: chatMessages, preferences: {
+            language: settings.language,
+            responseMode: settings.responseMode,
+            creativity: Number(settings.creativity),
+            answerLength: settings.answerLength
+          }}),
           signal: requestController.signal
         });
 
@@ -306,6 +497,7 @@
 
         chatMessages.push({role:'assistant', content:reply});
         addMessage(reply, 'assistant');
+        saveCurrentChat();
       } catch (error) {
         typing.remove();
         if (error.name !== 'AbortError') {
@@ -318,33 +510,75 @@
       }
     }
 
-        recent.forEach(item => item.addEventListener('click', () => {
-      recent.forEach(x=>x.classList.remove('active')); item.classList.add('active');
-      showView('chat');
-      chatMessages = [{role:'user', content:item.dataset.chat}];
-      welcome.hidden = true; conversation.innerHTML='';
-      addMessage(item.dataset.chat, 'user');
+        // Settings controls
+    $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
+      $$('.setting-tab').forEach(x => x.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.setting-panel').forEach(p => p.classList.toggle('active', p.dataset.settingPanel === tab.dataset.setting));
     }));
 
-    $$('.setting-tab').forEach(tab => tab.addEventListener('click', () => {
-      $$('.setting-tab').forEach(x=>x.classList.remove('active')); tab.classList.add('active');
-      $$('.setting-panel').forEach(p=>p.classList.toggle('active', p.dataset.settingPanel===tab.dataset.setting));
-    }));
     $$('.theme-card').forEach(card => card.addEventListener('click', () => {
-      $$('.theme-card').forEach(x=>x.classList.remove('active')); card.classList.add('active');
-      const theme = card.dataset.theme;
-      document.documentElement.dataset.theme = theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark') : theme;
+      settings.theme = card.dataset.theme;
+      saveSettings();
+      applySettings();
     }));
+
     $$('.accent-swatch').forEach(s => s.addEventListener('click', () => {
-      $$('.accent-swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); document.documentElement.dataset.accent=s.dataset.accent;
+      settings.accent = s.dataset.accent;
+      saveSettings();
+      applySettings();
     }));
-    $$('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
+
+    $$('.toggle[data-setting-toggle]').forEach(toggle => toggle.addEventListener('click', () => {
+      const key = toggle.dataset.settingToggle;
+      settings[key] = !settings[key];
+      saveSettings();
+      applySettings();
+    }));
+
+    $$('.choice-card[data-ai-choice]').forEach(card => card.addEventListener('click', () => {
+      settings[card.dataset.aiChoice] = card.dataset.value;
+      saveSettings();
+      applySettings();
+    }));
+
+    $('#textSizeSelect').addEventListener('change', e => { settings.textSize = e.target.value; saveSettings(); applySettings(); });
+    $('#languageSelect').addEventListener('change', e => { settings.language = e.target.value; saveSettings(); applySettings(); });
+    $('#answerLengthSelect').addEventListener('change', e => { settings.answerLength = e.target.value; saveSettings(); applySettings(); });
+    $('#creativityRange').addEventListener('input', e => {
+      settings.creativity = Number(e.target.value);
+      $('#creativityValue').textContent = settings.creativity.toFixed(1);
+      saveSettings();
+    });
+
     $('#clearData').addEventListener('click', () => {
+      if (!confirm('Clear all Cookie chats saved on this device?')) return;
       if (requestController) requestController.abort();
+      savedChats = [];
       chatMessages = [];
+      currentChatId = null;
+      writeLocal('cookie_chats', []);
       conversation.innerHTML = '';
       welcome.hidden = false;
-      alert('Local chats cleared.');
+      renderRecent();
+    });
+
+    $('#resetSettings').addEventListener('click', () => {
+      if (!confirm('Reset Cookie settings to their defaults?')) return;
+      settings = {...settingsDefaults};
+      saveSettings();
+      applySettings();
+    });
+
+    window.addEventListener('storage', event => {
+      if (event.key === 'cookie_settings') {
+        settings = {...settingsDefaults, ...readLocal('cookie_settings', {})};
+        applySettings();
+      }
+      if (event.key === 'cookie_chats') {
+        savedChats = readLocal('cookie_chats', []);
+        renderRecent();
+      }
     });
 
     const modelPicker = $('#modelPicker');
@@ -364,14 +598,22 @@
     const searchInput = $('#searchInput');
     const resultBox = $('#searchResults');
     function renderSearch(q='') {
-      const names = recent.map(x=>x.dataset.chat).filter(n=>n.toLowerCase().includes(q.toLowerCase()));
-      resultBox.innerHTML = names.length ? names.map(n=>'<button class="search-result" type="button"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span><strong>'+n+'</strong><small>Recent conversation</small></button>').join('') : '<div class="empty-search">No conversations found.</div>';
-      $$('.search-result', resultBox).forEach(b=>b.addEventListener('click',()=>{ const n=$('strong',b).textContent; const target=recent.find(x=>x.dataset.chat===n); if(target) target.click(); }));
+      const query = q.toLowerCase().trim();
+      const names = savedChats.filter(c => c.title.toLowerCase().includes(query));
+      resultBox.innerHTML = names.length
+        ? names.map(c => '<button class="search-result" type="button" data-chat-id="'+c.id+'"><span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span><strong></strong><small>Saved on this device</small></button>').join('')
+        : '<div class="empty-search">No saved conversations found.</div>';
+      $$('.search-result', resultBox).forEach(b => {
+        const chat = savedChats.find(c => c.id === b.dataset.chatId);
+        if (!chat) return;
+        $('strong', b).textContent = chat.title;
+        b.addEventListener('click', () => loadChat(chat.id));
+      });
     }
-    searchInput.addEventListener('input',()=>renderSearch(searchInput.value)); renderSearch();
+    searchInput.addEventListener('input', () => renderSearch(searchInput.value));
+    renderSearch();
 
-
-    /* Cookie cursor ribbon animation — inspired by the supplied reference video. */
+    /* Cookie cursor ribbon animation — touch friendly and configurable. */
     (() => {
       const canvas = document.getElementById('cookieTrail');
       if (!canvas) return;
@@ -379,162 +621,100 @@
       if (!ctx) return;
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const coarse = window.matchMedia('(pointer: coarse)');
       const points = [];
       const maxPoints = 34;
-      let width = 0;
-      let height = 0;
-      let dpr = 1;
-      let mouseX = window.innerWidth * 0.5;
-      let mouseY = window.innerHeight * 0.5;
-      let targetX = mouseX;
-      let targetY = mouseY;
+      let width = 0, height = 0, dpr = 1;
+      let mouseX = window.innerWidth * 0.5, mouseY = window.innerHeight * 0.48;
+      let targetX = mouseX, targetY = mouseY;
       let active = false;
       let lastTime = performance.now();
 
       function resize() {
         dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-        width = window.innerWidth;
-        height = window.innerHeight;
+        width = window.innerWidth; height = window.innerHeight;
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
+        canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-
-      function move(x, y) {
-        targetX = x;
-        targetY = y;
-        active = true;
-      }
-
-      window.addEventListener('pointermove', event => move(event.clientX, event.clientY), {passive:true});
-      window.addEventListener('pointerdown', event => {
-        move(event.clientX, event.clientY);
-        for (let i = 0; i < 7; i++) {
-          points.push({
-            x: event.clientX,
-            y: event.clientY,
-            vx: (Math.random() - .5) * 2.5,
-            vy: (Math.random() - .5) * 2.5,
-            life: 1,
-            particle: true
-          });
-        }
+      function move(x, y) { targetX = x; targetY = y; active = true; }
+      window.addEventListener('pointermove', e => move(e.clientX, e.clientY), {passive:true});
+      window.addEventListener('touchstart', e => { const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }, {passive:true});
+      window.addEventListener('touchmove', e => { const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }, {passive:true});
+      window.addEventListener('pointerdown', e => {
+        move(e.clientX, e.clientY);
+        for (let i=0;i<7;i++) points.push({x:e.clientX,y:e.clientY,vx:(Math.random()-.5)*2.5,vy:(Math.random()-.5)*2.5,life:1,particle:true});
       }, {passive:true});
       window.addEventListener('resize', resize, {passive:true});
-
       resize();
 
       function seed() {
         points.length = 0;
-        for (let i = 0; i < maxPoints; i++) {
-          points.push({
-            x: targetX,
-            y: targetY,
-            vx: 0,
-            vy: 0,
-            life: 1,
-            particle: false
-          });
-        }
+        for (let i=0;i<maxPoints;i++) points.push({x:targetX,y:targetY,vx:0,vy:0,life:1,particle:false});
       }
       seed();
 
       function draw(now) {
-        const dt = Math.min((now - lastTime) / 16.67, 2);
+        const dt = Math.min((now-lastTime)/16.67, 2);
         lastTime = now;
-
-        ctx.clearRect(0, 0, width, height);
-
-        if (reduceMotion.matches || !active) {
-          requestAnimationFrame(draw);
-          return;
+        ctx.clearRect(0,0,width,height);
+        if (reduceMotion.matches || document.body.classList.contains('cursor-ribbons-off')) {
+          requestAnimationFrame(draw); return;
         }
 
-        mouseX += (targetX - mouseX) * Math.min(.22 * dt, .5);
-        mouseY += (targetY - mouseY) * Math.min(.22 * dt, .5);
+        if (!active) {
+          targetX = width*.5 + Math.sin(now*.00038)*width*.20;
+          targetY = height*.44 + Math.cos(now*.00047)*height*.14;
+        }
+        mouseX += (targetX-mouseX)*Math.min(.16*dt,.5);
+        mouseY += (targetY-mouseY)*Math.min(.16*dt,.5);
 
         const head = points[0];
-        head.x += (mouseX - head.x) * Math.min(.55 * dt, .9);
-        head.y += (mouseY - head.y) * Math.min(.55 * dt, .9);
-
-        for (let i = 1; i < points.length; i++) {
-          const p = points[i];
-          const prev = points[i - 1];
-          const follow = Math.max(.08, .34 - i * .007);
-          p.x += (prev.x - p.x) * follow * dt;
-          p.y += (prev.y - p.y) * follow * dt;
+        head.x += (mouseX-head.x)*Math.min(.5*dt,.9);
+        head.y += (mouseY-head.y)*Math.min(.5*dt,.9);
+        for(let i=1;i<points.length;i++){
+          const p=points[i], prev=points[i-1], follow=Math.max(.08,.34-i*.007);
+          p.x += (prev.x-p.x)*follow*dt;
+          p.y += (prev.y-p.y)*follow*dt;
         }
 
-        if (coarse.matches) {
-          active = false;
-          ctx.clearRect(0, 0, width, height);
-          requestAnimationFrame(draw);
-          return;
-        }
-
-        const strands = 3;
-        for (let strand = 0; strand < strands; strand++) {
+        for(let strand=0;strand<3;strand++){
           ctx.beginPath();
-          for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            const next = points[Math.min(i + 1, points.length - 1)];
-            const dx = next.x - p.x;
-            const dy = next.y - p.y;
-            const len = Math.max(Math.hypot(dx, dy), 1);
-            const nx = -dy / len;
-            const ny = dx / len;
-            const offset = Math.sin(i * .52 + strand * 2.1 + now * .0012) * (3 + i * .12);
-            const x = p.x + nx * offset;
-            const y = p.y + ny * offset;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+          for(let i=0;i<points.length;i++){
+            const p=points[i], next=points[Math.min(i+1,points.length-1)];
+            const dx=next.x-p.x, dy=next.y-p.y, len=Math.max(Math.hypot(dx,dy),1);
+            const nx=-dy/len, ny=dx/len;
+            const offset=Math.sin(i*.52+strand*2.1+now*.0012)*(3+i*.12);
+            const x=p.x+nx*offset, y=p.y+ny*offset;
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
           }
-
-          const alpha = .20 - strand * .035;
-          ctx.strokeStyle = strand === 0
-            ? `rgba(224, 132, 48, ${alpha})`
-            : strand === 1
-              ? `rgba(245, 188, 107, ${alpha})`
-              : `rgba(255, 226, 183, ${alpha * .72})`;
-          ctx.lineWidth = strand === 0 ? 2.4 : strand === 1 ? 1.45 : .9;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.stroke();
+          const alpha=.20-strand*.035;
+          ctx.strokeStyle = strand===0 ? `rgba(224,132,48,${alpha})` : strand===1 ? `rgba(245,188,107,${alpha})` : `rgba(255,226,183,${alpha*.72})`;
+          ctx.lineWidth = strand===0 ? 2.4 : strand===1 ? 1.45 : .9;
+          ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
         }
 
-        for (let i = 0; i < points.length; i += 3) {
-          const p = points[i];
-          const size = Math.max(.7, 2.2 - i * .045);
-          ctx.fillStyle = `rgba(232, 150, 71, ${Math.max(0, .34 - i * .008)})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-          ctx.fill();
+        for(let i=0;i<points.length;i+=3){
+          const p=points[i], size=Math.max(.7,2.2-i*.045);
+          ctx.fillStyle=`rgba(232,150,71,${Math.max(0,.34-i*.008)})`;
+          ctx.beginPath(); ctx.arc(p.x,p.y,size,0,Math.PI*2); ctx.fill();
         }
 
-        for (let i = points.length - 1; i >= 0; i--) {
-          const p = points[i];
-          if (!p.particle) continue;
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
-          p.life -= .035 * dt;
-          if (p.life <= 0) points.splice(i, 1);
-          else {
-            ctx.fillStyle = `rgba(246, 186, 101, ${p.life * .6})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 1.7 * p.life, 0, Math.PI * 2);
-            ctx.fill();
-          }
+        for(let i=points.length-1;i>=0;i--){
+          const p=points[i]; if(!p.particle) continue;
+          p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=.035*dt;
+          if(p.life<=0) points.splice(i,1);
+          else { ctx.fillStyle=`rgba(246,186,101,${p.life*.6})`; ctx.beginPath(); ctx.arc(p.x,p.y,1.7*p.life,0,Math.PI*2); ctx.fill(); }
         }
-
-        if (points.length > maxPoints + 20) points.splice(maxPoints, points.length - maxPoints);
+        if(points.length>maxPoints+20) points.splice(maxPoints,points.length-maxPoints);
         requestAnimationFrame(draw);
       }
-
       requestAnimationFrame(draw);
     })();
+
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if (settings.theme === 'system') applySettings();
+    });
 
     document.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='k') { e.preventDefault(); resetChat(); }
