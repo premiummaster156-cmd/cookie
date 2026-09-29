@@ -374,7 +374,7 @@
         return;
       }
       list.innerHTML = workspace.slice().sort((a,b)=>a.path.localeCompare(b.path)).map(item => {
-        const folder = item.kind === 'folder' || /\\/$/.test(item.path);
+        const folder = item.kind === 'folder' || /\/$/.test(item.path);
         return '<div class="workspace-file">' +
           '<span style="font-size:15px">' + (folder ? '📁' : '📄') + '</span>' +
           '<span class="workspace-file-name" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span>' +
