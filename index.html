@@ -175,6 +175,10 @@
     const conversation = $('#conversation');
     const input = $('#messageInput');
     const welcome = $('#welcome');
+    const sendBtn = $('#sendBtn');
+    let chatMessages = [];
+    let isSending = false;
+    let requestController = null;
 
     function showView(name) {
       views.forEach(v => v.classList.toggle('is-visible', v.dataset.panel === name));
@@ -188,6 +192,9 @@
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
 
     function resetChat() {
+      if (requestController) requestController.abort();
+      setSending(false);
+      chatMessages = [];
       conversation.innerHTML = '';
       welcome.hidden = false;
       input.value = '';
@@ -207,30 +214,69 @@
       row.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
 
-    function answerFor(text) {
-      const lower = text.toLowerCase();
-      if (lower.includes('week')) return 'Absolutely. Start with the three things that matter most, then place smaller tasks around them. If you give me your schedule, I can turn it into a realistic plan.';
-      if (lower.includes('write')) return 'Sure. Send me what you have and tell me the tone you want. I can make it clearer while keeping it sounding like you.';
-      if (lower.includes('idea')) return 'Let’s explore it. Tell me what you are building, who it is for, and any limits you have. I’ll help you generate a few directions.';
-      return 'I’m here. This is the Cookie frontend demo, so the reply is intentionally local for now. The real AI connection can be added to the backend later.';
+    function addTyping() {
+      const row = document.createElement('article');
+      row.className = 'message-row assistant typing-row';
+      row.innerHTML = '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="typing-indicator" aria-label="Cookie is thinking"><span></span><span></span><span></span></div></div>';
+      conversation.appendChild(row);
+      row.scrollIntoView({behavior:'smooth', block:'nearest'});
+      return row;
     }
 
-    function send(text) {
+    function setSending(value) {
+      isSending = value;
+      sendBtn.disabled = value;
+      sendBtn.setAttribute('aria-busy', String(value));
+      input.disabled = value;
+    }
+
+    async function send(text) {
       text = text.trim();
-      if (!text) return;
+      if (!text || isSending) return;
+
       welcome.hidden = true;
       addMessage(text, 'user');
       input.value = '';
       input.style.height = 'auto';
-      const typing = document.createElement('article'); typing.className='message-row assistant typing-row'; typing.innerHTML='<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="typing-indicator" aria-label="Cookie is thinking"><span></span><span></span><span></span></div></div>'; conversation.appendChild(typing); typing.scrollIntoView({behavior:'smooth',block:'nearest'});
-      setTimeout(() => { typing.remove(); addMessage(answerFor(text), 'assistant'); }, 650);
+
+      chatMessages.push({role:'user', content:text});
+      const typing = addTyping();
+      setSending(true);
+      requestController = new AbortController();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({messages: chatMessages}),
+          signal: requestController.signal
+        });
+
+        const data = await response.json().catch(() => ({}));
+        typing.remove();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Cookie could not answer right now.');
+        }
+
+        const reply = typeof data.message === 'string' ? data.message.trim() : '';
+        if (!reply) throw new Error('Cookie returned an empty response.');
+
+        chatMessages.push({role:'assistant', content:reply});
+        addMessage(reply, 'assistant');
+      } catch (error) {
+        typing.remove();
+        if (error.name !== 'AbortError') {
+          addMessage(error.message || 'Something went wrong. Please try again.', 'assistant error-message');
+        }
+      } finally {
+        requestController = null;
+        setSending(false);
+        input.focus();
+      }
     }
 
-    $('#composer').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
-    input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
-    input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); }});
-
-    recent.forEach(item => item.addEventListener('click', () => {
+        recent.forEach(item => item.addEventListener('click', () => {
       recent.forEach(x=>x.classList.remove('active')); item.classList.add('active');
       showView('chat');
       chatMessages = [{role:'user', content:item.dataset.chat}];
@@ -251,7 +297,13 @@
       $$('.accent-swatch').forEach(x=>x.classList.remove('selected')); s.classList.add('selected'); document.documentElement.dataset.accent=s.dataset.accent;
     }));
     $$('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
-    $('#clearData').addEventListener('click', () => { conversation.innerHTML=''; welcome.hidden=false; alert('Local demo chats cleared.'); });
+    $('#clearData').addEventListener('click', () => {
+      if (requestController) requestController.abort();
+      chatMessages = [];
+      conversation.innerHTML = '';
+      welcome.hidden = false;
+      alert('Local chats cleared.');
+    });
 
     const modelPicker = $('#modelPicker');
     const modelMenu = $('#modelMenu');
