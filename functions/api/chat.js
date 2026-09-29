@@ -39,18 +39,21 @@ function limitResponse(text) {
 const profiles = {
   standard: {
     name: "CPT-1",
+    model: "__ENV_MODEL__",
     temperature: 0.55,
     instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it."
   },
   max: {
     name: "CPT-2 MAX",
-    temperature: 0.72,
-    instructions: "Handle difficult reasoning, creative work, writing, planning, coding, analysis, and multi-step tasks with extra care."
+    model: "kimi-k3:cloud",
+    temperature: 0.68,
+    instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions."
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    temperature: 0.82,
-    instructions: "Give high-quality sophisticated assistance. Break complex work into useful steps, check assumptions, and produce polished results."
+    model: "glm-5.3-flash:cloud",
+    temperature: 0.62,
+    instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer."
   }
 };
 
@@ -66,17 +69,13 @@ export async function onRequestPost({ request, env }) {
 
     const body = await readJson(request);
     const preferences = body?.preferences || {};
-    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
-    const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
-    if (imageAttachments.length) {
-      // Use Ollama's dedicated cloud vision model.
-      // Qwen3-VL is explicitly documented by Ollama as a cloud multimodal model.
-      model = "gemma4:cloud";
-    }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
       : "standard";
     const profile = profiles[mode];
+    model = profile.model === "__ENV_MODEL__" ? model : profile.model;
+    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
+    const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
 
     const messages = Array.isArray(body?.messages)
       ? body.messages
