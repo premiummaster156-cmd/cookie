@@ -453,10 +453,10 @@
     }
 
     function renderMarkdown(markdown) {
-      const source = String(markdown || '').replace(/\\r/g, '').trim();
+      const source = String(markdown || '').replace(/\r/g, '').trim();
       if (!source) return '<p></p>';
 
-      const lines = source.split('\\n');
+      const lines = source.split('\n');
       const blocks = [];
       let paragraph = [];
       let listType = null;
@@ -491,7 +491,7 @@
       }
 
       for (const line of lines) {
-        const fence = line.match(/^\s*```\s*([\w#+.-]*)\s*$/);
+        const fence = line.match(/^\s*\`\`\`\s*([\w#+.-]*)\s*$/);
         if (fence) {
           if (code) flushCode();
           else {
@@ -501,18 +501,19 @@
           }
           continue;
         }
+
         if (code) {
-          code.text += (code.text ? '\\n' : '') + line;
+          code.text += (code.text ? '\n' : '') + line;
           continue;
         }
 
-        if (/^\\s*$/.test(line)) {
+        if (/^\s*$/.test(line)) {
           flushParagraph();
           flushList();
           continue;
         }
 
-        const heading = line.match(/^\\s*(#{1,6})\\s+(.+)$/);
+        const heading = line.match(/^\s*(#{1,6})\s+(.+)$/);
         if (heading) {
           flushParagraph();
           flushList();
@@ -521,8 +522,8 @@
           continue;
         }
 
-        const ordered = line.match(/^\\s*\\d+[.)]\\s+(.+)$/);
-        const unordered = line.match(/^\\s*[-*+]\\s+(.+)$/);
+        const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+        const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
         if (ordered || unordered) {
           flushParagraph();
           const type = ordered ? 'ol' : 'ul';
