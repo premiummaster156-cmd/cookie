@@ -393,7 +393,8 @@
     }
 
     $('[data-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
-    $('[data-action="open-sidebar"]').addEventListener('click', () => document.body.classList.add('sidebar-open'));
+    const openSidebarButton = $('[data-action="open-sidebar"]');
+    if (openSidebarButton) openSidebarButton.addEventListener('click', () => document.body.classList.add('sidebar-open'));
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
 
     function resetChat() {
@@ -561,22 +562,23 @@
       input.disabled = value;
     }
 
-    $('#composer').addEventListener('submit', e => {
+    const composer = $('#composer');
+    if (composer) composer.addEventListener('submit', e => {
       e.preventDefault();
       send(input.value);
     });
 
-    sendBtn.addEventListener('click', e => {
+    if (sendBtn) sendBtn.addEventListener('click', e => {
       e.preventDefault();
       if (!isSending) send(input.value);
     });
 
-    input.addEventListener('input', () => {
+    if (input) input.addEventListener('input', () => {
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 160) + 'px';
     });
 
-    input.addEventListener('keydown', e => {
+    if (input) input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey && settings.enterToSend) {
         e.preventDefault();
         send(input.value);
