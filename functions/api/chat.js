@@ -68,8 +68,8 @@ export async function onRequestPost({ request, env }) {
     const preferences = body?.preferences || {};
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
-    if (imageAttachments.length && env.OLLAMA_VISION_MODEL) {
-      model = String(env.OLLAMA_VISION_MODEL).trim();
+    if (imageAttachments.length) {
+      model = String(env.OLLAMA_VISION_MODEL || "qwen3-vl:235b-cloud").trim();
     }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
@@ -118,12 +118,6 @@ export async function onRequestPost({ request, env }) {
       const match = a.data.match(/^data:[^;]+;base64,(.+)$/);
       return match ? match[1] : a.data;
     });
-
-    if (imageAttachments.length && !env.OLLAMA_VISION_MODEL) {
-      return json({
-        error: "Image upload is ready, but the current Ollama model is text-only. Add an OLLAMA_VISION_MODEL Pages secret to enable image analysis."
-      }, 422);
-    }
 
     const apiMessages = [{ role: "system", content: system }, ...messages];
     if (imageData.length) {
