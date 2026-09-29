@@ -585,7 +585,13 @@
     const modelPicker = $('#modelPicker');
     const modelMenu = $('#modelMenu');
     const activeModel = $('#activeModel');
-    const modelOptions = $$('.model-option');
+    const modelOptions = $('.model-option');
+    function syncModelPicker(){
+      const activeMode = modelOptions.find(x => x.dataset.mode === settings.responseMode) || modelOptions[0];
+      modelOptions.forEach(x => { x.classList.toggle('active', x === activeMode); x.setAttribute('aria-checked', String(x === activeMode)); });
+      if (activeMode) activeModel.textContent = activeMode.dataset.model;
+    }
+    syncModelPicker();
     function closeModelMenu(){ modelMenu.classList.remove('open'); modelPicker.setAttribute('aria-expanded','false'); }
     modelPicker.addEventListener('click', e => { e.stopPropagation(); const open = modelMenu.classList.toggle('open'); modelPicker.setAttribute('aria-expanded', String(open)); });
     modelOptions.forEach(option => option.addEventListener('click', () => {
@@ -594,6 +600,7 @@
       settings.responseMode = option.dataset.mode || 'balanced';
       saveSettings();
       applySettings();
+      syncModelPicker();
       closeModelMenu();
     }));
     document.addEventListener('click', e => { if(!e.target.closest('.model-control')) closeModelMenu(); });
