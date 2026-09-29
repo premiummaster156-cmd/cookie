@@ -553,20 +553,40 @@
       row.className = 'message-row ' + role;
       const time = Number(timestamp) || Date.now();
       const label = formatMessageTime(time);
-      row.innerHTML = role === 'user'
-        ? '<div class="message-avatar">D</div><div class="message-body"><div class="message-content"></div><div class="message-attachments"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>'
-        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="message-content"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>';
 
-      const content = $('.message-content', row);
-      content.innerHTML = renderMarkdown(text);
+      if (role === 'user') {
+        row.innerHTML =
+          '<div class="message-body">' +
+            '<div class="user-message-bubble">' +
+              '<div class="message-content"></div>' +
+              '<div class="message-attachments"></div>' +
+            '</div>' +
+            '<time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time>' +
+          '</div>';
+      } else {
+        row.innerHTML =
+          '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div>' +
+          '<div class="message-body">' +
+            '<div class="message-content"></div>' +
+            '<time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time>' +
+          '</div>';
+      }
+
+      $('.message-content', row).innerHTML = renderMarkdown(text);
 
       const attachmentBox = $('.message-attachments', row);
       if (attachmentBox && attachments.length) {
         attachmentBox.innerHTML = attachments.map(file => {
           if (file.kind === 'image' && file.data) {
-            return '<div class="message-image"><img src="' + file.data + '" alt="' + escapeAttachmentText(file.name) + '"><span>' + escapeAttachmentText(file.name) + '</span></div>';
+            return '<figure class="message-image">' +
+              '<img src="' + file.data + '" alt="' + escapeAttachmentText(file.name) + '">' +
+              '<figcaption>' + escapeAttachmentText(file.name) + '</figcaption>' +
+            '</figure>';
           }
-          return '<div class="message-file"><span class="attachment-file-icon">DOC</span><span>' + escapeAttachmentText(file.name) + '</span></div>';
+          return '<div class="message-file">' +
+            '<span class="attachment-file-icon">DOC</span>' +
+            '<span>' + escapeAttachmentText(file.name) + '</span>' +
+          '</div>';
         }).join('');
       }
 
