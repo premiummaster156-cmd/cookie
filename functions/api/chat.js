@@ -29,7 +29,36 @@ export async function onRequestPost(context) {
   }
 
   const preferences = body?.preferences && typeof body.preferences === "object" ? body.preferences : {};
-  const responseMode = ["balanced", "concise", "deep"].includes(preferences.responseMode) ? preferences.responseMode : "balanced";
+  const responseMode = ["ultra", "code", "writer", "tutor", "fast"].includes(preferences.responseMode) ? preferences.responseMode : "ultra";
+
+  const modelProfiles = {
+    ultra: {
+      name: "CPT Ultra 1",
+      temperature: 0.65,
+      instructions: "You are CPT Ultra 1, Cookie's strongest general-purpose model. Handle research, analysis, planning, problem solving, everyday questions, and complex mixed tasks. Be accurate, structured, and capable across domains."
+    },
+    code: {
+      name: "CPT Code 1",
+      temperature: 0.35,
+      instructions: "You are CPT Code 1, Cookie's software engineering specialist. Focus on programming, debugging, architecture, APIs, databases, DevOps, testing, security-aware engineering, and production-quality code. Prefer complete working solutions and explain important implementation choices."
+    },
+    writer: {
+      name: "CPT Writer 1",
+      temperature: 0.85,
+      instructions: "You are CPT Writer 1, Cookie's writing specialist. Focus on writing, rewriting, editing, storytelling, scripts, copywriting, tone, structure, and polished communication. Preserve the user's intent while improving clarity and style."
+    },
+    tutor: {
+      name: "CPT Tutor 1",
+      temperature: 0.55,
+      instructions: "You are CPT Tutor 1, Cookie's teaching specialist. Teach step by step, adapt to the learner's level, use examples and practice, explain difficult ideas simply, and help the user learn rather than only giving an answer."
+    },
+    fast: {
+      name: "CPT Fast 1",
+      temperature: 0.45,
+      instructions: "You are CPT Fast 1, Cookie's quick-task specialist. Give direct, useful answers for simple questions, quick edits, short translations, calculations, summaries, and everyday tasks. Avoid unnecessary detail."
+    }
+  };
+  const profile = modelProfiles[responseMode];
   const language = ["auto", "english", "uzbek", "russian"].includes(preferences.language) ? preferences.language : "auto";
   const answerLength = ["auto", "short", "detailed"].includes(preferences.answerLength) ? preferences.answerLength : "auto";
   const creativity = Number.isFinite(Number(preferences.creativity)) ? Math.min(1, Math.max(0, Number(preferences.creativity))) : 0.7;
@@ -56,14 +85,17 @@ export async function onRequestPost(context) {
       },
       body: JSON.stringify({
         model: MODEL,
+      model_name: profile.name,
         stream: false,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "system",
+            content: profile.instructions
+          },
+          {
+            role: "system",
             content: [
-              responseMode === "concise" ? "Prefer concise answers unless detail is necessary." : "",
-              responseMode === "deep" ? "Give more complete explanations and useful reasoning when appropriate." : "",
               language === "english" ? "Prefer English responses." : "",
               language === "uzbek" ? "Prefer Uzbek responses." : "",
               language === "russian" ? "Prefer Russian responses." : "",
@@ -74,7 +106,7 @@ export async function onRequestPost(context) {
           ...messages
         ],
         options: {
-          temperature: creativity
+          temperature: Math.min(1, Math.max(0, (profile.temperature * 0.65) + (creativity * 0.35)))
         }
       })
     });
