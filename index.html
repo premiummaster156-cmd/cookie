@@ -21,7 +21,36 @@
 .workspace-panel>.workspace-head .workspace-btn{display:none}
 .workspace-editor{position:fixed;z-index:100;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:18px}.workspace-editor.open{display:flex}.workspace-editor-card{width:min(900px,100%);height:min(760px,92dvh);background:#201b18;border:1px solid rgba(255,255,255,.1);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.45)}.workspace-editor-head{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}.workspace-editor-head strong{flex:1;font-size:13px}.workspace-editor textarea{flex:1;width:100%;resize:none;border:0;outline:0;background:#171412;color:#f4eee8;padding:18px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.workspace-editor-actions{padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;gap:8px}.workspace-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer}.workspace-btn.primary{background:#e5a15a;color:#1a120c;border-color:transparent;font-weight:700}
 @media(max-width:600px){.workspace-more-btn{top:11px;right:11px}.workspace-panel{top:7px;right:7px;bottom:7px;width:calc(100vw - 14px);border-radius:16px}.workspace-options{grid-template-columns:1fr 1fr}.workspace-file-actions{opacity:1}}
-</style>
+<style id="cookie-real-motion">
+/* Real motion: state changes must animate between two rendered states. */
+@keyframes cookie-screen-enter{0%{opacity:0;transform:translateY(14px) scale(.985);filter:blur(3px)}100%{opacity:1;transform:none;filter:none}}
+@keyframes cookie-message-enter{0%{opacity:0;transform:translateY(18px) scale(.985)}100%{opacity:1;transform:none}}
+@keyframes cookie-sidebar-in{0%{opacity:0;transform:translateX(-28px)}100%{opacity:1;transform:none}}
+@keyframes cookie-backdrop-in{0%{opacity:0}100%{opacity:1}}
+@keyframes cookie-workspace-in{0%{opacity:0;transform:translateX(100%)}100%{opacity:1;transform:translateX(0)}}
+@keyframes cookie-workspace-out{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(100%)}}
+@keyframes cookie-modal-in{0%{opacity:0;transform:translateY(20px) scale(.94)}60%{opacity:1;transform:translateY(-2px) scale(1.01)}100%{opacity:1;transform:none}}
+@keyframes cookie-drop-in{0%{opacity:0;transform:translateY(-8px) scale(.97)}100%{opacity:1;transform:none}}
+@keyframes cookie-button-pop{0%{transform:scale(.96)}100%{transform:scale(1)}}
+@keyframes cookie-dot-breathe{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+.view-entering{animation:cookie-screen-enter 420ms cubic-bezier(.16,1,.3,1) both!important}
+.view-leaving{animation:none!important}
+.message{animation:cookie-message-enter 360ms cubic-bezier(.16,1,.3,1) both}
+.message:nth-child(2){animation-delay:35ms}.message:nth-child(3){animation-delay:70ms}.message:nth-child(4){animation-delay:105ms}
+.sidebar.open,.sidebar.active{animation:cookie-sidebar-in 300ms cubic-bezier(.16,1,.3,1) both}
+.workspace-panel{display:flex!important;visibility:hidden;pointer-events:none;transform:translateX(100%)!important;opacity:0!important;transition:transform 380ms cubic-bezier(.16,1,.3,1),opacity 260ms ease!important}
+.workspace-panel.open{visibility:visible;pointer-events:auto;transform:translateX(0)!important;opacity:1!important}
+.workspace-panel.closing{animation:cookie-workspace-out 300ms cubic-bezier(.7,0,.84,0) both}
+.workspace-editor.open{animation:cookie-modal-in 320ms cubic-bezier(.16,1,.3,1) both}
+.workspace-editor-card{animation:cookie-modal-in 320ms cubic-bezier(.16,1,.3,1) both}
+.dropdown,.model-picker,.popover,.toast{animation:cookie-drop-in 220ms cubic-bezier(.16,1,.3,1) both}
+.attachment-tray{animation:cookie-drop-in 260ms cubic-bezier(.16,1,.3,1) both}
+button:hover,.nav-item:hover,.recent-item:hover,.choice-card:hover,.model-option:hover,.tool-label:hover,.round-tool:hover{transform:translateY(-2px)}
+button:active,.nav-item:active,.recent-item:active,.choice-card:active,.model-option:active,.tool-label:active,.round-tool:active,.send-btn:active{transform:scale(.94)}
+.send-btn:hover{transform:translateY(-2px) scale(1.03)}
+.typing-indicator span{display:inline-block;animation:cookie-dot-breathe 850ms ease-in-out infinite}
+.typing-indicator span:nth-child(2){animation-delay:140ms}.typing-indicator span:nth-child(3){animation-delay:280ms}
+</style></style>
 
 
 <style id="cookie-motion-system">
