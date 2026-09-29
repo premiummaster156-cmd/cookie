@@ -7,6 +7,7 @@
 <title>Sign in — Cookie</title>
 <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
 <link rel="stylesheet" href="auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <main class="auth-shell">
@@ -79,6 +80,10 @@
 
 <script>
 (() => {
+  const SUPABASE_URL = 'https://imnsdbqricehgncpobda.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0mQKl_lds4N017Zhcn8JfQ_PwmTCvRi';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
   const $ = s => document.querySelector(s);
   let mode = 'login';
   const form = $('#authForm');
@@ -127,71 +132,57 @@
     error.textContent = message;
   }
 
-  if (params.get('verified') === '1') {
-    showMessage('Email verified. You can sign in now.', true);
+  function recoveryFlow() {
+    return location.hash.includes('type=recovery') || params.get('recovery') === '1';
   }
 
-  if (params.get('reset')) {
-    mode = 'reset';
-    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.remove('active'));
-    title.textContent = 'Set a new password';
-    subtitle.textContent = 'Choose a new password for your Cookie account.';
-    nameField.classList.add('hidden');
-    name.required = false;
-    email.closest('.field').classList.add('hidden');
-    email.required = false;
-    password.autocomplete = 'new-password';
-    submit.textContent = 'Update password';
-    $('#forgotBtn').hidden = true;
-    if (formNote) formNote.textContent = 'Enter a new password for your Cookie account.';
-  }
-
-  async function api(path, body) {
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      credentials: 'same-origin',
-      body: JSON.stringify(body)
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Something went wrong.');
-    return data;
-  }
-
-  async function redirectIfSignedIn() {
-    try {
-      const response = await fetch('/api/auth/me', {credentials: 'same-origin', cache: 'no-store'});
-      const data = await response.json().catch(() => ({}));
-      if (response.ok && data.user && !params.get('reset')) location.replace('index.html');
-    } catch {}
-  }
-
-  document.querySelectorAll('[data-auth-mode]').forEach(btn => btn.addEventListener('click', () => {
-    if (params.get('reset')) return;
-    mode = btn.dataset.authMode;
-    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x === btn));
-    const signup = mode === 'signup';
-    email.autocomplete = signup ? 'off' : 'email';
-    password.autocomplete = signup ? 'new-password' : 'current-password';
+  function setMode(nextMode) {
+    mode = nextMode;
+    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x.dataset.authMode === nextMode));
+    const signup = nextMode === 'signup';
     nameField.classList.toggle('hidden', !signup);
     $('#forgotBtn').hidden = signup;
-    if (formNote) formNote.textContent = signup ? 'Use an email you can access to verify your account.' : 'Use the email linked to your Cookie account.';
     name.required = signup;
+    email.required = nextMode !== 'reset';
+    password.autocomplete = signup || nextMode === 'reset' ? 'new-password' : 'current-password';
+
+    if (nextMode === 'reset') {
+      title.textContent = 'Set a new password';
+      subtitle.textContent = 'Choose a new password for your Cookie account.';
+      email.closest('.field').classList.add('hidden');
+      nameField.classList.add('hidden');
+      name.required = false;
+      email.required = false;
+      submit.textContent = 'Update password';
+      $('#forgotBtn').hidden = true;
+      formNote.textContent = 'Enter a new password for your Cookie account.';
+      return;
+    }
+
+    email.closest('.field').classList.remove('hidden');
+    formNote.textContent = signup ? 'Use an email you can access to verify your account.' : 'Use the email linked to your Cookie account.';
     title.textContent = signup ? 'Create your account' : 'Welcome back';
     subtitle.textContent = signup ? 'Create your Cookie account.' : 'Sign in to continue to Cookie.';
     submit.textContent = signup ? 'Create account' : 'Sign in';
-    password.autocomplete = signup ? 'new-password' : 'current-password';
     error.hidden = true;
-  }));
+  }
 
   async function submitAuth() {
     error.hidden = true;
 
     if (mode === 'reset') {
+      if (password.value.length < 8) {
+        showErrorModal('Your new password must be at least 8 characters.', submitAuth);
+        return;
+      }
+      submit.textContent = 'Updating…';
       try {
-        await api('/api/auth/reset', {token: params.get('reset'), password: password.value});
-        location.href = 'auth.html';
+        const { error: updateError } = await supabase.auth.updateUser({ password: password.value });
+        if (updateError) throw updateError;
+        await supabase.auth.signOut();
+        location.href = 'auth.html?reset=success';
       } catch (err) {
+        submit.textContent = 'Update password';
         showErrorModal(err.message, submitAuth);
       }
       return;
@@ -205,17 +196,27 @@
     submit.textContent = mode === 'signup' ? 'Creating…' : 'Signing in…';
 
     try {
-      const data = await api(mode === 'signup' ? '/api/auth/register' : '/api/auth/login', {
-        name: name.value,
-        email: email.value,
-        password: password.value
-      });
-
       if (mode === 'signup') {
-        showMessage(data.message || 'Check your email to verify your account.', true);
+        const { data, error: signupError } = await supabase.auth.signUp({
+          email: email.value.trim(),
+          password: password.value,
+          options: {
+            data: { full_name: name.value.trim() },
+            emailRedirectTo: location.origin + '/auth.html'
+          }
+        });
+        if (signupError) throw signupError;
         password.value = '';
+        showMessage(data.session
+          ? 'Account created. You are signed in.'
+          : 'Verification email sent. Check your inbox before signing in.', true);
         submit.textContent = 'Create account';
       } else {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: email.value.trim(),
+          password: password.value
+        });
+        if (loginError) throw loginError;
         location.href = 'index.html';
       }
     } catch (err) {
@@ -223,6 +224,11 @@
       showErrorModal(err.message, submitAuth);
     }
   }
+
+  document.querySelectorAll('[data-auth-mode]').forEach(btn => btn.addEventListener('click', () => {
+    if (recoveryFlow()) return;
+    setMode(btn.dataset.authMode);
+  }));
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -236,16 +242,39 @@
       showMessage('Enter your email first.');
       return;
     }
-
     try {
-      const data = await api('/api/auth/forgot', {email: value});
-      showMessage(data.message, true);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(value, {
+        redirectTo: location.origin + '/auth.html'
+      });
+      if (resetError) throw resetError;
+      showMessage('If that email has a Cookie account, reset instructions have been sent.', true);
     } catch (err) {
-      showMessage(err.message);
+      showErrorModal(err.message, () => $('#forgotBtn').click());
     }
   });
 
-  if (mode === 'login') redirectIfSignedIn();
+  $('#reset=success');
+  if (params.get('reset') === 'success') {
+    showMessage('Password updated. You can sign in now.', true);
+  }
+
+  async function boot() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (recoveryFlow()) {
+      setMode('reset');
+      if (session) password.focus();
+      return;
+    }
+    if (params.get('verified') === '1') showMessage('Email verified. You can sign in now.', true);
+    if (session) location.replace('index.html');
+    else setMode('login');
+  }
+
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') setMode('reset');
+  });
+
+  boot();
 })();
 </script>
 </body>
