@@ -319,7 +319,7 @@
       const lang = $('#languageSelect'); if (lang) lang.value = settings.language;
       const length = $('#answerLengthSelect'); if (length) length.value = settings.answerLength;
       const range = $('#creativityRange'); if (range) { range.value = settings.creativity; $('#creativityValue').textContent = Number(settings.creativity).toFixed(1); }
-      $[data-setting-toggle].forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
+      $data-setting-toggle.forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
       $.choice-card[data-ai-choice].forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
     }
 
@@ -392,7 +392,7 @@
       window.scrollTo({top:0, behavior:'smooth'});
     }
 
-    $[data-view].forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+    $data-view.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
     $('[data-action="open-sidebar"]').addEventListener('click', () => document.body.classList.add('sidebar-open'));
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
 
