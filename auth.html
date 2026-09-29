@@ -33,17 +33,17 @@
     <form id="authForm" novalidate>
       <label class="field hidden" id="nameField">
         <span>Name</span>
-        <input id="name" name="name" autocomplete="name" placeholder="Your name">
+        <input id="name" name="name" autocomplete="off" placeholder="Your name">
       </label>
 
       <label class="field">
         <span>Email</span>
-        <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        <input id="email" name="email" type="email" autocomplete="off" placeholder="you@example.com" required>
       </label>
 
       <label class="field">
         <span>Password</span>
-        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" minlength="8" required>
+        <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required>
       </label>
 
       <div class="form-meta">
@@ -129,6 +129,8 @@
     mode = btn.dataset.authMode;
     document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x === btn));
     const signup = mode === 'signup';
+    email.autocomplete = signup ? 'off' : 'email';
+    password.autocomplete = signup ? 'new-password' : 'current-password';
     nameField.classList.toggle('hidden', !signup);
     $('#forgotBtn').hidden = signup;
     if (formNote) formNote.textContent = signup ? 'Use an email you can access to verify your account.' : 'Use the email linked to your Cookie account.';
