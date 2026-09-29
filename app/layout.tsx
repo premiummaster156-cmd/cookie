@@ -1,0 +1,1 @@
+import "./globals.css";\nimport type { Metadata } from "next";\nexport const metadata:Metadata={title:"Cookie — AI Workspace",description:"Cookie AI workspace"};\nexport default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
