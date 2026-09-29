@@ -57,10 +57,22 @@
       </button>
       <p class="auth-error" id="authError" role="alert" hidden></p>
     </form>
-
-    <p class="auth-note">We use your email only for account verification and password recovery.</p>
   </section>
 
+  <div class="error-modal-backdrop" id="errorModal" hidden>
+    <section class="error-modal" role="alertdialog" aria-modal="true" aria-labelledby="errorModalTitle" aria-describedby="errorModalMessage">
+      <div class="error-modal-icon" aria-hidden="true">!</div>
+      <p class="error-modal-kicker">COOKIE</p>
+      <h2 id="errorModalTitle">Something went wrong</h2>
+      <p id="errorModalMessage">We couldn't complete that request.</p>
+      <div class="error-modal-actions">
+        <button type="button" class="error-cancel" id="errorCancel">Cancel</button>
+        <button type="button" class="error-retry" id="errorRetry">Retry</button>
+      </div>
+    </section>
+  </div>
+
+    <p class="auth-note">We use your email only for account verification and password recovery.</p>
   <p class="auth-footer">Cookie · AI workspace</p>
 </main>
 
@@ -78,6 +90,34 @@
   const error = $('#authError');
   const nameField = $('#nameField');
   const params = new URLSearchParams(location.search);
+  const errorModal = $('#errorModal');
+  const errorModalMessage = $('#errorModalMessage');
+  const errorCancel = $('#errorCancel');
+  const errorRetry = $('#errorRetry');
+  let retryAction = null;
+
+  function closeErrorModal() {
+    errorModal.hidden = true;
+    document.body.classList.remove('modal-open');
+    retryAction = null;
+  }
+
+  function showErrorModal(message, retry) {
+    errorModalMessage.textContent = message || 'We could not complete that request.';
+    retryAction = retry || null;
+    errorModal.hidden = false;
+    document.body.classList.add('modal-open');
+  }
+
+  errorCancel.addEventListener('click', closeErrorModal);
+  errorRetry.addEventListener('click', async () => {
+    const action = retryAction;
+    closeErrorModal();
+    if (action) await action();
+  });
+  errorModal.addEventListener('click', event => {
+    if (event.target === errorModal) closeErrorModal();
+  });
 
   function showMessage(message, success = false) {
     error.hidden = false;
@@ -142,8 +182,7 @@
     error.hidden = true;
   }));
 
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
+  async function submitAuth() {
     error.hidden = true;
 
     if (mode === 'reset') {
@@ -151,7 +190,7 @@
         await api('/api/auth/reset', {token: params.get('reset'), password: password.value});
         location.href = 'auth.html';
       } catch (err) {
-        showMessage(err.message);
+        showErrorModal(err.message, submitAuth);
       }
       return;
     }
@@ -178,9 +217,14 @@
         location.href = 'index.html';
       }
     } catch (err) {
-      showMessage(err.message);
       submit.textContent = mode === 'signup' ? 'Create account' : 'Sign in';
+      showErrorModal(err.message, submitAuth);
     }
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    await submitAuth();
   });
 
   $('#forgotBtn').addEventListener('click', async () => {
