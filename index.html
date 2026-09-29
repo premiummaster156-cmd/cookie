@@ -299,6 +299,47 @@
     let chatMessages = [];
     let isSending = false;
     let requestController = null;
+    let currentUser = null;
+
+    function formatMessageTime(timestamp) {
+      const date = new Date(timestamp || Date.now());
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      return new Intl.DateTimeFormat(undefined, {
+        timeZone: zone,
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(date);
+    }
+
+    async function requireAuthentication() {
+      try {
+        const response = await fetch('/api/auth/me', {credentials:'same-origin', cache:'no-store'});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.user) {
+          window.location.replace('auth.html');
+          return false;
+        }
+        currentUser = data.user;
+        const accountName = $('.account-copy strong');
+        const accountPlan = $('.account-copy small');
+        const profileName = $('.profile-info h3');
+        const profileEmail = $('.profile-info p');
+        const profilePlan = $('.plan-badge');
+        if (accountName) accountName.textContent = currentUser.name || 'Account';
+        if (accountPlan) accountPlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
+        if (profileName) profileName.textContent = currentUser.name || 'Account';
+        if (profileEmail) profileEmail.textContent = currentUser.email || '';
+        if (profilePlan) profilePlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
+        return true;
+      } catch {
+        window.location.replace('auth.html');
+        return false;
+      }
+    }
 
     function readLocal(key, fallback) {
       try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
@@ -370,13 +411,14 @@
       chatMessages = Array.isArray(chat.messages) ? chat.messages.slice() : [];
       conversation.innerHTML = '';
       welcome.hidden = true;
-      chatMessages.forEach(m => addMessage(m.content, m.role));
+      chatMessages.forEach(m => addMessage(m.content, m.role, m.timestamp || chat.updatedAt || Date.now()));
       renderRecent();
       showView('chat');
     }
 
     applySettings();
     renderRecent();
+    requireAuthentication();
 
     function showView(name) {
       const next = views.find(v => v.dataset.panel === name);
@@ -533,14 +575,15 @@
       return blocks.join('');
     }
 
-    function addMessage(text, role) {
+    function addMessage(text, role, timestamp) {
       const row = document.createElement('article');
       row.className = 'message-row ' + role;
+      const time = Number(timestamp) || Date.now();
+      const label = formatMessageTime(time);
       row.innerHTML = role === 'user'
-        ? '<div class="message-avatar">D</div><div class="message-body"></div>'
-        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"></div>';
-      const body = $('.message-body', row);
-      body.innerHTML = renderMarkdown(text);
+        ? '<div class="message-avatar">D</div><div class="message-body"><div class="message-content"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>'
+        : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="message-content"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>';
+      $('.message-content', row).innerHTML = renderMarkdown(text);
       conversation.appendChild(row);
       if (settings.autoScroll) row.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
@@ -604,11 +647,12 @@
       if (!text || isSending) return;
 
       welcome.hidden = true;
-      addMessage(text, 'user');
+      addMessage(text, 'user', sentAt);
       input.value = '';
       input.style.height = 'auto';
 
-      chatMessages.push({role:'user', content:text});
+      const sentAt = Date.now();
+      chatMessages.push({role:'user', content:text, timestamp:sentAt});
       saveCurrentChat();
       const typing = addTyping();
       setSending(true);
@@ -619,7 +663,7 @@
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({messages: chatMessages, preferences: {
-            plan: localStorage.getItem('cookie_plan') || 'free',
+            plan: currentUser?.plan || 'free',
             language: settings.language,
             responseMode: settings.responseMode,
             creativity: Number(settings.creativity),
@@ -638,8 +682,9 @@
         const reply = typeof data.message === 'string' ? data.message.trim() : '';
         if (!reply) throw new Error('Cookie returned an empty response.');
 
-        chatMessages.push({role:'assistant', content:reply});
-        addMessage(reply, 'assistant');
+        const repliedAt = Date.now();
+        chatMessages.push({role:'assistant', content:reply, timestamp:repliedAt});
+        addMessage(reply, 'assistant', repliedAt);
         saveCurrentChat();
       } catch (error) {
         typing.remove();
