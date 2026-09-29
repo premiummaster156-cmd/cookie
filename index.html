@@ -79,12 +79,14 @@
 
         <div class="composer-wrap">
           <form class="composer" id="composer">
+            <input id="fileInput" type="file" hidden multiple accept="image/*,.txt,.md,.csv,.json,.js,.jsx,.ts,.tsx,.py,.html,.css,.xml,.yaml,.yml,.sql,.sh,.java,.c,.cpp,.h,.hpp,.rs,.go,.php,.rb,.swift,.kt,.log">
+            <div id="attachmentTray" class="attachment-tray" hidden></div>
             <div class="composer-main">
               <textarea id="messageInput" rows="1" aria-label="Message Cookie" placeholder="Message Cookie..." autocomplete="off"></textarea>
             </div>
             <div class="composer-toolbar">
               <div class="toolbar-left">
-                <button class="round-tool" type="button" aria-label="Attach a file"><svg viewBox="0 0 24 24"><path d="m9 17 6.8-6.8a3 3 0 0 0-4.2-4.2L4.8 12.8a4.5 4.5 0 0 0 6.4 6.4l6.1-6.1"/></svg></button>
+                <button class="round-tool" id="attachBtn" type="button" aria-label="Attach files or images"><svg viewBox="0 0 24 24"><path d="m9 17 6.8-6.8a3 3 0 0 0-4.2-4.2L4.8 12.8a4.5 4.5 0 0 0 6.4 6.4l6.1-6.1"/></svg></button>
                 <button class="tool-label" type="button"><span class="tool-glyph"><svg viewBox="0 0 24 24"><path d="M7 4h10v4H7zM5 10h14v10H5zM9 14h6"/></svg></span> Tools <span class="tiny-chevron"><svg viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"/></svg></span></button>
               </div>
               <div class="toolbar-right">
@@ -273,6 +275,9 @@
     const input = $('#messageInput');
     const welcome = $('#welcome');
     const sendBtn = $('#sendBtn');
+    const fileInput = $('#fileInput');
+    const attachmentTray = $('#attachmentTray');
+    let pendingAttachments = [];
     const settingsDefaults = {
       theme: 'dark',
       accent: 'cookie',
@@ -610,16 +615,88 @@
       }
     });
 
+    function escapeAttachmentText(value) {
+      return String(value || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderAttachments() {
+      attachmentTray.innerHTML = pendingAttachments.map((file, index) => {
+        const image = file.type.startsWith('image/');
+        return '<div class="attachment-chip">' +
+          (image ? '<img src="' + file.preview + '" alt="">' : '<span class="attachment-file-icon">DOC</span>') +
+          '<span class="attachment-name">' + escapeAttachmentText(file.name) + '</span>' +
+          '<button type="button" class="attachment-remove" data-remove-attachment="' + index + '" aria-label="Remove ' + escapeAttachmentText(file.name) + '">×</button>' +
+        '</div>';
+      }).join('');
+      attachmentTray.hidden = pendingAttachments.length === 0;
+    }
+
+    async function readAttachment(file) {
+      if (file.size > 6 * 1024 * 1024) throw new Error(file.name + ' is larger than 6 MB.');
+      if (file.type.startsWith('image/')) {
+        const preview = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Could not read ' + file.name));
+          reader.readAsDataURL(file);
+        });
+        return {name:file.name, type:file.type, size:file.size, preview, data:preview, kind:'image'};
+      }
+      const textTypes = /^(text\/|application\/json|application\/javascript|application\/xml)$/i;
+      const allowedExt = /\.(txt|md|csv|json|js|jsx|ts|tsx|py|html|css|xml|yaml|yml|sql|sh|java|c|cpp|h|hpp|rs|go|php|rb|swift|kt|log)$/i;
+      if (!textTypes.test(file.type) && !allowedExt.test(file.name)) {
+        throw new Error(file.name + ' is not a supported text/code file yet.');
+      }
+      const content = await file.text();
+      if (content.length > 250000) throw new Error(file.name + ' is larger than 250,000 characters.');
+      return {name:file.name, type:file.type || 'text/plain', size:file.size, content, kind:'text'};
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const files = [...fileInput.files];
+      fileInput.value = '';
+      for (const file of files) {
+        try {
+          pendingAttachments.push(await readAttachment(file));
+        } catch (error) {
+          addMessage(error.message || 'Could not attach that file.', 'assistant error-message');
+        }
+      }
+      renderAttachments();
+    });
+
+    attachmentTray.addEventListener('click', event => {
+      const button = event.target.closest('[data-remove-attachment]');
+      if (!button) return;
+      pendingAttachments.splice(Number(button.dataset.removeAttachment), 1);
+      renderAttachments();
+    });
+
+    $('#attachBtn').addEventListener('click', () => fileInput.click());
+
     async function send(text) {
       text = text.trim();
-      if (!text || isSending) return;
+      if ((!text && !pendingAttachments.length) || isSending) return;
+
+      const attachments = pendingAttachments;
+      pendingAttachments = [];
+      renderAttachments();
+
+      let apiText = text;
+      const textFiles = attachments.filter(x => x.kind === 'text');
+      if (textFiles.length) {
+        apiText += (apiText ? '\n\n' : '') + textFiles.map(file =>
+          '[Attached file: ' + file.name + ']\n' + file.content + '\n[End attached file]'
+        ).join('\n\n');
+      }
+      if (!apiText) apiText = 'Please analyze the attached image(s).';
 
       welcome.hidden = true;
       const sentAt = Date.now();
-      addMessage(text, 'user', sentAt);
+      addMessage(text || 'Attached ' + attachments.length + ' file' + (attachments.length === 1 ? '' : 's'), 'user', sentAt);
       input.value = '';
       input.style.height = 'auto';
-      chatMessages.push({role:'user', content:text, timestamp:sentAt});
+      chatMessages.push({role:'user', content:apiText, timestamp:sentAt});
       saveCurrentChat();
       const typing = addTyping();
       setSending(true);
@@ -629,7 +706,7 @@
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({messages: chatMessages, preferences: {
+          body: JSON.stringify({messages: chatMessages, attachments: attachments.map(({name,type,kind,data}) => ({name,type,kind,data})), preferences: {
             plan: currentUser?.plan || 'free',
             language: settings.language,
             responseMode: settings.responseMode,
@@ -642,10 +719,7 @@
         const data = await response.json().catch(() => ({}));
         typing.remove();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Cookie could not answer right now.');
-        }
-
+        if (!response.ok) throw new Error(data.error || 'Cookie could not answer right now.');
         const reply = typeof data.message === 'string' ? data.message.trim() : '';
         if (!reply) throw new Error('Cookie returned an empty response.');
 
@@ -655,9 +729,7 @@
         saveCurrentChat();
       } catch (error) {
         typing.remove();
-        if (error.name !== 'AbortError') {
-          addMessage(error.message || 'Something went wrong. Please try again.', 'assistant error-message');
-        }
+        if (error.name !== 'AbortError') addMessage(error.message || 'Something went wrong. Please try again.', 'assistant error-message');
       } finally {
         requestController = null;
         setSending(false);
