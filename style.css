@@ -20,3 +20,26 @@
 .send-btn:disabled{cursor:wait;opacity:.72}
 .error-message .message-body{color:#efb0a8}
 @media(prefers-reduced-motion:reduce){.view.is-visible,.view.view-leaving,.page-container,.chat-content{animation:none!important}.view.view-entering{opacity:1;transform:none}}
+
+/* Reference-video cursor ribbons */
+.cookie-trail{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  pointer-events:none;
+  z-index:2;
+  opacity:.9;
+}
+.app-shell,
+.sidebar-overlay,
+.skip-link{
+  position:relative;
+  z-index:3;
+}
+@media(pointer:coarse){
+  .cookie-trail{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .cookie-trail{display:none}
+}
