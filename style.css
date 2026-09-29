@@ -87,3 +87,80 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 }
 
 .keyboard-hints-off .shortcut-hint,.keyboard-hints-off .new-chat kbd{display:none}
+
+
+/* Cookie rich-message rendering */
+.message-body h1,.message-body h2,.message-body h3,.message-body h4,.message-body h5,.message-body h6{
+  margin:18px 0 8px;
+  color:var(--text);
+  line-height:1.18;
+  letter-spacing:-.02em;
+}
+.message-body h1{font-size:1.7em}
+.message-body h2{font-size:1.42em}
+.message-body h3{font-size:1.18em}
+.message-body h4,.message-body h5,.message-body h6{font-size:1em}
+.message-body p{margin:0 0 10px}
+.message-body p:last-child{margin-bottom:0}
+.message-body ul,.message-body ol{margin:8px 0 12px;padding-left:24px}
+.message-body li{margin:4px 0}
+.message-body strong{font-weight:700;color:var(--text)}
+.message-body em{font-style:italic}
+.message-body code:not(pre code){
+  padding:2px 5px;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:var(--surface-2);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.88em;
+}
+.code-block{
+  margin:14px 0;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#171311;
+}
+.code-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:36px;
+  padding:0 8px 0 12px;
+  border-bottom:1px solid var(--line);
+  color:var(--muted);
+  font-size:11px;
+  text-transform:none;
+}
+.copy-code{
+  min-height:30px;
+  padding:4px 10px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:transparent;
+  color:var(--text);
+  font-size:11px;
+  cursor:pointer;
+}
+.copy-code:hover{background:var(--surface-2)}
+.code-block pre{
+  margin:0;
+  padding:14px;
+  overflow:auto;
+  white-space:pre;
+  -webkit-overflow-scrolling:touch;
+}
+.code-block pre code{
+  color:#f2e9df;
+  font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+.message-row.assistant .message-body{
+  max-width:min(820px,calc(100vw - 72px));
+}
+@media(max-width:620px){
+  .message-row.assistant .message-body{max-width:calc(100vw - 68px)}
+  .message-body h1{font-size:1.5em}
+  .message-body h2{font-size:1.3em}
+  .message-body h3{font-size:1.12em}
+  .code-block pre{font-size:11px}
+}
