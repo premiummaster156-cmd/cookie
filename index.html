@@ -32,15 +32,15 @@
         <div class="recent-empty" id="recentEmpty">Your chats will appear here.</div>
       </div>
     <button class="auth-entry" type="button" data-action="open-auth" aria-label="Open Cookie account">
-      <span class="auth-avatar">D</span>
-      <span><strong>Account</strong><small>Sign in / create account</small></span>
+      <span class="auth-avatar">?</span>
+      <span><strong>Account</strong><small>Loading account…</small></span>
     </button>
       <div class="sidebar-bottom">
         <button class="nav-item" type="button" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.4 1.4 1.1-1.8 3.1-1.7-.6a7.6 7.6 0 0 1-1.8 1l-.3 1.8h-3.6l-.3-1.8a7.6 7.6 0 0 1-1.8-1l-1.7.6-1.8-3.1 1.4-1.1a7.7 7.7 0 0 1 0-2.8L5.7 9.5l1.8-3.1 1.7.6a7.6 7.6 0 0 1 1.8-1l.3-1.8h3.6l.3 1.8a7.6 7.6 0 0 1 1.8 1l1.7-.6 1.8 3.1-1.4 1.1a7.7 7.7 0 0 1 0 2.8Z"/></svg></span><span>Settings</span></button>
         <button class="nav-item" type="button" data-view="help"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.2a2.4 2.4 0 1 1 4.1 1.7c-.9.9-1.9 1.2-1.9 2.6"/><path d="M12 16.8h.01"/></svg></span><span>Help</span></button>
         <button class="account" type="button" data-view="profile">
-          <span class="avatar">D</span>
-          <span class="account-copy"><strong>Dan</strong><small>Free plan</small></span>
+          <span class="avatar profile-avatar">?</span>
+          <span class="account-copy"><strong>Account</strong><small>Loading…</small></span>
           <span class="account-more">•••</span>
         </button>
       </div>
@@ -230,7 +230,7 @@
       <section class="view" data-panel="profile">
         <div class="page-container profile-page">
           <div class="page-heading"><span class="eyebrow">Profile</span><h2>Your account</h2><p>Personal details and your Cookie plan.</p></div>
-          <div class="profile-card"><div class="profile-avatar">D</div><div class="profile-info"><h3>Dan</h3><p>dan@example.com</p><span class="plan-badge">Free plan</span></div><button class="secondary-btn" type="button">Edit profile</button></div>
+          <div class="profile-card"><div class="profile-avatar" id="profileAvatar">?</div><div class="profile-info"><h3>Account</h3><p></p><span class="plan-badge">FREE plan</span></div><button class="secondary-btn" type="button">Edit profile</button></div>
           <div class="account-section"><div><h3>Plan</h3><p>Free · 20 messages per day</p></div><button class="primary-btn" type="button" data-view="upgrade">View plans</button></div>
         </div>
       </section>
@@ -261,7 +261,7 @@
             <details open><summary>What is Cookie?</summary><p>Cookie is a simple AI workspace designed to help you write, learn, plan, and explore ideas without getting in the way.</p></details>
             <details><summary>How do I start a new chat?</summary><p>Tap New chat in the sidebar, or use the new-chat button in the top bar on mobile.</p></details>
             <details><summary>Can I change the appearance?</summary><p>Yes. Open Settings and choose Dark, Light, or System mode.</p></details>
-            <details><summary>Is my data stored?</summary><p>This frontend demo keeps only the small amount of state needed for the interface in your browser. A production backend can later add secure account storage.</p></details>
+            <details><summary>Is my data stored?</summary><p>Cookie stores your account securely on the server. Local chat drafts and interface preferences stay on this device.</p></details>
           </div>
         </div>
       </section>
@@ -329,11 +329,16 @@
         const profileName = $('.profile-info h3');
         const profileEmail = $('.profile-info p');
         const profilePlan = $('.plan-badge');
+         const accountAvatar = $('.auth-avatar');
+         const profileAvatar = $('.profile-avatar');
         if (accountName) accountName.textContent = currentUser.name || 'Account';
         if (accountPlan) accountPlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
         if (profileName) profileName.textContent = currentUser.name || 'Account';
         if (profileEmail) profileEmail.textContent = currentUser.email || '';
         if (profilePlan) profilePlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
+         const initial = (currentUser.name || currentUser.email || 'A').trim().charAt(0).toUpperCase();
+         if (accountAvatar) accountAvatar.textContent = initial;
+         if (profileAvatar) profileAvatar.textContent = initial;
         return true;
       } catch {
         window.location.replace('auth.html');
