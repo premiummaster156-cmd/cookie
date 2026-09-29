@@ -31,6 +31,10 @@
         <div class="recent-list" id="recentList"></div>
         <div class="recent-empty" id="recentEmpty">Your chats will appear here.</div>
       </div>
+    <button class="auth-entry" type="button" data-action="open-auth" aria-label="Open Cookie account">
+      <span class="auth-avatar">D</span>
+      <span><strong>Account</strong><small>Sign in / create account</small></span>
+    </button>
       <div class="sidebar-bottom">
         <button class="nav-item" type="button" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.4 1.4 1.1-1.8 3.1-1.7-.6a7.6 7.6 0 0 1-1.8 1l-.3 1.8h-3.6l-.3-1.8a7.6 7.6 0 0 1-1.8-1l-1.7.6-1.8-3.1 1.4-1.1a7.7 7.7 0 0 1 0-2.8L5.7 9.5l1.8-3.1 1.7.6a7.6 7.6 0 0 1 1.8-1l.3-1.8h3.6l.3 1.8a7.6 7.6 0 0 1 1.8 1l1.7-.6 1.8 3.1-1.4 1.1a7.7 7.7 0 0 1 0 2.8Z"/></svg></span><span>Settings</span></button>
         <button class="nav-item" type="button" data-view="help"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.2a2.4 2.4 0 1 1 4.1 1.7c-.9.9-1.9 1.2-1.9 2.6"/><path d="M12 16.8h.01"/></svg></span><span>Help</span></button>
@@ -401,6 +405,8 @@
     }
 
     $$('[data-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+    const authEntry = $('[data-action="open-auth"]');
+    if (authEntry) authEntry.addEventListener('click', () => { window.location.href = 'auth.html'; });
     const openSidebarButton = $('[data-action="open-sidebar"]');
     if (openSidebarButton) openSidebarButton.addEventListener('click', () => document.body.classList.add('sidebar-open'));
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
