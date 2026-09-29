@@ -8,6 +8,7 @@
   <title>Cookie — AI</title>
   <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <canvas id="cookieTrail" class="cookie-trail" aria-hidden="true"></canvas>
@@ -315,30 +316,52 @@
       }).format(date);
     }
 
+    const SUPABASE_URL = 'https://imnsdbqricehgncpobda.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0mQKl_lds4N017Zhcn8JfQ_PwmTCvRi';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
     async function requireAuthentication() {
       try {
-        const response = await fetch('/api/auth/me', {credentials:'same-origin', cache:'no-store'});
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
           window.location.replace('auth.html');
           return false;
         }
-        currentUser = data.user;
+
+        const user = session.user;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        currentUser = {
+          id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Account',
+          email: user.email || '',
+          plan: profile?.plan || 'free'
+        };
+        localStorage.setItem('cookie_plan', currentUser.plan);
+
         const accountName = $('.account-copy strong');
         const accountPlan = $('.account-copy small');
         const profileName = $('.profile-info h3');
         const profileEmail = $('.profile-info p');
         const profilePlan = $('.plan-badge');
-         const accountAvatar = $('.auth-avatar');
-         const profileAvatar = $('.profile-avatar');
-        if (accountName) accountName.textContent = currentUser.name || 'Account';
-        if (accountPlan) accountPlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
-        if (profileName) profileName.textContent = currentUser.name || 'Account';
-        if (profileEmail) profileEmail.textContent = currentUser.email || '';
-        if (profilePlan) profilePlan.textContent = (currentUser.plan || 'free').toUpperCase() + ' plan';
-         const initial = (currentUser.name || currentUser.email || 'A').trim().charAt(0).toUpperCase();
-         if (accountAvatar) accountAvatar.textContent = initial;
-         if (profileAvatar) profileAvatar.textContent = initial;
+        const accountAvatar = $('.auth-avatar');
+        const profileAvatar = $('.profile-avatar');
+        if (accountName) accountName.textContent = currentUser.name;
+        if (accountPlan) accountPlan.textContent = currentUser.plan.toUpperCase() + ' plan';
+        if (profileName) profileName.textContent = currentUser.name;
+        if (profileEmail) profileEmail.textContent = currentUser.email;
+        if (profilePlan) profilePlan.textContent = currentUser.plan.toUpperCase() + ' plan';
+        const initial = currentUser.name.trim().charAt(0).toUpperCase() || 'A';
+        if (accountAvatar) accountAvatar.textContent = initial;
+        if (profileAvatar) profileAvatar.textContent = initial;
+
+        supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_OUT') window.location.replace('auth.html');
+        });
         return true;
       } catch {
         window.location.replace('auth.html');
@@ -664,9 +687,14 @@
       requestController = new AbortController();
 
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('Your Cookie session expired. Please sign in again.');
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: {'Content-Type':'application/json'},
+          headers: {
+            'Content-Type':'application/json',
+            'Authorization':'Bearer ' + session.access_token
+          },
           body: JSON.stringify({messages: chatMessages, preferences: {
             plan: currentUser?.plan || 'free',
             language: settings.language,
@@ -788,7 +816,7 @@
     modelPicker.addEventListener('click', e => { e.stopPropagation(); const open = modelMenu.classList.toggle('open'); modelPicker.setAttribute('aria-expanded', String(open)); });
     modelOptions.forEach(option => option.addEventListener('click', () => {
       const requiredPlan = option.dataset.plan || 'free';
-      const currentPlan = localStorage.getItem('cookie_plan') || 'free';
+      const currentPlan = currentUser?.plan || localStorage.getItem('cookie_plan') || 'free';
       const rank = {free: 0, plus: 1, pro: 2};
       if ((rank[currentPlan] || 0) < (rank[requiredPlan] || 0)) {
         closeModelMenu();
