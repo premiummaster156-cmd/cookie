@@ -250,6 +250,28 @@
       input.disabled = value;
     }
 
+    $('#composer').addEventListener('submit', e => {
+      e.preventDefault();
+      send(input.value);
+    });
+
+    sendBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (!isSending) send(input.value);
+    });
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send(input.value);
+      }
+    });
+
     async function send(text) {
       text = text.trim();
       if (!text || isSending) return;
