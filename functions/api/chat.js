@@ -69,7 +69,7 @@ export async function onRequestPost({ request, env }) {
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
     if (imageAttachments.length) {
-      model = String(env.OLLAMA_VISION_MODEL || "qwen3.5:cloud").trim();
+      model = "qwen3.5:cloud";
     }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
