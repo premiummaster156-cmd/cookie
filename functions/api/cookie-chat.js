@@ -36,6 +36,68 @@ function limitResponse(text) {
   return output.join("\n");
 }
 
+
+const WORKSPACE_LIMITS = { maxFiles: 120, maxFileChars: 500000, maxPathChars: 240 };
+
+const agentTools = [
+  { type:"function", function:{ name:"workspace_list", description:"List files in Cookie's project workspace.", parameters:{type:"object",properties:{}} } },
+  { type:"function", function:{ name:"workspace_read", description:"Read one complete file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
+  { type:"function", function:{ name:"workspace_write", description:"Create a new file or replace an existing file in Cookie's project workspace.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
+  { type:"function", function:{ name:"workspace_delete", description:"Delete one file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
+  { type:"function", function:{ name:"workspace_rename", description:"Rename a file inside Cookie's project workspace.", parameters:{type:"object",required:["from","to"],properties:{from:{type:"string"},to:{type:"string"}}} } }
+];
+
+function normalizeWorkspace(input) {
+  if (!Array.isArray(input)) return [];
+  return input.filter(f => f && typeof f.path === "string" && typeof f.content === "string")
+    .slice(0, WORKSPACE_LIMITS.maxFiles)
+    .map(f => ({path:f.path.replace(/^\/+/,"").slice(0,WORKSPACE_LIMITS.maxPathChars),content:f.content.slice(0,WORKSPACE_LIMITS.maxFileChars)}))
+    .filter(f => f.path && !f.path.includes(".."));
+}
+
+function executeWorkspaceTool(workspace, name, args) {
+  const a = args && typeof args === "object" ? args : {};
+  if (name === "workspace_list") {
+    return {workspace, result:JSON.stringify({ok:true,files:workspace.map(f=>({path:f.path,size:f.content.length}))})};
+  }
+  if (name === "workspace_read") {
+    const path=String(a.path||"").replace(/^\/+/,"");
+    const file=workspace.find(f=>f.path===path);
+    return file ? {workspace,result:JSON.stringify({ok:true,path,content:file.content})} : {workspace,result:JSON.stringify({ok:false,error:"File not found: "+path})};
+  }
+  if (name === "workspace_write") {
+    const path=String(a.path||"").replace(/^\/+/,"");
+    const content=String(a.content ?? "");
+    if (!path || path.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid workspace path."})};
+    if (path.length>WORKSPACE_LIMITS.maxPathChars) return {workspace,result:JSON.stringify({ok:false,error:"Path is too long."})};
+    if (content.length>WORKSPACE_LIMITS.maxFileChars) return {workspace,result:JSON.stringify({ok:false,error:"File is too large for the preview workspace."})};
+    const i=workspace.findIndex(f=>f.path===path);
+    const action=i>=0 ? "updated" : "created";
+    if(i>=0) workspace[i]={path,content}; else {
+      if(workspace.length>=WORKSPACE_LIMITS.maxFiles) return {workspace,result:JSON.stringify({ok:false,error:"Workspace file limit reached."})};
+      workspace.push({path,content});
+    }
+    return {workspace,result:JSON.stringify({ok:true,action,path,size:content.length})};
+  }
+  if (name === "workspace_delete") {
+    const path=String(a.path||"").replace(/^\/+/,"");
+    const i=workspace.findIndex(f=>f.path===path);
+    if(i<0) return {workspace,result:JSON.stringify({ok:false,error:"File not found: "+path})};
+    workspace.splice(i,1);
+    return {workspace,result:JSON.stringify({ok:true,action:"deleted",path})};
+  }
+  if (name === "workspace_rename") {
+    const from=String(a.from||"").replace(/^\/+/,""), to=String(a.to||"").replace(/^\/+/,"");
+    if(!from||!to||from.includes("..")||to.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid workspace path."})};
+    const source=workspace.find(f=>f.path===from);
+    if(!source) return {workspace,result:JSON.stringify({ok:false,error:"File not found: "+from})};
+    if(workspace.some(f=>f.path===to)) return {workspace,result:JSON.stringify({ok:false,error:"Destination already exists: "+to})};
+    source.path=to;
+    return {workspace,result:JSON.stringify({ok:true,action:"renamed",from,to})};
+  }
+  return {workspace,result:JSON.stringify({ok:false,error:"Unknown workspace tool: "+name})};
+}
+
 const profiles = {
   standard: {
     name: "CPT-1",
@@ -75,6 +137,8 @@ export async function onRequestPost({ request, env }) {
     const profile = profiles[mode];
     model = profile.model;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
+    let workspace = normalizeWorkspace(body?.workspace);
+    const workspaceActions = [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
 
 
@@ -100,7 +164,7 @@ export async function onRequestPost({ request, env }) {
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
       "During the preview, all Cookie model profiles are free to use. Do not tell users to buy credits or upgrade to access a Cookie profile.",
-      "If asked to create a file, provide the complete file contents in a code block when no file-writing tool is available. Do not claim you physically created or saved a file on the user's device.",
+      "You have real project workspace tools. When the user asks you to create, edit, rename, or delete project files, use the workspace tools instead of merely pasting code. Inspect existing files before changing them when useful. Never claim a file was changed unless the workspace tool succeeded.",
       "You are Cookie, a polished general-purpose AI assistant.",
       "Be genuinely useful rather than overly enthusiastic or repetitive.",
       "Follow the user's instructions precisely and preserve important constraints.",
@@ -130,44 +194,67 @@ export async function onRequestPost({ request, env }) {
       if (last?.role === "user") last.images = imageData;
     }
 
-    const upstream = await fetch(ollamaUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + apiKey
-      },
-      body: JSON.stringify({
-        model,
-        stream: false,
-        messages: apiMessages,
-        options: {
-          temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35)
-        }
-      })
+    const agentMessages = apiMessages.slice();
+    let finalMessage = "";
+    let lastData = null;
+
+    for (let turn = 0; turn < 10; turn++) {
+      const upstream = await fetch(ollamaUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          messages: agentMessages,
+          tools: agentTools,
+          options: { temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35) }
+        })
+      });
+
+      const responseText = await upstream.text();
+      let data = null;
+      try { data = responseText ? JSON.parse(responseText) : null; } catch {}
+      lastData = data;
+
+      if (!upstream.ok) {
+        const upstreamMessage = typeof data?.error === "string" ? data.error :
+          responseText?.trim() ? responseText.trim().slice(0,500) : "No error details were returned by Ollama Cloud.";
+        console.error("[Cookie Ollama]", upstream.status, upstreamMessage);
+        return json({error:"Ollama Cloud error ("+upstream.status+"): "+upstreamMessage},502);
+      }
+
+      const assistantMessage = data?.message;
+      if (!assistantMessage || typeof assistantMessage !== "object") return json({error:"Cookie received an invalid model response."},502);
+      agentMessages.push(assistantMessage);
+
+      const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
+      if (!toolCalls.length) {
+        finalMessage = typeof assistantMessage.content === "string" ? assistantMessage.content : "";
+        break;
+      }
+
+      for (const call of toolCalls.slice(0,8)) {
+        const name=call?.function?.name;
+        let args=call?.function?.arguments;
+        if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
+        const executed=executeWorkspaceTool(workspace,name,args);
+        workspace=executed.workspace;
+        workspaceActions.push({tool:name,path:args?.path||args?.to||args?.from||null,ok:!/"ok":false/.test(executed.result)});
+        agentMessages.push({role:"tool",tool_name:name,content:executed.result});
+      }
+    }
+
+    if(!finalMessage && lastData?.message?.content) finalMessage=lastData.message.content;
+    if(!finalMessage) finalMessage="I finished the workspace operation.";
+
+    return json({
+      message: limitResponse(String(finalMessage).trim()),
+      model: profile.name,
+      demo: true,
+      demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo.",
+      workspace,
+      workspaceActions
     });
-
-    const responseText = await upstream.text();
-    let data = null;
-    try { data = responseText ? JSON.parse(responseText) : null; } catch {}
-    if (!upstream.ok) {
-      const upstreamMessage = typeof data?.error === "string"
-        ? data.error
-        : responseText?.trim()
-          ? responseText.trim().slice(0, 500)
-          : "No error details were returned by Ollama Cloud.";
-      console.error("[Cookie Ollama]", upstream.status, upstreamMessage);
-      return json(
-        { error: "Ollama Cloud error (" + upstream.status + "): " + upstreamMessage },
-        502
-      );
-    }
-
-    const message = data?.message?.content;
-    if (typeof message !== "string" || !message.trim()) {
-      return json({ error: "Cookie received an empty response." }, 502);
-    }
-
-    return json({ message: limitResponse(message.trim()), model: profile.name, demo: true, demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo." });
   } catch (error) {
     console.error("[Cookie chat]", error);
     return json({ error: "Cookie could not answer right now. Check the Pages Function logs." }, 502);
