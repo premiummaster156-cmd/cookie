@@ -116,14 +116,36 @@
           </div>
           <div class="settings-layout">
             <nav class="settings-nav" aria-label="Settings sections">
-              <button class="setting-tab active" type="button" data-setting="appearance">Appearance</button>
+              <button class="setting-tab active" type="button" data-setting="general">General</button>
+              <button class="setting-tab" type="button" data-setting="appearance">Appearance</button>
               <button class="setting-tab" type="button" data-setting="chat">Chat</button>
               <button class="setting-tab" type="button" data-setting="ai">AI</button>
               <button class="setting-tab" type="button" data-setting="interface">Interface</button>
+              <button class="setting-tab" type="button" data-setting="notifications">Notifications</button>
               <button class="setting-tab" type="button" data-setting="privacy">Privacy</button>
+              <button class="setting-tab" type="button" data-setting="data">Data</button>
+              <button class="setting-tab" type="button" data-setting="accessibility">Accessibility</button>
+              <button class="setting-tab" type="button" data-setting="keyboard">Keyboard</button>
             </nav>
             <div class="settings-content">
-              <div class="setting-panel active" data-setting-panel="appearance">
+              <div class="setting-panel active" data-setting-panel="general">
+                <div class="setting-group">
+                  <h3>Startup</h3>
+                  <p>Choose what Cookie should show when you open the app.</p>
+                  <div class="control-row"><span><strong>Default page</strong><small>Return to chat, search, or the last page you used.</small></span><select class="setting-select" data-setting-select="startupView" aria-label="Default page"><option value="chat">Chat</option><option value="search">Search</option><option value="last">Last page</option></select></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Show welcome screen</strong><small>Keep the simple Cookie welcome state visible in a new chat.</small></span><button class="toggle on" type="button" data-setting-toggle="showWelcome" aria-label="Toggle welcome screen"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Confirm destructive actions</strong><small>Ask before clearing local chats or resetting settings.</small></span><button class="toggle on" type="button" data-setting-toggle="confirmActions" aria-label="Toggle confirmations"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Show setup tips</strong><small>Allow small guidance messages on new Cookie features.</small></span><button class="toggle on" type="button" data-setting-toggle="showTips" aria-label="Toggle setup tips"><span></span></button></div>
+                </div>
+              </div>
+
+              <div class="setting-panel" data-setting-panel="appearance">
                 <div class="setting-group">
                   <h3>Theme</h3>
                   <p>Choose how Cookie appears on this device.</p>
@@ -203,6 +225,20 @@
                 </div>
               </div>
 
+              <div class="setting-panel" data-setting-panel="notifications">
+                <div class="setting-group">
+                  <h3>Notifications</h3>
+                  <p>Choose which local interface events Cookie may show.</p>
+                  <div class="toggle-row"><span><strong>Response notifications</strong><small>Show a small notice when a long response finishes.</small></span><button class="toggle on" type="button" data-setting-toggle="responseNotifications" aria-label="Toggle response notifications"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Sound effects</strong><small>Use subtle interface sounds where supported.</small></span><button class="toggle" type="button" data-setting-toggle="soundEffects" aria-label="Toggle sound effects"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Desktop notifications</strong><small>Allow browser notifications only after the browser grants permission.</small></span><button class="toggle" type="button" data-setting-toggle="desktopNotifications" aria-label="Toggle desktop notifications"><span></span></button></div>
+                </div>
+              </div>
+
               <div class="setting-panel" data-setting-panel="privacy">
                 <div class="setting-group">
                   <h3>Local data</h3>
@@ -218,6 +254,49 @@
                   <h3>Reset Cookie</h3>
                   <p>Restore appearance and behavior settings to their defaults.</p>
                   <button class="secondary-btn" type="button" id="resetSettings">Reset settings</button>
+                </div>
+              </div>
+
+              <div class="setting-panel" data-setting-panel="data">
+                <div class="setting-group">
+                  <h3>Local storage</h3>
+                  <p>Cookie's current MVP keeps chats and preferences in this browser. These controls affect only this device.</p>
+                  <div class="data-status"><span class="status-dot"></span><strong id="storageEstimate">Browser storage active</strong></div>
+                </div>
+                <div class="setting-group">
+                  <div class="control-row"><span><strong>Recent chat limit</strong><small>Maximum number of conversations shown in the sidebar.</small></span><select class="setting-select" data-setting-select="recentLimit" aria-label="Recent chat limit"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="50">50</option></select></div>
+                </div>
+                <div class="setting-group">
+                  <button class="secondary-btn" type="button" id="exportData">Export local data</button>
+                  <p class="setting-note">Creates a JSON file containing your local Cookie preferences and saved chats.</p>
+                </div>
+              </div>
+
+              <div class="setting-panel" data-setting-panel="accessibility">
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Reduce motion</strong><small>Prefer shorter transitions and honor your device's reduced-motion setting.</small></span><button class="toggle" type="button" data-setting-toggle="reduceMotion" aria-label="Toggle reduced motion"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>High contrast controls</strong><small>Increase borders and control contrast without changing the Cookie palette.</small></span><button class="toggle" type="button" data-setting-toggle="highContrast" aria-label="Toggle high contrast"><span></span></button></div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Always show focus outlines</strong><small>Keep keyboard focus indicators visible for navigation.</small></span><button class="toggle on" type="button" data-setting-toggle="focusOutlines" aria-label="Toggle focus outlines"><span></span></button></div>
+                </div>
+              </div>
+
+              <div class="setting-panel" data-setting-panel="keyboard">
+                <div class="setting-group">
+                  <h3>Shortcuts</h3>
+                  <p>Keyboard controls for faster navigation.</p>
+                  <div class="shortcut-list">
+                    <div><kbd>⌘ K</kbd><span>Start a new chat</span></div>
+                    <div><kbd>Enter</kbd><span>Send a message when enabled</span></div>
+                    <div><kbd>Shift Enter</kbd><span>Insert a new line</span></div>
+                    <div><kbd>Esc</kbd><span>Close the mobile sidebar or open menu</span></div>
+                  </div>
+                </div>
+                <div class="setting-group">
+                  <div class="toggle-row"><span><strong>Keyboard shortcuts</strong><small>Enable Cookie's keyboard navigation shortcuts.</small></span><button class="toggle on" type="button" data-setting-toggle="shortcuts" aria-label="Toggle keyboard shortcuts"><span></span></button></div>
                 </div>
               </div>
             </div>
@@ -254,12 +333,18 @@
 
       <section class="view" data-panel="help">
         <div class="page-container help-page">
-          <div class="page-heading"><span class="eyebrow">Help</span><h2>How can we help?</h2><p>Quick answers for the things you may need.</p></div>
-          <div class="faq-list">
-            <details open><summary>What is Cookie?</summary><p>Cookie is a simple AI workspace designed to help you write, learn, plan, and explore ideas without getting in the way.</p></details>
-            <details><summary>How do I start a new chat?</summary><p>Tap New chat in the sidebar, or use the new-chat button in the top bar on mobile.</p></details>
-            <details><summary>Can I change the appearance?</summary><p>Yes. Open Settings and choose Dark, Light, or System mode.</p></details>
-            <details><summary>Is my data stored?</summary><p>Cookie stores your account securely on the server. Local chat drafts and interface preferences stay on this device.</p></details>
+          <div class="page-heading"><span class="eyebrow">Help</span><h2>Cookie help center</h2><p>Ten focused guides cover the product from first chat to troubleshooting and accessibility.</p></div>
+          <div class="help-grid">
+            <a class="help-card" href="help/getting-started.html"><strong>Getting started</strong><span>Learn the layout, first chat, recent chats, and core navigation.</span></a>
+            <a class="help-card" href="help/chat-conversations.html"><strong>Chat & conversations</strong><span>Understand messages, history, context, editing habits, and long chats.</span></a>
+            <a class="help-card" href="help/models-responses.html"><strong>Models & responses</strong><span>Understand CPT modes, answer length, creativity, and response behavior.</span></a>
+            <a class="help-card" href="help/files-images.html"><strong>Files & images</strong><span>Attach text, code, documents, and images and understand current limits.</span></a>
+            <a class="help-card" href="help/writing-study.html"><strong>Writing & study</strong><span>Use Cookie for rewriting, learning, planning, summaries, and structured work.</span></a>
+            <a class="help-card" href="help/coding-projects.html"><strong>Coding & projects</strong><span>Get better code, review workflows, project context, and safe iteration habits.</span></a>
+            <a class="help-card" href="help/settings.html"><strong>Settings & personalization</strong><span>Configure appearance, chat behavior, AI preferences, and interface controls.</span></a>
+            <a class="help-card" href="help/privacy-data.html"><strong>Privacy & local data</strong><span>Understand what the current no-auth MVP keeps in your browser.</span></a>
+            <a class="help-card" href="help/troubleshooting.html"><strong>Troubleshooting</strong><span>Diagnose chat errors, uploads, display issues, and deployment-related problems.</span></a>
+            <a class="help-card" href="help/accessibility-keyboard.html"><strong>Accessibility & keyboard</strong><span>Use focus states, shortcuts, reduced motion, and keyboard-first navigation.</span></a>
           </div>
         </div>
       </section>
@@ -292,7 +377,19 @@
       animations: true,
       cursorRibbons: true,
       compactMessages: false,
-      keyboardHints: true
+      keyboardHints: true,
+      startupView: 'chat',
+      showWelcome: true,
+      confirmActions: true,
+      showTips: true,
+      responseNotifications: true,
+      soundEffects: false,
+      desktopNotifications: false,
+      recentLimit: 30,
+      reduceMotion: false,
+      highContrast: false,
+      focusOutlines: true,
+      shortcuts: true
     };
     let settings = {...settingsDefaults};
     let savedChats = [];
@@ -340,9 +437,13 @@
       document.body.classList.toggle('compact-messages', settings.compactMessages);
       document.body.classList.toggle('cursor-ribbons-off', !settings.cursorRibbons);
       document.body.classList.toggle('keyboard-hints-off', !settings.keyboardHints);
+      document.body.classList.toggle('reduce-motion', Boolean(settings.reduceMotion));
+      document.body.classList.toggle('high-contrast', Boolean(settings.highContrast));
+      document.body.classList.toggle('focus-outlines-on', Boolean(settings.focusOutlines));
       $$('.theme-card').forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
       $$('.accent-swatch').forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
       const textSize = $('#textSizeSelect'); if (textSize) textSize.value = settings.textSize;
+      $('[data-setting-select]').forEach(select => { const key = select.dataset.settingSelect; if (key && settings[key] !== undefined) select.value = String(settings[key]); });
       const lang = $('#languageSelect'); if (lang) lang.value = settings.language;
       const length = $('#answerLengthSelect'); if (length) length.value = settings.answerLength;
       const range = $('#creativityRange'); if (range) { range.value = settings.creativity; $('#creativityValue').textContent = Number(settings.creativity).toFixed(1); }
@@ -359,7 +460,8 @@
       const existing = savedChats.find(c => c.id === currentChatId);
       const chat = {id: currentChatId, title, messages: chatMessages.slice(-40), updatedAt: Date.now()};
       if (existing) Object.assign(existing, chat); else savedChats.unshift(chat);
-      savedChats = savedChats.slice(0, 30);
+      const limit = Math.max(10, Math.min(50, Number(settings.recentLimit) || 30));
+      savedChats = savedChats.slice(0, limit);
       writeLocal('cookie_chats', savedChats);
       renderRecent();
     }
@@ -368,7 +470,8 @@
       if (!recentList || !recentEmpty) return;
       recentList.innerHTML = '';
       recentEmpty.hidden = savedChats.length > 0;
-      savedChats.slice().sort((a,b) => b.updatedAt - a.updatedAt).forEach(chat => {
+      const limit = Math.max(10, Math.min(50, Number(settings.recentLimit) || 30));
+      savedChats.slice().sort((a,b) => b.updatedAt - a.updatedAt).slice(0, limit).forEach(chat => {
         const button = document.createElement('button');
         button.className = 'recent-item' + (chat.id === currentChatId ? ' active' : '');
         button.type = 'button';
@@ -805,6 +908,12 @@
     $('#textSizeSelect').addEventListener('change', e => { settings.textSize = e.target.value; saveSettings(); applySettings(); });
     $('#languageSelect').addEventListener('change', e => { settings.language = e.target.value; saveSettings(); applySettings(); });
     $('#answerLengthSelect').addEventListener('change', e => { settings.answerLength = e.target.value; saveSettings(); applySettings(); });
+    $('.setting-select[data-setting-select]').forEach(select => select.addEventListener('change', e => {
+      const key = e.target.dataset.settingSelect;
+      settings[key] = e.target.value;
+      saveSettings();
+      applySettings();
+    }));
     $('#creativityRange').addEventListener('input', e => {
       settings.creativity = Number(e.target.value);
       $('#creativityValue').textContent = settings.creativity.toFixed(1);
@@ -812,7 +921,7 @@
     });
 
     $('#clearData').addEventListener('click', () => {
-      if (!confirm('Clear all Cookie chats saved on this device?')) return;
+      if (settings.confirmActions && !confirm('Clear all Cookie chats saved on this device?')) return;
       if (requestController) requestController.abort();
       savedChats = [];
       chatMessages = [];
@@ -824,10 +933,23 @@
     });
 
     $('#resetSettings').addEventListener('click', () => {
-      if (!confirm('Reset Cookie settings to their defaults?')) return;
+      if (settings.confirmActions && !confirm('Reset Cookie settings to their defaults?')) return;
       settings = {...settingsDefaults};
       saveSettings();
       applySettings();
+    });
+
+
+    const exportDataButton = $('#exportData');
+    if (exportDataButton) exportDataButton.addEventListener('click', () => {
+      const payload = {exportedAt:new Date().toISOString(), settings, chats:savedChats};
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'cookie-local-data.json';
+      link.click();
+      URL.revokeObjectURL(url);
     });
 
     window.addEventListener('storage', event => {
@@ -1001,7 +1123,7 @@
     });
 
     document.addEventListener('keydown', e => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='k') { e.preventDefault(); resetChat(); }
+      if (settings.shortcuts && (e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='k') { e.preventDefault(); resetChat(); }
       if (e.key==='Escape') document.body.classList.remove('sidebar-open');
     });
   </script>
