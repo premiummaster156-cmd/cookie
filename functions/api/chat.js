@@ -1,5 +1,41 @@
 import { json, readJson } from "./_lib.js";
 
+function limitResponse(text) {
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const output = [];
+  let inCode = false;
+  let codeLines = 0;
+  let normalLines = 0;
+
+  for (const line of lines) {
+    const fence = new RegExp("^\\s*" + "`" + "`" + "`");
+    if (fence.test(line)) {
+      if (inCode) {
+        output.push(line);
+        inCode = false;
+        continue;
+      }
+      output.push(line);
+      inCode = true;
+      codeLines = 0;
+      continue;
+    }
+
+    if (inCode) {
+      if (codeLines >= 10000) continue;
+      output.push(line);
+      codeLines++;
+    } else {
+      if (normalLines >= 1000) continue;
+      output.push(line);
+      normalLines++;
+    }
+  }
+
+  if (inCode) output.push("```");
+  return output.join("\n");
+}
+
 const profiles = {
   standard: {
     name: "CPT-1",
@@ -64,6 +100,7 @@ export async function onRequestPost({ request, env }) {
       "For complex tasks, reason carefully internally and give the user the useful result, assumptions, and conclusions without exposing private chain-of-thought.",
       "Do not invent facts, files, tool results, tests, or actions you did not actually perform.",
       "Use Markdown when it improves readability. Avoid unnecessary headings, filler, and repeated conclusions.",
+      "Response limits: keep ordinary non-code text to at most 1,000 lines. Code inside fenced code blocks may use up to 10,000 lines per code block when the task genuinely requires it. Prefer complete, useful code rather than shortening code unnecessarily. Do not split code into many tiny blocks just to bypass the limit.",
       profile.instructions,
       language === "english" ? "Prefer English unless the user clearly requests another language." : "",
       language === "uzbek" ? "Prefer Uzbek unless the user clearly requests another language." : "",
@@ -109,7 +146,7 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Cookie received an empty response." }, 502);
     }
 
-    return json({ message: message.trim(), model: profile.name });
+    return json({ message: limitResponse(message.trim()), model: profile.name });
   } catch (error) {
     console.error("[Cookie chat]", error);
     return json({ error: "Cookie could not answer right now. Check the Pages Function logs." }, 502);
