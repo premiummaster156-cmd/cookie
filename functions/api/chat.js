@@ -69,7 +69,9 @@ export async function onRequestPost({ request, env }) {
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
     if (imageAttachments.length) {
-      model = "qwen3.5:cloud";
+      // Use Ollama's dedicated cloud vision model.
+      // Qwen3-VL is explicitly documented by Ollama as a cloud multimodal model.
+      model = "qwen3-vl:235b-cloud";
     }
     const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
       ? preferences.responseMode
