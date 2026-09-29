@@ -164,3 +164,8 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .message-body h3{font-size:1.12em}
   .code-block pre{font-size:11px}
 }
+
+.message-content{min-width:0}
+.message-time{display:block;margin-top:7px;color:var(--faint);font-size:10px;line-height:1.2;letter-spacing:.01em}
+.message-row.user .message-time{padding-left:2px}
+.message-row.assistant .message-time{padding-left:0}
