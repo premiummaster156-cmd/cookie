@@ -83,7 +83,9 @@ async function onRequestPostImpl({ request, env, params }) {
         env.DB.prepare("DELETE FROM users WHERE id=?").bind(id)
       ]);
       console.error("[Cookie email]", error);
-      return json({ error: "We could not send the verification email. Check your SMTP secrets." }, 502);
+      const detail = String(error?.message || "Unknown SMTP error.")
+        .replace(/(password|pass|secret|token)\s*[:=]\s*\S+/gi, "$1: [redacted]");
+      return json({ error: "Verification email could not be sent. " + detail }, 502);
     }
     return json({ ok: true, message: "Verification email sent. Check your inbox before signing in." }, 201);
   }
