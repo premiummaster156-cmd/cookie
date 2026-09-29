@@ -19,7 +19,7 @@
     <div class="auth-heading">
       <div class="auth-icon"><img src="cookie-ai-icon.png" alt="" width="44" height="44"></div>
       <div>
-        <p class="auth-kicker">COOKIE AI</p>
+        <p class="auth-kicker">COOKIE</p>
         <h1 id="auth-title">Welcome back</h1>
         <p id="authSubtitle">Sign in to continue to Cookie.</p>
       </div>
@@ -47,7 +47,7 @@
       </label>
 
       <div class="form-meta">
-        <label class="remember"><input id="remember" type="checkbox" checked><span>Keep me signed in</span></label>
+        <span class="form-note" id="formNote">Use the email linked to your Cookie account.</span>
         <button class="forgot" type="button" id="forgotBtn">Forgot password?</button>
       </div>
 
@@ -57,11 +57,6 @@
       </button>
       <p class="auth-error" id="authError" role="alert" hidden></p>
     </form>
-
-    <div class="auth-required">
-      <span class="required-dot" aria-hidden="true"></span>
-      <div><strong>Account required</strong><small>You must sign in with a verified email to use Cookie. Anonymous access is disabled.</small></div>
-    </div>
 
     <p class="auth-note">We use your email only for account verification and password recovery.</p>
   </section>
@@ -106,6 +101,7 @@
     password.autocomplete = 'new-password';
     submit.textContent = 'Update password';
     $('#forgotBtn').hidden = true;
+    if (formNote) formNote.textContent = 'Enter a new password for your Cookie account.';
   }
 
   async function api(path, body) {
@@ -134,9 +130,11 @@
     document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x === btn));
     const signup = mode === 'signup';
     nameField.classList.toggle('hidden', !signup);
+    $('#forgotBtn').hidden = signup;
+    if (formNote) formNote.textContent = signup ? 'Use an email you can access to verify your account.' : 'Use the email linked to your Cookie account.';
     name.required = signup;
     title.textContent = signup ? 'Create your account' : 'Welcome back';
-    subtitle.textContent = signup ? 'Create a verified Cookie account.' : 'Sign in to continue to Cookie.';
+    subtitle.textContent = signup ? 'Create your Cookie account.' : 'Sign in to continue to Cookie.';
     submit.textContent = signup ? 'Create account' : 'Sign in';
     password.autocomplete = signup ? 'new-password' : 'current-password';
     error.hidden = true;
