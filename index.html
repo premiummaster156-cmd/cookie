@@ -52,14 +52,15 @@
         <div class="model-control">
           <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">CPT-1</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
           <div class="model-menu" id="modelMenu" role="menu" aria-label="AI models">
+            <div class="model-preview-note"><strong>Preview demo</strong><small>All Cookie models are free while the demo is in preview.</small></div>
             <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="CPT-1" data-mode="standard" data-plan="free">
-              <span><strong>CPT-1</strong><small>FREE · everyday chat & quick tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+              <span><strong>CPT-1</strong><small>FREE DEMO · everyday chat & quick tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
             </button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT-2 MAX" data-mode="max" data-plan="plus">
-              <span><strong>CPT-2 MAX</strong><small>PLUS · creative work & advanced tasks</small></span><span class="model-lock">PLUS</span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT-2 MAX" data-mode="max" data-plan="free">
+              <span><strong>CPT-2 MAX</strong><small>FREE DEMO · advanced reasoning, coding & review</small></span><span class="model-lock demo-badge">DEMO</span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
             </button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT-3 ULTRA" data-mode="ultra" data-plan="pro">
-              <span><strong>CPT-3 ULTRA</strong><small>PRO · latest & strongest Cookie model</small></span><span class="model-lock">PRO</span><svg class="check-icon" viewBox="0 0 24 6" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="CPT-3 ULTRA" data-mode="ultra" data-plan="free">
+              <span><strong>CPT-3 ULTRA</strong><small>FREE DEMO · latest multimodal coding model</small></span><span class="model-lock demo-badge">DEMO</span><svg class="check-icon" viewBox="0 0 24 6" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
             </button>          </div>
         </div>
         <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -174,9 +175,9 @@
                   <h3>Response style</h3>
                   <p>Tell Cookie how you want answers to feel.</p>
                   <div class="choice-grid">
-                    <button class="choice-card selected" type="button" data-ai-choice="responseMode" data-value="standard"><strong>CPT-1</strong><small>FREE · everyday chat</small></button>
-                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="max"><strong>CPT-2 MAX</strong><small>PLUS · creative & advanced work</small></button>
-                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="ultra"><strong>CPT-3 ULTRA</strong><small>PRO · latest & strongest</small></button>
+                    <button class="choice-card selected" type="button" data-ai-choice="responseMode" data-value="standard"><strong>CPT-1</strong><small>FREE DEMO · everyday chat</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="max"><strong>CPT-2 MAX</strong><small>FREE DEMO · advanced reasoning, coding & review</small></button>
+                    <button class="choice-card" type="button" data-ai-choice="responseMode" data-value="ultra"><strong>CPT-3 ULTRA</strong><small>FREE DEMO · latest multimodal coding</small></button>
                   </div>
                 </div>
                 <div class="setting-group">
@@ -243,7 +244,7 @@
 
       <section class="view" data-panel="upgrade">
         <div class="page-container upgrade-page">
-          <div class="page-heading center"><span class="eyebrow">Upgrade</span><h2>More room to think.</h2><p>Pick the plan that fits how you use Cookie.</p></div>
+          <div class="page-heading center"><span class="eyebrow">Preview demo</span><h2>All Cookie models are free for now.</h2><p>Cookie is currently in preview, so CPT-1, CPT-2 MAX, and CPT-3 ULTRA are available at no cost while the demo is open.</p></div>
           <div class="plans">
             <article class="plan"><span class="plan-label">Free</span><h3>$0</h3><p>For trying Cookie out.</p><ul><li>20 messages / day</li><li>Standard model</li><li>Chat history</li></ul><button class="secondary-btn full" type="button">Current plan</button></article>
             <article class="plan featured"><span class="plan-label">Plus</span><h3>$10 <small>/ month</small></h3><p>For everyday use.</p><ul><li>Unlimited everyday chats</li><li>Faster responses</li><li>Longer context</li></ul><button class="primary-btn full" type="button">Choose Plus</button></article>
@@ -323,8 +324,8 @@
     }
     settings = {...settingsDefaults, ...readLocal('cookie_settings', {})};
     if (!['standard','max','ultra'].includes(settings.responseMode)) settings.responseMode = 'standard';
+    // Preview demo: all Cookie models are temporarily free.
     const cookiePlan = 'free';
-    if (cookiePlan === 'free' && settings.responseMode !== 'standard') settings.responseMode = 'standard';
     savedChats = readLocal('cookie_chats', []);
     if (!Array.isArray(savedChats)) savedChats = [];
 
@@ -854,14 +855,7 @@
     function closeModelMenu(){ modelMenu.classList.remove('open'); modelPicker.setAttribute('aria-expanded','false'); }
     modelPicker.addEventListener('click', e => { e.stopPropagation(); const open = modelMenu.classList.toggle('open'); modelPicker.setAttribute('aria-expanded', String(open)); });
     modelOptions.forEach(option => option.addEventListener('click', () => {
-      const requiredPlan = option.dataset.plan || 'free';
-      const currentPlan = currentUser?.plan || localStorage.getItem('cookie_plan') || 'free';
-      const rank = {free: 0, plus: 1, pro: 2};
-      if ((rank[currentPlan] || 0) < (rank[requiredPlan] || 0)) {
-        closeModelMenu();
-        showView('upgrade');
-        return;
-      }
+      // Preview demo: model access is intentionally unlocked for everyone.
       modelOptions.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-checked','false'); });
       option.classList.add('active'); option.setAttribute('aria-checked','true');
       settings.responseMode = option.dataset.mode || 'standard';
