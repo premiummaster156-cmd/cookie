@@ -76,6 +76,7 @@ export async function onRequestPost({ request, env }) {
     model = profile.model === "__ENV_MODEL__" ? model : profile.model;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
+    if (imageAttachments.length && mode === "standard") model = "gemma4:cloud";
 
     const messages = Array.isArray(body?.messages)
       ? body.messages
