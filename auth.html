@@ -10,159 +10,196 @@
 </head>
 <body>
 <main class="auth-shell">
-  <a class="auth-brand" href="index.html"><img src="cookie-ai-icon.png" alt="" width="38" height="38"><strong>Cookie</strong></a>
+  <a class="auth-brand" href="index.html" aria-label="Cookie home">
+    <img src="cookie-ai-icon.png" alt="" width="34" height="34">
+    <strong>Cookie</strong>
+  </a>
+
   <section class="auth-card" aria-labelledby="auth-title">
-    <div class="auth-icon"><img src="cookie-ai-icon.png" alt="" width="42" height="42"></div>
-    <h1 id="auth-title">Welcome back</h1>
-    <p class="auth-subtitle" id="authSubtitle">Sign in to continue to Cookie.</p>
-    <div class="auth-tabs" role="tablist">
+    <div class="auth-heading">
+      <div class="auth-icon"><img src="cookie-ai-icon.png" alt="" width="44" height="44"></div>
+      <div>
+        <p class="auth-kicker">COOKIE AI</p>
+        <h1 id="auth-title">Welcome back</h1>
+        <p id="authSubtitle">Sign in to continue to Cookie.</p>
+      </div>
+    </div>
+
+    <div class="auth-tabs" role="tablist" aria-label="Account">
       <button class="auth-tab active" type="button" data-auth-mode="login">Sign in</button>
       <button class="auth-tab" type="button" data-auth-mode="signup">Create account</button>
     </div>
+
     <form id="authForm" novalidate>
-      <label class="field"><span>Name</span><input id="name" name="name" autocomplete="name" placeholder="Your name" hidden></label>
-      <label class="field"><span>Email</span><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
-      <label class="field"><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" minlength="8" required></label>
-      <label class="remember"><input id="remember" type="checkbox" checked><span>Keep me signed in</span></label>
-      <button class="forgot" type="button" id="forgotBtn">Forgot password?</button>
-      <button class="auth-submit" type="submit"><span id="submitText">Sign in</span><span class="arrow">→</span></button>
+      <label class="field hidden" id="nameField">
+        <span>Name</span>
+        <input id="name" name="name" autocomplete="name" placeholder="Your name">
+      </label>
+
+      <label class="field">
+        <span>Email</span>
+        <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+      </label>
+
+      <label class="field">
+        <span>Password</span>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" minlength="8" required>
+      </label>
+
+      <div class="form-meta">
+        <label class="remember"><input id="remember" type="checkbox" checked><span>Keep me signed in</span></label>
+        <button class="forgot" type="button" id="forgotBtn">Forgot password?</button>
+      </div>
+
+      <button class="auth-submit" type="submit">
+        <span id="submitText">Sign in</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </button>
       <p class="auth-error" id="authError" role="alert" hidden></p>
     </form>
-    <div class="divider"><span>or</span></div>
-    <button class="secondary-auth" type="button" id="guestBtn">Continue without an account</button>
-    <p class="auth-note">Your email must be verified before you can sign in. Cookie sends verification and password-reset emails through its own SMTP mailer.</p>
+
+    <div class="auth-required">
+      <span class="required-dot" aria-hidden="true"></span>
+      <div><strong>Account required</strong><small>You must sign in with a verified email to use Cookie. Anonymous access is disabled.</small></div>
+    </div>
+
+    <p class="auth-note">We use your email only for account verification and password recovery.</p>
   </section>
+
   <p class="auth-footer">Cookie · AI workspace</p>
 </main>
+
 <script>
 (() => {
   const $ = s => document.querySelector(s);
   let mode = 'login';
-  const form=$('#authForm'), name=$('#name'), email=$('#email'), password=$('#password');
-  const title=$('#auth-title'), subtitle=$('#authSubtitle'), submit=$('#submitText'), error=$('#authError');
-  const params=new URLSearchParams(location.search);
+  const form = $('#authForm');
+  const name = $('#name');
+  const email = $('#email');
+  const password = $('#password');
+  const title = $('#auth-title');
+  const subtitle = $('#authSubtitle');
+  const submit = $('#submitText');
+  const error = $('#authError');
+  const nameField = $('#nameField');
+  const params = new URLSearchParams(location.search);
 
-  if(params.get('verified')==='1'){
-    error.hidden=false;
-    error.className='auth-success';
-    error.textContent='Email verified. You can sign in now.';
+  function showMessage(message, success = false) {
+    error.hidden = false;
+    error.className = success ? 'auth-success' : 'auth-error';
+    error.textContent = message;
   }
 
-  if(params.get('reset')){
-    mode='reset';
-    document.querySelectorAll('[data-auth-mode]').forEach(x=>x.classList.remove('active'));
-    title.textContent='Set a new password';
-    subtitle.textContent='Choose a new password for your Cookie account.';
-    name.closest('.field').classList.add('hidden');
-    name.hidden=true;
-    name.required=false;
+  if (params.get('verified') === '1') {
+    showMessage('Email verified. You can sign in now.', true);
+  }
+
+  if (params.get('reset')) {
+    mode = 'reset';
+    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.remove('active'));
+    title.textContent = 'Set a new password';
+    subtitle.textContent = 'Choose a new password for your Cookie account.';
+    nameField.classList.add('hidden');
+    name.required = false;
     email.closest('.field').classList.add('hidden');
-    email.hidden=true;
-    email.required=false;
-    password.autocomplete='new-password';
-    submit.textContent='Update password';
-    $('#forgotBtn').hidden=true;
+    email.required = false;
+    password.autocomplete = 'new-password';
+    submit.textContent = 'Update password';
+    $('#forgotBtn').hidden = true;
   }
 
-  async function api(path, body){
-    const r=await fetch(path,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
-      body:JSON.stringify(body)
+  async function api(path, body) {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: JSON.stringify(body)
     });
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(data.error||'Something went wrong.');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Something went wrong.');
     return data;
   }
 
-  document.querySelectorAll('[data-auth-mode]').forEach(btn=>btn.addEventListener('click',()=>{
-    mode=btn.dataset.authMode;
-    document.querySelectorAll('[data-auth-mode]').forEach(x=>x.classList.toggle('active',x===btn));
-    const signup=mode==='signup';
-    name.hidden=!signup;
-    name.required=signup;
-    name.closest('.field').classList.toggle('hidden',!signup);
-    title.textContent=signup?'Create your account':'Welcome back';
-    subtitle.textContent=signup?'Create your Cookie account to save your workspace.':'Sign in to continue to Cookie.';
-    submit.textContent=signup?'Create account':'Sign in';
-    password.autocomplete=signup?'new-password':'current-password';
-    error.hidden=true;
+  async function redirectIfSignedIn() {
+    try {
+      const response = await fetch('/api/auth/me', {credentials: 'same-origin', cache: 'no-store'});
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.user && !params.get('reset')) location.replace('index.html');
+    } catch {}
+  }
+
+  document.querySelectorAll('[data-auth-mode]').forEach(btn => btn.addEventListener('click', () => {
+    if (params.get('reset')) return;
+    mode = btn.dataset.authMode;
+    document.querySelectorAll('[data-auth-mode]').forEach(x => x.classList.toggle('active', x === btn));
+    const signup = mode === 'signup';
+    nameField.classList.toggle('hidden', !signup);
+    name.required = signup;
+    title.textContent = signup ? 'Create your account' : 'Welcome back';
+    subtitle.textContent = signup ? 'Create a verified Cookie account.' : 'Sign in to continue to Cookie.';
+    submit.textContent = signup ? 'Create account' : 'Sign in';
+    password.autocomplete = signup ? 'new-password' : 'current-password';
+    error.hidden = true;
   }));
 
-  form.addEventListener('submit',async e=>{
+  form.addEventListener('submit', async e => {
     e.preventDefault();
-    error.hidden=true;
+    error.hidden = true;
 
-    if(mode==='reset'){
-      try{
-        await api('/api/auth/reset',{token:params.get('reset'),password:password.value});
-        location.href='auth.html';
-      }catch(err){
-        error.hidden=false;
-        error.className='auth-error';
-        error.textContent=err.message;
+    if (mode === 'reset') {
+      try {
+        await api('/api/auth/reset', {token: params.get('reset'), password: password.value});
+        location.href = 'auth.html';
+      } catch (err) {
+        showMessage(err.message);
       }
       return;
     }
 
-    if(!form.checkValidity()){
+    if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
-    submit.textContent=mode==='signup'?'Creating…':'Signing in…';
+    submit.textContent = mode === 'signup' ? 'Creating…' : 'Signing in…';
 
-    try{
-      const data=await api(mode==='signup'?'/api/auth/register':'/api/auth/login',{
-        name:name.value,
-        email:email.value,
-        password:password.value
+    try {
+      const data = await api(mode === 'signup' ? '/api/auth/register' : '/api/auth/login', {
+        name: name.value,
+        email: email.value,
+        password: password.value
       });
 
-      if(mode==='signup'){
-        error.hidden=false;
-        error.className='auth-success';
-        error.textContent=data.message||'Check your email to verify your account.';
-        password.value='';
-        submit.textContent='Create account';
-      }else{
-        location.href='index.html';
+      if (mode === 'signup') {
+        showMessage(data.message || 'Check your email to verify your account.', true);
+        password.value = '';
+        submit.textContent = 'Create account';
+      } else {
+        location.href = 'index.html';
       }
-    }catch(err){
-      error.hidden=false;
-      error.className='auth-error';
-      error.textContent=err.message;
-      submit.textContent=mode==='signup'?'Create account':'Sign in';
+    } catch (err) {
+      showMessage(err.message);
+      submit.textContent = mode === 'signup' ? 'Create account' : 'Sign in';
     }
   });
 
-  $('#forgotBtn').addEventListener('click',async()=>{
-    const value=email.value.trim();
-    if(!value){
+  $('#forgotBtn').addEventListener('click', async () => {
+    const value = email.value.trim();
+    if (!value) {
       email.focus();
-      error.hidden=false;
-      error.className='auth-error';
-      error.textContent='Enter your email first.';
+      showMessage('Enter your email first.');
       return;
     }
 
-    try{
-      const data=await api('/api/auth/forgot',{email:value});
-      error.hidden=false;
-      error.className='auth-success';
-      error.textContent=data.message;
-    }catch(err){
-      error.hidden=false;
-      error.className='auth-error';
-      error.textContent=err.message;
+    try {
+      const data = await api('/api/auth/forgot', {email: value});
+      showMessage(data.message, true);
+    } catch (err) {
+      showMessage(err.message);
     }
   });
 
-  $('#guestBtn').addEventListener('click',()=>{
-    localStorage.setItem('cookie_guest','1');
-    location.href='index.html';
-  });
+  if (mode === 'login') redirectIfSignedIn();
 })();
 </script>
 </body>
