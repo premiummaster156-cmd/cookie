@@ -313,14 +313,14 @@
       document.body.classList.toggle('compact-messages', settings.compactMessages);
       document.body.classList.toggle('cursor-ribbons-off', !settings.cursorRibbons);
       document.body.classList.toggle('keyboard-hints-off', !settings.keyboardHints);
-      $$'.theme-card'.forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
-      $$'.accent-swatch'.forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
+      $.theme-card.forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
+      $.accent-swatch.forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
       const textSize = $('#textSizeSelect'); if (textSize) textSize.value = settings.textSize;
       const lang = $('#languageSelect'); if (lang) lang.value = settings.language;
       const length = $('#answerLengthSelect'); if (length) length.value = settings.answerLength;
       const range = $('#creativityRange'); if (range) { range.value = settings.creativity; $('#creativityValue').textContent = Number(settings.creativity).toFixed(1); }
-      $$'[data-setting-toggle]'.forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
-      $$'.choice-card[data-ai-choice]'.forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
+      $[data-setting-toggle].forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
+      $.choice-card[data-ai-choice].forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
     }
 
     function saveCurrentChat() {
@@ -392,7 +392,7 @@
       window.scrollTo({top:0, behavior:'smooth'});
     }
 
-    $$'[data-view]'.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+    $[data-view].forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
     $('[data-action="open-sidebar"]').addEventListener('click', () => document.body.classList.add('sidebar-open'));
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
 
@@ -512,32 +512,32 @@
     }
 
         // Settings controls
-    $$'.setting-tab'.forEach(tab => tab.addEventListener('click', () => {
-      $$'.setting-tab'.forEach(x => x.classList.remove('active'));
+    $.setting-tab.forEach(tab => tab.addEventListener('click', () => {
+      $.setting-tab.forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
-      $$'.setting-panel'.forEach(p => p.classList.toggle('active', p.dataset.settingPanel === tab.dataset.setting));
+      $.setting-panel.forEach(p => p.classList.toggle('active', p.dataset.settingPanel === tab.dataset.setting));
     }));
 
-    $$'.theme-card'.forEach(card => card.addEventListener('click', () => {
+    $.theme-card.forEach(card => card.addEventListener('click', () => {
       settings.theme = card.dataset.theme;
       saveSettings();
       applySettings();
     }));
 
-    $$'.accent-swatch'.forEach(s => s.addEventListener('click', () => {
+    $.accent-swatch.forEach(s => s.addEventListener('click', () => {
       settings.accent = s.dataset.accent;
       saveSettings();
       applySettings();
     }));
 
-    $$'.toggle[data-setting-toggle]'.forEach(toggle => toggle.addEventListener('click', () => {
+    $.toggle[data-setting-toggle].forEach(toggle => toggle.addEventListener('click', () => {
       const key = toggle.dataset.settingToggle;
       settings[key] = !settings[key];
       saveSettings();
       applySettings();
     }));
 
-    $$'.choice-card[data-ai-choice]'.forEach(card => card.addEventListener('click', () => {
+    $.choice-card[data-ai-choice].forEach(card => card.addEventListener('click', () => {
       settings[card.dataset.aiChoice] = card.dataset.value;
       saveSettings();
       applySettings();
