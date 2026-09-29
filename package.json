@@ -1,29 +1,21 @@
 {
-  "name": "cookie-next",
-  "private": true,
-  "version": "2.1.0",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+  "name":"cookie",
+  "private":true,
+  "version":"3.0.0",
+  "type":"module",
+  "scripts":{"dev":"vite","build":"tsc && vite build","preview":"vite preview"},
+  "dependencies":{
+    "@types/node":"latest",
+    "@types/react":"latest",
+    "@types/react-dom":"latest",
+    "framer-motion":"latest",
+    "lucide-react":"latest",
+    "react":"latest",
+    "react-dom":"latest"
   },
-  "dependencies": {
-    "@opennextjs/cloudflare": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "framer-motion": "latest",
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "typescript": "latest"
-  },
-  "devDependencies": {
-    "wrangler": "latest"
+  "devDependencies":{
+    "@vitejs/plugin-react":"latest",
+    "typescript":"latest",
+    "vite":"latest"
   }
 }
