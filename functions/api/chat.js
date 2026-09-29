@@ -39,19 +39,19 @@ function limitResponse(text) {
 const profiles = {
   standard: {
     name: "CPT-1",
-    model: "__ENV_MODEL__",
+    model: "gemma4:cloud",
     temperature: 0.55,
     instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it."
   },
   max: {
     name: "CPT-2 MAX",
-    model: "kimi-k3:cloud",
+    model: "gemma4:cloud",
     temperature: 0.68,
     instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions."
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "glm-5.3-flash:cloud",
+    model: "gemma4:cloud",
     temperature: 0.62,
     instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer."
   }
@@ -60,7 +60,7 @@ const profiles = {
 export async function onRequestPost({ request, env }) {
   try {
     const apiKey = String(env.OLLAMA_API_KEY || "").trim();
-    let model = String(env.OLLAMA_MODEL || "gpt-oss:120b-cloud").trim();
+    let model = "gemma4:cloud";
     const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
 
     if (!apiKey) {
@@ -73,10 +73,10 @@ export async function onRequestPost({ request, env }) {
       ? preferences.responseMode
       : "standard";
     const profile = profiles[mode];
-    model = profile.model === "__ENV_MODEL__" ? model : profile.model;
+    model = profile.model;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
-    if (imageAttachments.length && mode === "standard") model = "gemma4:cloud";
+
 
     const messages = Array.isArray(body?.messages)
       ? body.messages
@@ -164,7 +164,7 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Cookie received an empty response." }, 502);
     }
 
-    return json({ message: limitResponse(message.trim()), model: profile.name });
+    return json({ message: limitResponse(message.trim()), model: profile.name, demo: true, demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo." });
   } catch (error) {
     console.error("[Cookie chat]", error);
     return json({ error: "Cookie could not answer right now. Check the Pages Function logs." }, 502);
