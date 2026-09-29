@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -102,12 +103,12 @@ export default function App(){
          <span className="crumb">Chat</span><span className="slash">/</span>
          <div className="model-picker">
            <button className="model-trigger" onClick={()=>setModelOpen(v=>!v)} aria-expanded={modelOpen}>
-             <active.icon size={15}/><span>{active.name}</span><ChevronDown size={14}/>
+             {React.createElement(active.icon,{size:15})}<span>{active.name}</span><ChevronDown size={14}/>
            </button>
            <AnimatePresence>{modelOpen&&<motion.div className="model-popover" initial={{opacity:0,y:-5,scale:.98}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-4}} transition={{duration:.15}}>
              <div className="popover-label">Cookie models</div>
              {MODELS.map(m=><button className={"model-option "+(m.id===model?"chosen":"")} key={m.id} onClick={()=>{setModel(m.id);setModelOpen(false)}}>
-               <span className="model-icon"><m.icon size={15}/></span><span><b>{m.name}</b><small>{m.desc}</small></span>{m.id===model&&<Check size={15}/>}
+               <span className="model-icon">{React.createElement(m.icon,{size:15})}</span><span><b>{m.name}</b><small>{m.desc}</small></span>{m.id===model&&<Check size={15}/>}
              </button>)}
            </motion.div></AnimatePresence>}
          </div>
@@ -128,7 +129,7 @@ export default function App(){
            <p>Ask a question, share an image, or give Cookie a project to build.</p>
            <div className="starter-grid">
              {STARTERS.map((s,i)=><motion.button key={s.title} className="starter" whileHover={reduce?undefined:{y:-2}} whileTap={reduce?undefined:{scale:.985}} transition={{duration:.16}} onClick={()=>send(s.prompt)}>
-               <span className="starter-icon"><s.icon size={17}/></span><span><b>{s.title}</b><small>{s.desc}</small></span><ArrowUp size={15}/>
+               <span className="starter-icon">{React.createElement(s.icon,{size:17})}</span><span><b>{s.title}</b><small>{s.desc}</small></span><ArrowUp size={15}/>
              </motion.button>)}
            </div>
          </motion.div>
@@ -137,7 +138,7 @@ export default function App(){
            {messages.map(m=><motion.article key={m.id} className={"message "+m.role} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} transition={{duration:.22}}>
              <div className="message-meta">{m.role==="assistant"?<><span className="mini-mark">C</span><b>Cookie</b></>:<><span>You</span></>}</div>
              <div className="message-body">
-               {m.images?.map((x,i)=><img className="message-image" key={i} src={x} alt="Uploaded attachment"/>}
+               {m.images?.map((x,i)=><img className="message-image" key={i} src={x} alt="Uploaded attachment"/>)}
                <Message text={m.content}/>
                {m.role==="assistant"&&<div className="message-tools"><button><Copy size={13}/>Copy</button><button><MoreHorizontal size={13}/>More</button></div>}
              </div>
