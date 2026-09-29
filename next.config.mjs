@@ -1,1 +1,0 @@
-/** @type {import("next").NextConfig} */\nconst nextConfig={reactStrictMode:true};\nexport default nextConfig;
