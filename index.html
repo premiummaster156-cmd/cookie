@@ -50,11 +50,11 @@
         <div class="mobile-brand"><img src="cookie-ai-icon.png" alt="" width="25" height="25"><strong>Cookie</strong></div>
         <div class="topbar-spacer"></div>
         <div class="model-control">
-          <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">Cookie</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
+          <button class="model-picker" id="modelPicker" type="button" aria-label="Select AI model" aria-haspopup="menu" aria-expanded="false"><span class="status-dot"></span><span id="activeModel">Balanced</span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
           <div class="model-menu" id="modelMenu" role="menu" aria-label="AI models">
-            <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="Cookie"><span><strong>Cookie</strong><small>Balanced · everyday chat</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Cookie Fast"><span><strong>Cookie Fast</strong><small>Quick · lightweight tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
-            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Cookie Reasoning"><span><strong>Cookie Reasoning</strong><small>Deeper · complex tasks</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option active" type="button" role="menuitemradio" aria-checked="true" data-model="Balanced" data-mode="balanced"><span><strong>Balanced</strong><small>Natural · everyday chat</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Concise" data-mode="concise"><span><strong>Concise</strong><small>Short · direct answers</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button class="model-option" type="button" role="menuitemradio" aria-checked="false" data-model="Deep" data-mode="deep"><span><strong>Deep</strong><small>More detailed answers</small></span><svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
           </div>
         </div>
         <button class="icon-btn" type="button" aria-label="New chat" data-action="new-chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -312,6 +312,7 @@
       document.body.classList.toggle('animations-off', !settings.animations);
       document.body.classList.toggle('compact-messages', settings.compactMessages);
       document.body.classList.toggle('cursor-ribbons-off', !settings.cursorRibbons);
+      document.body.classList.toggle('keyboard-hints-off', !settings.keyboardHints);
       $('.theme-card').forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
       $('.accent-swatch').forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
       const textSize = $('#textSizeSelect'); if (textSize) textSize.value = settings.textSize;
@@ -590,7 +591,9 @@
     modelOptions.forEach(option => option.addEventListener('click', () => {
       modelOptions.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-checked','false'); });
       option.classList.add('active'); option.setAttribute('aria-checked','true');
-      activeModel.textContent = option.dataset.model;
+      settings.responseMode = option.dataset.mode || 'balanced';
+      saveSettings();
+      applySettings();
       closeModelMenu();
     }));
     document.addEventListener('click', e => { if(!e.target.closest('.model-control')) closeModelMenu(); });
