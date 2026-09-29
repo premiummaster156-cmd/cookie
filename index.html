@@ -548,15 +548,28 @@
       return blocks.join('');
     }
 
-    function addMessage(text, role, timestamp) {
+    function addMessage(text, role, timestamp, attachments = []) {
       const row = document.createElement('article');
       row.className = 'message-row ' + role;
       const time = Number(timestamp) || Date.now();
       const label = formatMessageTime(time);
       row.innerHTML = role === 'user'
-        ? '<div class="message-avatar">D</div><div class="message-body"><div class="message-content"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>'
+        ? '<div class="message-avatar">D</div><div class="message-body"><div class="message-content"></div><div class="message-attachments"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>'
         : '<div class="assistant-mark"><img src="cookie-ai-icon.png" alt="" width="24" height="24"></div><div class="message-body"><div class="message-content"></div><time class="message-time" datetime="' + new Date(time).toISOString() + '">' + escapeHtml(label) + '</time></div>';
-      $('.message-content', row).innerHTML = renderMarkdown(text);
+
+      const content = $('.message-content', row);
+      content.innerHTML = renderMarkdown(text);
+
+      const attachmentBox = $('.message-attachments', row);
+      if (attachmentBox && attachments.length) {
+        attachmentBox.innerHTML = attachments.map(file => {
+          if (file.kind === 'image' && file.data) {
+            return '<div class="message-image"><img src="' + file.data + '" alt="' + escapeAttachmentText(file.name) + '"><span>' + escapeAttachmentText(file.name) + '</span></div>';
+          }
+          return '<div class="message-file"><span class="attachment-file-icon">DOC</span><span>' + escapeAttachmentText(file.name) + '</span></div>';
+        }).join('');
+      }
+
       conversation.appendChild(row);
       if (settings.autoScroll) row.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
@@ -693,7 +706,7 @@
 
       welcome.hidden = true;
       const sentAt = Date.now();
-      addMessage(text || 'Attached ' + attachments.length + ' file' + (attachments.length === 1 ? '' : 's'), 'user', sentAt);
+      addMessage(text || 'Attached ' + attachments.length + ' file' + (attachments.length === 1 ? '' : 's'), 'user', sentAt, attachments);
       input.value = '';
       input.style.height = 'auto';
       chatMessages.push({role:'user', content:apiText, timestamp:sentAt});
