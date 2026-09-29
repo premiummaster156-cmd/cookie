@@ -8,7 +8,6 @@
   <title>Cookie — AI</title>
   <link rel="icon" href="cookie-ai-icon.png" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <canvas id="cookieTrail" class="cookie-trail" aria-hidden="true"></canvas>
@@ -32,10 +31,7 @@
         <div class="recent-list" id="recentList"></div>
         <div class="recent-empty" id="recentEmpty">Your chats will appear here.</div>
       </div>
-    <button class="auth-entry" type="button" data-action="open-auth" aria-label="Open Cookie account">
-      <span class="auth-avatar">?</span>
-      <span><strong>Account</strong><small>Loading account…</small></span>
-    </button>
+    <div class="auth-entry" aria-label="Cookie account"><span class="auth-avatar">C</span><span><strong>Account</strong><small>FREE plan</small></span></div>
       <div class="sidebar-bottom">
         <button class="nav-item" type="button" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.1 13.4 1.4 1.1-1.8 3.1-1.7-.6a7.6 7.6 0 0 1-1.8 1l-.3 1.8h-3.6l-.3-1.8a7.6 7.6 0 0 1-1.8-1l-1.7.6-1.8-3.1 1.4-1.1a7.7 7.7 0 0 1 0-2.8L5.7 9.5l1.8-3.1 1.7.6a7.6 7.6 0 0 1 1.8-1l.3-1.8h3.6l.3 1.8a7.6 7.6 0 0 1 1.8 1l1.7-.6 1.8 3.1-1.4 1.1a7.7 7.7 0 0 1 0 2.8Z"/></svg></span><span>Settings</span></button>
         <button class="nav-item" type="button" data-view="help"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.2a2.4 2.4 0 1 1 4.1 1.7c-.9.9-1.9 1.2-1.9 2.6"/><path d="M12 16.8h.01"/></svg></span><span>Help</span></button>
@@ -300,7 +296,7 @@
     let chatMessages = [];
     let isSending = false;
     let requestController = null;
-    let currentUser = null;
+    let currentUser = { id:null, name:'Account', email:'', plan:'free' };
 
     function formatMessageTime(timestamp) {
       const date = new Date(timestamp || Date.now());
@@ -315,60 +311,6 @@
         hour12: false
       }).format(date);
     }
-
-    const SUPABASE_URL = 'https://imnsdbqricehgncpobda.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0mQKl_lds4N017Zhcn8JfQ_PwmTCvRi';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-    async function requireAuthentication() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          window.location.replace('auth.html');
-          return false;
-        }
-
-        const user = session.user;
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('plan')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        currentUser = {
-          id: user.id,
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Account',
-          email: user.email || '',
-          plan: profile?.plan || 'free'
-        };
-        localStorage.setItem('cookie_plan', currentUser.plan);
-
-        const accountName = $('.account-copy strong');
-        const accountPlan = $('.account-copy small');
-        const profileName = $('.profile-info h3');
-        const profileEmail = $('.profile-info p');
-        const profilePlan = $('.plan-badge');
-        const accountAvatar = $('.auth-avatar');
-        const profileAvatar = $('.profile-avatar');
-        if (accountName) accountName.textContent = currentUser.name;
-        if (accountPlan) accountPlan.textContent = currentUser.plan.toUpperCase() + ' plan';
-        if (profileName) profileName.textContent = currentUser.name;
-        if (profileEmail) profileEmail.textContent = currentUser.email;
-        if (profilePlan) profilePlan.textContent = currentUser.plan.toUpperCase() + ' plan';
-        const initial = currentUser.name.trim().charAt(0).toUpperCase() || 'A';
-        if (accountAvatar) accountAvatar.textContent = initial;
-        if (profileAvatar) profileAvatar.textContent = initial;
-
-        supabase.auth.onAuthStateChange((event) => {
-          if (event === 'SIGNED_OUT') window.location.replace('auth.html');
-        });
-        return true;
-      } catch {
-        window.location.replace('auth.html');
-        return false;
-      }
-    }
-
     function readLocal(key, fallback) {
       try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
     }
@@ -377,7 +319,7 @@
     }
     settings = {...settingsDefaults, ...readLocal('cookie_settings', {})};
     if (!['standard','max','ultra'].includes(settings.responseMode)) settings.responseMode = 'standard';
-    const cookiePlan = localStorage.getItem('cookie_plan') || 'free';
+    const cookiePlan = 'free';
     if (cookiePlan === 'free' && settings.responseMode !== 'standard') settings.responseMode = 'standard';
     savedChats = readLocal('cookie_chats', []);
     if (!Array.isArray(savedChats)) savedChats = [];
@@ -446,7 +388,7 @@
 
     applySettings();
     renderRecent();
-    requireAuthentication();
+    syncLocalAccount();
 
     function showView(name) {
       const next = views.find(v => v.dataset.panel === name);
@@ -475,8 +417,6 @@
     }
 
     $$('[data-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
-    const authEntry = $('[data-action="open-auth"]');
-    if (authEntry) authEntry.addEventListener('click', () => { window.location.href = 'auth.html'; });
     const openSidebarButton = $('[data-action="open-sidebar"]');
     if (openSidebarButton) openSidebarButton.addEventListener('click', () => document.body.classList.add('sidebar-open'));
     $$('[data-action="close-sidebar"]').forEach(b => b.addEventListener('click', () => document.body.classList.remove('sidebar-open')));
@@ -686,14 +626,9 @@
       requestController = new AbortController();
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error('Your Cookie session expired. Please sign in again.');
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type':'application/json',
-            'Authorization':'Bearer ' + session.access_token
-          },
+          headers: {'Content-Type':'application/json'},
           body: JSON.stringify({messages: chatMessages, preferences: {
             plan: currentUser?.plan || 'free',
             language: settings.language,
