@@ -23,18 +23,49 @@
 @media(max-width:600px){.workspace-more-btn{top:11px;right:11px}.workspace-panel{top:7px;right:7px;bottom:7px;width:calc(100vw - 14px);border-radius:16px}.workspace-options{grid-template-columns:1fr 1fr}.workspace-file-actions{opacity:1}}
 </style>
 
-<style id="no-motion-global">
-*,*::before,*::after{
-  animation:none !important;
-  transition:none !important;
-  scroll-behavior:auto !important;
-  transform:none !important;
+
+<style id="cookie-motion-system">
+:root{
+  --motion-fast:140ms;
+  --motion-med:220ms;
+  --motion-slow:360ms;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.2,.9,.2,1.15);
 }
-html{scroll-behavior:auto !important}
-.view-entering,.view-leaving{animation:none !important;transform:none !important;opacity:1 !important}
-.workspace-panel{transform:none !important;display:none !important}
-.workspace-panel.open{display:flex !important;transform:none !important}
-.workspace-more-btn:hover,.workspace-option:hover{transform:none !important}
+@keyframes cookie-fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cookie-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes cookie-pop{0%{opacity:0;transform:scale(.96)}70%{transform:scale(1.01)}100%{opacity:1;transform:scale(1)}}
+@keyframes cookie-slide-right{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes cookie-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes cookie-spin{to{transform:rotate(360deg)}}
+@keyframes cookie-shimmer{0%{background-position:120% 0}100%{background-position:-20% 0}}
+.view.is-visible{animation:cookie-fade-in var(--motion-med) var(--ease-out) both}
+.view-entering{animation:cookie-fade-up var(--motion-med) var(--ease-out) both}
+.sidebar-open .sidebar{animation:cookie-slide-right var(--motion-med) var(--ease-out) both}
+.message{animation:cookie-fade-up var(--motion-med) var(--ease-out) both}
+.composer{transition:box-shadow var(--motion-med) var(--ease-out),border-color var(--motion-med) var(--ease-out),background var(--motion-med) var(--ease-out)}
+button,input,textarea,.nav-item,.recent-item,.choice-card,.theme-card,.accent-swatch,.model-option,.tool-label,.round-tool,.send-btn{transition:transform var(--motion-fast) var(--ease-out),background var(--motion-fast) var(--ease-out),border-color var(--motion-fast) var(--ease-out),box-shadow var(--motion-fast) var(--ease-out),color var(--motion-fast) var(--ease-out),opacity var(--motion-fast) var(--ease-out)}
+button:hover,.nav-item:hover,.recent-item:hover,.choice-card:hover,.theme-card:hover,.model-option:hover,.tool-label:hover,.round-tool:hover{transform:translateY(-1px)}
+button:active,.nav-item:active,.recent-item:active,.choice-card:active,.model-option:active,.tool-label:active,.round-tool:active,.send-btn:active{transform:scale(.97)}
+.send-btn:hover{box-shadow:0 7px 22px rgba(229,161,90,.18)}
+.attachment-tray{animation:cookie-pop var(--motion-fast) var(--ease-out) both}
+.typing-indicator span{animation:cookie-pulse 1s ease-in-out infinite}
+.typing-indicator span:nth-child(2){animation-delay:120ms}.typing-indicator span:nth-child(3){animation-delay:240ms}
+.workspace-panel{display:flex;transform:translateX(calc(100% + 24px));transition:transform var(--motion-slow) var(--ease-out),box-shadow var(--motion-med) var(--ease-out)}
+.workspace-panel.open{transform:translateX(0)}
+.workspace-more-btn{transition:transform var(--motion-fast) var(--ease-out),background var(--motion-fast) var(--ease-out),border-color var(--motion-fast) var(--ease-out),color var(--motion-fast) var(--ease-out)}
+.workspace-more-btn:hover{transform:rotate(90deg)}
+.workspace-option:hover{transform:translateY(-2px)}
+.workspace-file{transition:background var(--motion-fast) var(--ease-out),border-color var(--motion-fast) var(--ease-out),transform var(--motion-fast) var(--ease-out)}
+.workspace-file:hover{transform:translateX(3px)}
+.workspace-editor{transition:opacity var(--motion-med) var(--ease-out)}
+.workspace-editor.open{animation:cookie-fade-in var(--motion-med) var(--ease-out) both}
+.workspace-editor-card{animation:cookie-pop var(--motion-med) var(--ease-out) both}
+.toast,.error-modal,.dropdown,.model-picker,.popover{animation:cookie-pop var(--motion-fast) var(--ease-out) both}
+.loading,.skeleton{background:linear-gradient(100deg,rgba(255,255,255,.025) 25%,rgba(255,255,255,.07) 50%,rgba(255,255,255,.025) 75%);background-size:220% 100%;animation:cookie-shimmer 1.5s linear infinite}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important;scroll-behavior:auto!important}
+}
 </style>
 </head>
 <body>
