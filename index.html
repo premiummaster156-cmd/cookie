@@ -736,7 +736,7 @@
       requestController = new AbortController();
 
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('/api/cookie-chat', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({messages: chatMessages, attachments: attachments.map(({name,type,kind,data}) => ({name,type,kind,data})), preferences: {
