@@ -313,14 +313,14 @@
       document.body.classList.toggle('compact-messages', settings.compactMessages);
       document.body.classList.toggle('cursor-ribbons-off', !settings.cursorRibbons);
       document.body.classList.toggle('keyboard-hints-off', !settings.keyboardHints);
-      $('.theme-card').forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
-      $('.accent-swatch').forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
+      $$('.theme-card').forEach(x => x.classList.toggle('active', x.dataset.theme === settings.theme));
+      $$('.accent-swatch').forEach(x => x.classList.toggle('selected', x.dataset.accent === settings.accent));
       const textSize = $('#textSizeSelect'); if (textSize) textSize.value = settings.textSize;
       const lang = $('#languageSelect'); if (lang) lang.value = settings.language;
       const length = $('#answerLengthSelect'); if (length) length.value = settings.answerLength;
       const range = $('#creativityRange'); if (range) { range.value = settings.creativity; $('#creativityValue').textContent = Number(settings.creativity).toFixed(1); }
-      $('[data-setting-toggle]').forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
-      $('.choice-card[data-ai-choice]').forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
+      $$('[data-setting-toggle]').forEach(t => t.classList.toggle('on', Boolean(settings[t.dataset.settingToggle])));
+      $$('.choice-card[data-ai-choice]').forEach(c => c.classList.toggle('selected', c.dataset.value === settings[c.dataset.aiChoice]));
     }
 
     function saveCurrentChat() {
@@ -585,7 +585,7 @@
     const modelPicker = $('#modelPicker');
     const modelMenu = $('#modelMenu');
     const activeModel = $('#activeModel');
-    const modelOptions = $('.model-option');
+    const modelOptions = $$('.model-option');
     function syncModelPicker(){
       const activeMode = modelOptions.find(x => x.dataset.mode === settings.responseMode) || modelOptions[0];
       modelOptions.forEach(x => { x.classList.toggle('active', x === activeMode); x.setAttribute('aria-checked', String(x === activeMode)); });
