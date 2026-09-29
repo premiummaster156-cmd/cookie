@@ -1,8 +1,5 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "cookie",
-  "pages_build_output_dir": "./dist",
-  "assets": {
-    "not_found_handling": "single-page-application"
-  }
+  "pages_build_output_dir": "./dist"
 }
