@@ -85,3 +85,5 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .choice-grid{grid-template-columns:1fr}
   .choice-card{min-height:0}
 }
+
+.keyboard-hints-off .shortcut-hint,.keyboard-hints-off .new-chat kbd{display:none}
