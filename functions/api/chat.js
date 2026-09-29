@@ -1,4 +1,32 @@
-import { getUser, json, readJson } from "./_lib.js";
+import { json, readJson } from "./_lib.js";
+
+const SUPABASE_URL = "https://imnsdbqricehgncpobda.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0mQKl_lds4N017Zhcn8JfQ_PwmTCvRi";
+
+async function getSupabaseUser(request) {
+  const authorization = request.headers.get("Authorization") || "";
+  if (!/^Bearer\\s+\\S+$/i.test(authorization)) return null;
+  const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: authorization
+    }
+  });
+  if (!response.ok) return null;
+  return await response.json().catch(() => null);
+}
+
+async function getPlan(userId, accessToken) {
+  const response = await fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + encodeURIComponent(userId) + "&select=plan&limit=1", {
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: "Bearer " + accessToken
+    }
+  });
+  if (!response.ok) return "free";
+  const rows = await response.json().catch(() => []);
+  return rows?.[0]?.plan || "free";
+}
 
 const profiles = {
   standard: {
@@ -24,8 +52,11 @@ const rank = { free: 0, plus: 1, pro: 2 };
 
 export async function onRequestPost({ request, env }) {
   try {
-    const user = await getUser(request, env);
+    const authorization = request.headers.get("Authorization") || "";
+    const user = await getSupabaseUser(request);
     if (!user) return json({ error: "Please sign in to use Cookie." }, 401);
+    const accessToken = authorization.replace(/^Bearer\\s+/i, "");
+    const userPlan = await getPlan(user.id, accessToken);
 
     if (!env.OLLAMA_API_KEY) {
       return json({ error: "Cookie AI is not configured yet. Add OLLAMA_API_KEY in Pages secrets." }, 503);
@@ -35,7 +66,7 @@ export async function onRequestPost({ request, env }) {
     const preferences = body?.preferences || {};
     const mode = ["standard","max","ultra"].includes(preferences.responseMode) ? preferences.responseMode : "standard";
     const profile = profiles[mode];
-    const plan = user.plan || "free";
+    const plan = userPlan || "free";
 
     if ((rank[plan] || 0) < (rank[profile.required] || 0)) {
       return json({ error: profile.name + " requires the " + profile.required.toUpperCase() + " plan." }, 403);
