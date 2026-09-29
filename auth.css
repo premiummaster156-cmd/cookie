@@ -37,3 +37,20 @@ button{cursor:pointer}
 .auth-footer{margin:0;color:#665e58;font-size:11px;text-align:center}
 @media(max-width:600px){.auth-shell{padding:20px 20px 22px}.auth-main{padding:44px 0 34px}.auth-card h1{font-size:30px}.auth-brand{font-size:19px}.auth-brand img{width:28px;height:28px}.auth-tabs{gap:22px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+body.modal-open{overflow:hidden}
+.error-modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgba(8,7,6,.72);backdrop-filter:blur(5px);animation:modalFade .18s ease-out}
+.error-modal-backdrop[hidden]{display:none}
+.error-modal{width:min(390px,calc(100vw - 40px));padding:28px;background:#211c19;border:1px solid #4a3930;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45);animation:modalIn .22s cubic-bezier(.2,.8,.2,1)}
+.error-modal-icon{width:42px;height:42px;display:grid;place-items:center;margin-bottom:18px;border:1px solid #6b3833;border-radius:50%;background:#2d1d1b;color:#e9aaa1;font-size:22px;font-weight:750}
+.error-modal-kicker{margin:0 0 6px;color:var(--cookie);font-size:10px;font-weight:800;letter-spacing:.14em}
+.error-modal h2{margin:0;color:var(--text);font-size:22px;line-height:1.15;letter-spacing:-.025em}
+.error-modal p:not(.error-modal-kicker){margin:10px 0 24px;color:#b7aaa1;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.error-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.error-modal-actions button{height:46px;border-radius:8px;font-size:13px;font-weight:700}
+.error-cancel{border:1px solid var(--line);background:transparent;color:var(--text)}
+.error-cancel:hover{background:#29231f}
+.error-retry{border:1px solid #f0d9c2;background:var(--cream);color:#191512}
+.error-retry:hover{background:#f0e4d8}
+@keyframes modalFade{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.error-modal-backdrop,.error-modal{animation:none}}
