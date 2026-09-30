@@ -103,9 +103,17 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
     let pointerInside=false;
     let raf=0;
     let lastWave=0;
+    const updateGlassLight=(x:number,y:number)=>{
+      const root=document.documentElement;
+      root.style.setProperty("--cookie-glass-x",`${Math.round((x/window.innerWidth)*100)}%`);
+      root.style.setProperty("--cookie-glass-y",`${Math.round((y/window.innerHeight)*100)}%`);
+      root.style.setProperty("--cookie-glass-mx",`${((x/window.innerWidth-.5)*2).toFixed(3)}`);
+      root.style.setProperty("--cookie-glass-my",`${((y/window.innerHeight-.5)*2).toFixed(3)}`);
+    };
     const onPointerMove=(e:PointerEvent)=>{
       tx=(e.clientX/window.innerWidth-.5)*2;
       ty=-(e.clientY/window.innerHeight-.5)*2;
+      updateGlassLight(e.clientX,e.clientY);
       pointerInside=true;
       if(e.buttons&&performance.now()-lastWave>170){
         makeWave(e.clientX,e.clientY);
@@ -113,6 +121,7 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
       }
     };
     const onPointerDown=(e:PointerEvent)=>{
+      updateGlassLight(e.clientX,e.clientY);
       makeWave(e.clientX,e.clientY);
       lastWave=performance.now();
     };
@@ -164,6 +173,10 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
       window.removeEventListener("pointerleave",onPointerLeave);
       window.removeEventListener("resize",resize);
       waves.forEach(w=>{w.mesh.geometry.dispose();w.mesh.material.dispose();scene.remove(w.mesh)});
+      document.documentElement.style.removeProperty("--cookie-glass-x");
+      document.documentElement.style.removeProperty("--cookie-glass-y");
+      document.documentElement.style.removeProperty("--cookie-glass-mx");
+      document.documentElement.style.removeProperty("--cookie-glass-my");
       cursor.geometry.dispose();
       cursor.material.dispose();
       waveMaterial.dispose();
