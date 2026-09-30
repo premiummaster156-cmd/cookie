@@ -6287,3 +6287,362 @@ html[data-theme=light] .profile-edit-modal{
     inset 0 1px 0 rgba(255,255,255,.65),
     inset 0 -1px 0 rgba(50,40,30,.06)!important;
 }
+
+
+/* ===== Liquid Glass v2 — refractive material pass =====
+   Based on the physical-transmission approach used by ektogamat/apple-liquid-glass:
+   translucent material, strong backdrop response, dynamic specular lighting and
+   content showing through the surface instead of opaque "glass-colored" cards. */
+
+:root{
+  --cookie-glass-x:50%;
+  --cookie-glass-y:18%;
+  --cookie-glass-mx:0;
+  --cookie-glass-my:-.64;
+  --cookie-glass-blur:26px;
+  --cookie-glass-sat:175%;
+}
+
+/* Give the glass something real to react to. The reference demo uses a rich
+   scene underneath the transmissive material; Cookie keeps this deliberately
+   subtle so it does not become a wallpaper. */
+body::before{
+  content:"";
+  position:fixed;
+  inset:-22%;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at calc(50% + (var(--cookie-glass-mx) * 18%)) calc(18% + (var(--cookie-glass-my) * 10%)),rgba(86,137,255,.12),transparent 22%),
+    radial-gradient(circle at 18% 78%,rgba(217,130,69,.10),transparent 24%),
+    radial-gradient(circle at 82% 28%,rgba(125,92,255,.075),transparent 22%);
+  filter:blur(72px) saturate(125%);
+  opacity:.9;
+  transition:opacity 300ms ease;
+}
+html[data-theme=light] body::before{
+  background:
+    radial-gradient(circle at calc(50% + (var(--cookie-glass-mx) * 18%)) calc(18% + (var(--cookie-glass-my) * 10%)),rgba(72,118,255,.12),transparent 22%),
+    radial-gradient(circle at 18% 78%,rgba(217,130,69,.08),transparent 24%),
+    radial-gradient(circle at 82% 28%,rgba(125,92,255,.06),transparent 22%);
+  opacity:.72;
+}
+.app-shell{position:relative;z-index:1;background:transparent!important}
+.main{background:transparent!important}
+
+/* The key difference from the previous pass: do not paint an opaque dark
+   rectangle over the backdrop. The surface is a thin optical layer. */
+.sidebar,
+.topbar,
+.composer,
+.large-search,
+.chat-session-menu,
+.composer-menu,
+.message-action-menu,
+.activity-panel,
+.suggestion,
+.welcome-prompts button,
+.attachment-tray,
+.attachment-chip,
+.generated-file,
+.session-archived,
+.help-nav,
+.help-content,
+.help-code-block,
+.help-note,
+.help-footer,
+.settings-reference-card,
+.settings-profile-section,
+.settings-detail-card,
+.settings-logout-row,
+.settings-form-card,
+.profile-edit-modal,
+.account-mobile-card,
+.account-profile-card,
+.account-detail-card,
+.account-logout-row,
+.usage-card,
+.usage-grid>div,
+.plan,
+.theme-card,
+.profile-card,
+.settings-page .settings-row-grid,
+.settings-page .toggle-row,
+.settings-page .settings-note,
+.settings-page .settings-nav{
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.125),transparent 34%),
+    linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.025) 52%,rgba(255,255,255,.012))!important;
+  border-color:rgba(255,255,255,.16)!important;
+  box-shadow:
+    0 18px 50px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(0,0,0,.10),
+    0 0 0 1px rgba(255,255,255,.025)!important;
+  backdrop-filter:blur(var(--cookie-glass-blur)) saturate(var(--cookie-glass-sat)) brightness(1.05)!important;
+  -webkit-backdrop-filter:blur(var(--cookie-glass-blur)) saturate(var(--cookie-glass-sat)) brightness(1.05)!important;
+}
+
+/* Dynamic specular highlight: follows the same pointer-driven light used by
+   the Three.js layer instead of a fixed decorative shine. */
+.sidebar::before,
+.topbar::before,
+.composer::before,
+.large-search::before,
+.chat-session-menu::before,
+.composer-menu::before,
+.message-action-menu::before,
+.activity-panel::before,
+.suggestion::before,
+.welcome-prompts button::before,
+.attachment-chip::before,
+.generated-file::before,
+.session-archived::before,
+.help-nav::before,
+.help-content::before,
+.help-code-block::before,
+.help-note::before,
+.help-footer::before,
+.settings-reference-card::before,
+.settings-profile-section::before,
+.settings-detail-card::before,
+.settings-logout-row::before,
+.settings-form-card::before,
+.profile-edit-modal::before,
+.account-mobile-card::before,
+.account-profile-card::before,
+.account-detail-card::before,
+.account-logout-row::before,
+.usage-card::before,
+.usage-grid>div::before,
+.plan::before,
+.theme-card::before,
+.profile-card::before{
+  inset:1px!important;
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.19),transparent 30%),
+    linear-gradient(105deg,transparent 32%,rgba(255,255,255,.055) 50%,transparent 68%)!important;
+  opacity:.9!important;
+  transform:none!important;
+  transition:opacity 260ms ease,filter 260ms ease!important;
+  filter:blur(.2px);
+}
+.sidebar:hover::before,
+.topbar:hover::before,
+.composer:focus-within::before,
+.large-search:focus-within::before,
+.chat-session-menu:hover::before,
+.composer-menu:hover::before,
+.message-action-menu:hover::before,
+.activity-panel:hover::before,
+.suggestion:hover::before,
+.welcome-prompts button:hover::before,
+.attachment-chip:hover::before,
+.generated-file:hover::before,
+.session-archived:hover::before,
+.help-nav:hover::before,
+.help-content:hover::before,
+.help-code-block:hover::before,
+.help-note:hover::before,
+.help-footer:hover::before,
+.settings-reference-card:hover::before,
+.settings-profile-section:hover::before,
+.settings-detail-card:hover::before,
+.settings-logout-row:hover::before,
+.settings-form-card:hover::before,
+.profile-edit-modal:hover::before,
+.account-mobile-card:hover::before,
+.account-profile-card:hover::before,
+.account-detail-card:hover::before,
+.account-logout-row:hover::before,
+.usage-card:hover::before,
+.usage-grid>div:hover::before,
+.plan:hover::before,
+.theme-card:hover::before,
+.profile-card:hover::before{
+  opacity:1!important;
+  filter:blur(0)!important;
+}
+
+/* Glass edges are crisp and bright only at the top/outer rim, like the
+   specular rim in a transmissive physical material. */
+.sidebar,
+.topbar,
+.composer,
+.large-search,
+.suggestion,
+.profile-card,
+.theme-card,
+.plan,
+.usage-card,
+.settings-reference-card,
+.settings-profile-section,
+.settings-detail-card,
+.settings-form-card,
+.profile-edit-modal{
+  border-top-color:rgba(255,255,255,.23)!important;
+}
+
+/* Controls should look like individual pieces of glass, not filled pills. */
+.icon-btn,
+.round-tool,
+.new-chat,
+.nav-item,
+.model-picker,
+.send-btn,
+.secondary-btn,
+.primary-btn,
+.danger-btn,
+.setting-select,
+.choice-card,
+.accent-swatch,
+.toggle,
+.setting-tab,
+.settings-mobile-row{
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.12),transparent 42%),
+    rgba(255,255,255,.035)!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 6px 20px rgba(0,0,0,.10)!important;
+  backdrop-filter:blur(16px) saturate(165%)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(165%)!important;
+}
+.icon-btn:hover,
+.round-tool:hover,
+.new-chat:hover,
+.nav-item:hover,
+.model-picker:hover,
+.secondary-btn:hover,
+.choice-card:hover,
+.setting-tab:hover{
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.17),transparent 42%),
+    rgba(255,255,255,.065)!important;
+  border-color:rgba(255,255,255,.18)!important;
+}
+
+/* The send control gets the stronger physical-glass edge treatment while
+   retaining its high-contrast affordance. */
+.send-btn{
+  background:
+    radial-gradient(circle at 35% 22%,rgba(255,255,255,.95),transparent 28%),
+    linear-gradient(145deg,rgba(255,255,255,.92),rgba(255,255,255,.72))!important;
+  color:#171412!important;
+  border:1px solid rgba(255,255,255,.68)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    inset 0 -2px 5px rgba(0,0,0,.10),
+    0 8px 24px rgba(0,0,0,.20)!important;
+}
+.send-btn:hover{
+  filter:saturate(115%) brightness(1.05)!important;
+  transform:translateY(-1px)!important;
+}
+
+/* User messages are content objects, not opaque cards. */
+.user-message-bubble,
+.message-row.user .message-body{
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.13),transparent 38%),
+    rgba(255,255,255,.055)!important;
+  border-color:rgba(255,255,255,.15)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -1px 0 rgba(0,0,0,.08),
+    0 10px 30px rgba(0,0,0,.13)!important;
+  backdrop-filter:blur(20px) saturate(165%)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(165%)!important;
+}
+
+/* Menus/sheets need more transmission blur because their content is dense. */
+.chat-session-menu,
+.composer-menu,
+.message-action-menu,
+.profile-edit-modal,
+.large-search{
+  backdrop-filter:blur(32px) saturate(185%) brightness(1.07)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(185%) brightness(1.07)!important;
+  box-shadow:
+    0 26px 80px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(0,0,0,.12)!important;
+}
+
+/* Keep the effect subtle on content-heavy code blocks. */
+.code-block,
+.help-code-block pre{
+  background:rgba(8,7,6,.28)!important;
+  backdrop-filter:blur(18px) saturate(140%)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(140%)!important;
+}
+
+/* Mobile: the sidebar and composer become clear floating glass sheets. */
+@media(max-width:900px){
+  .app-shell>.sidebar{
+    background:
+      radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.14),transparent 36%),
+      rgba(22,20,18,.48)!important;
+    border-right:1px solid rgba(255,255,255,.17)!important;
+    backdrop-filter:blur(34px) saturate(180%) brightness(1.06)!important;
+    -webkit-backdrop-filter:blur(34px) saturate(180%) brightness(1.06)!important;
+    box-shadow:
+      24px 0 80px rgba(0,0,0,.38),
+      inset -1px 0 rgba(255,255,255,.12),
+      inset 0 1px 0 rgba(255,255,255,.12)!important;
+  }
+  .app-shell>.sidebar-overlay{
+    background:rgba(0,0,0,.18)!important;
+    backdrop-filter:blur(16px) saturate(125%)!important;
+    -webkit-backdrop-filter:blur(16px) saturate(125%)!important;
+  }
+  .app-shell .composer{
+    background:
+      radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.16),transparent 38%),
+      rgba(24,22,20,.52)!important;
+    border-color:rgba(255,255,255,.18)!important;
+    backdrop-filter:blur(30px) saturate(180%) brightness(1.06)!important;
+    -webkit-backdrop-filter:blur(30px) saturate(180%) brightness(1.06)!important;
+    box-shadow:
+      0 18px 55px rgba(0,0,0,.30),
+      inset 0 1px 0 rgba(255,255,255,.18),
+      inset 0 -1px 0 rgba(0,0,0,.10)!important;
+  }
+}
+
+/* Light appearance: preserve translucency instead of turning glass into a
+   white card. */
+html[data-theme=light] .sidebar,
+html[data-theme=light] .topbar,
+html[data-theme=light] .composer,
+html[data-theme=light] .large-search,
+html[data-theme=light] .suggestion,
+html[data-theme=light] .profile-card,
+html[data-theme=light] .theme-card,
+html[data-theme=light] .plan,
+html[data-theme=light] .usage-card,
+html[data-theme=light] .settings-reference-card,
+html[data-theme=light] .settings-profile-section,
+html[data-theme=light] .settings-detail-card,
+html[data-theme=light] .settings-form-card,
+html[data-theme=light] .profile-edit-modal{
+  background:
+    radial-gradient(circle at var(--cookie-glass-x) var(--cookie-glass-y),rgba(255,255,255,.55),transparent 36%),
+    rgba(255,255,255,.48)!important;
+  border-color:rgba(60,50,42,.12)!important;
+  box-shadow:
+    0 18px 50px rgba(60,48,38,.10),
+    inset 0 1px 0 rgba(255,255,255,.80),
+    inset 0 -1px 0 rgba(60,48,38,.06)!important;
+  backdrop-filter:blur(26px) saturate(165%) brightness(1.02)!important;
+  -webkit-backdrop-filter:blur(26px) saturate(165%) brightness(1.02)!important;
+}
+
+/* Respect reduced-motion without removing the material. */
+@media(prefers-reduced-motion:reduce){
+  body::before{transition:none!important}
+  .sidebar::before,.topbar::before,.composer::before,.large-search::before,
+  .suggestion::before,.profile-card::before,.theme-card::before,
+  .settings-reference-card::before{transition:none!important}
+}
