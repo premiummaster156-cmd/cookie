@@ -207,7 +207,7 @@ export default function App(){
                   <button onClick={()=>useTool("Create a downloadable file for me.")}><Code2 size={17}/><span><b>Create files</b><small>Generate code and downloadable files</small></span></button>
                   <button onClick={()=>useTool("Analyze the files or images I attached.")}><ScanSearch size={17}/><span><b>Analyze uploads</b><small>Inspect attached content</small></span></button>
                   <button onClick={()=>useTool("Help me debug or improve this code.")}><Wrench size={17}/><span><b>Code tools</b><small>Debug, review, refactor</small></span></button>
-                  <button onClick={()=>useTool("Research this using available web knowledge and cite current sources when needed.")}><Globe2 size={17}/><span><b>Web research</b><small>Research current information</small></span></button>
+                  <button onClick={()=>useTool("Help me explain, summarize, or compare this clearly.")}><Globe2 size={17}/><span><b>Web research</b><small>Research current information</small></span></button>
                 </div>}
               </div>
               {keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}
