@@ -15,12 +15,6 @@ const MODELS=[
  {id:"max",name:"CPT-2 MAX",desc:"Deep reasoning & coding",icon:BrainCircuit},
  {id:"ultra",name:"CPT-3 ULTRA",desc:"Maximum agentic capability",icon:CookieIcon}
 ];
-const STARTERS=[
- {title:"Build something",desc:"Create a complete project",icon:CookieIcon,prompt:"Build a complete project in my workspace."},
- {title:"Explain a topic",desc:"Learn something difficult",icon:CookieIcon,prompt:"Explain a difficult topic simply and clearly."},
- {title:"Debug my code",desc:"Find and fix issues",icon:CookieIcon,prompt:"Inspect my project and find the most important bug to fix."},
- {title:"Write for me",desc:"Draft polished content",icon:CookieIcon,prompt:"Draft polished content for me."}
-];
 const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 function CookieIcon({size=22}:{size?:number}){return <img className="cookie-ai-icon" src="/cookie-ai-icon.png" width={size} height={size} alt="Cookie AI"/>}
 
@@ -128,11 +122,6 @@ export default function App(){
            <div className="eyebrow">COOKIE AI WORKSPACE</div>
            <h1>What are you working on?</h1>
            <p>Ask a question, share an image, or give Cookie a project to build.</p>
-           <div className="starter-grid">
-             {STARTERS.map((s,i)=><motion.button key={s.title} className="starter" whileHover={reduce?undefined:{y:-2}} whileTap={reduce?undefined:{scale:.985}} transition={{duration:.16}} onClick={()=>send(s.prompt)}>
-               <span className="starter-icon">{React.createElement(s.icon,{size:17})}</span><span><b>{s.title}</b><small>{s.desc}</small></span><ArrowUp size={15}/>
-             </motion.button>)}
-           </div>
          </motion.div>
        :
          <div className="conversation">
