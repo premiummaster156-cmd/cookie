@@ -6,7 +6,7 @@ import {
   ArrowUp, Copy, FileText, FileUp, ImagePlus,
   Camera, Images, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, CirclePlus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
-  ShieldCheck, Palette
+  ShieldCheck, Palette, Plus, Check
 } from "lucide-react";
 
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
@@ -304,7 +304,7 @@ function SettingsPage(props:{
           {(["orange","cream","cocoa"] as const).map(x=><button key={x} aria-label={x+" accent"} className={"accent-swatch "+x+" "+(props.accent===x?"selected":"")} onClick={()=>props.setAccent(x)}/>)}
         </div></SettingGroup><SettingGroup title="Text size" desc="Adjust reading size without changing the layout."><div className="choice-grid">{(["small","medium","large"] as const).map(x=><button key={x} className={"choice-card "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="small"?"Compact":x==="medium"?"Default":"More comfortable"}</small></button>)}</div></SettingGroup></>}
         {tab==="Chat"&&<><SettingGroup title="Conversation density" desc="Control how much vertical space messages use."><Toggle label="Compact messages" desc="Reduce the gap between messages." value={props.compact} setValue={props.setCompact}/></SettingGroup><SettingGroup title="Keyboard" desc="Control the hints shown around the composer."><Toggle label="Keyboard hints" desc="Show shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/></SettingGroup><SettingGroup title="Motion" desc="Keep transitions subtle and functional."><Toggle label="Interface animations" desc="Disable non-essential transitions and entrance effects." value={props.animations} setValue={props.setAnimations}/></SettingGroup></>}
-        {tab==="Interface"&&<><SettingGroup title="Chat layout" desc="Cookie keeps the conversation centered and leaves tools out of the way until you need them."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · tools on demand</div></SettingGroup><SettingGroup title="Model" desc="Choose the model from the selector in the chat header."><div className="choice-grid">{MODELS.map(m=><button key={m.id} className="choice-card"><strong>{m.name}</strong><small>{m.desc}</small></button>)}</div></SettingGroup></>}
+        {tab==="Interface"&&<><SettingGroup title="Chat layout" desc="Cookie keeps the conversation focused with navigation and attachments available when needed."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · focused interface</div></SettingGroup></>}
         {tab==="Privacy"&&<>{/* privacy controls */}<SettingGroup title="Uploads" desc="Attachments stay in the current conversation and are submitted only with your message."><div className="data-status"><ShieldCheck size={16}/> Up to 10 attachments per message · no folder uploads</div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Reset visual preferences for Cookie."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}
       </div>
     </div>
