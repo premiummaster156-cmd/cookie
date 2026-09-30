@@ -31,7 +31,7 @@ export default function App(){
  const [modelOpen,setModelOpen]=useState(false);
  const [workspace,setWorkspace]=useState<FileItem[]>([]);
  const [drawer,setDrawer]=useState(false);
- const [sidebar,setSidebar]=useState(true);
+ const [sidebar,setSidebar]=useState(()=>typeof window!=="undefined"?window.innerWidth>900:true);
  const [loading,setLoading]=useState(false);
  const [images,setImages]=useState<string[]>([]);
  const [panel,setPanel]=useState<"settings"|"help"|null>(null);
@@ -194,4 +194,23 @@ export default function App(){
  </main>;
 }
 
-function Message({text}:{text:string}){return <div className="message-text">{text.split("\n").map((x,i)=><p key={i}>{x||" "}</p>)}</div>}
+function Message({text}:{text:string}){
+ const lines=text.split("\n");
+ const inline=(value:string)=>{
+   const parts=value.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+   return parts.map((part,i)=>{
+     if(/^\*\*[^*]+\*\*$/.test(part)) return <strong key={i}>{part.slice(2,-2)}</strong>;
+     if(/^`[^`]+`$/.test(part)) return <code key={i}>{part.slice(1,-1)}</code>;
+     return <React.Fragment key={i}>{part}</React.Fragment>;
+   });
+ };
+ return <div className="message-text">
+   {lines.map((line,i)=>{
+     const heading=line.match(/^\*\*(.+?)\*\*:?$/);
+     const numbered=line.match(/^(\d+)\.\s+(.*)$/);
+     if(heading) return <h3 key={i}>{inline(heading[1])}</h3>;
+     if(numbered) return <p className="rich-list-item" key={i}><span>{numbered[1]}.</span> {inline(numbered[2])}</p>;
+     return <p key={i}>{line?inline(line):" "}</p>;
+   })}
+ </div>;
+}
