@@ -145,6 +145,8 @@ export default function App(){
   function findInChat(text:string){setSearch(text.slice(0,80));setMessageMenuOpen(null)}
 
 
+  const menuMessage=messageMenuOpen?messages.find(m=>m.id===messageMenuOpen):null;
+
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -202,15 +204,6 @@ export default function App(){
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
                     <div className="message-more-wrap">
                       <button className={messageMenuOpen===m.id?"active":""} onClick={e=>toggleMessageMenu(m.id,e.currentTarget)} aria-label="More message actions" aria-expanded={messageMenuOpen===m.id}><MoreHorizontal size={15}/></button>
-                      {messageMenuOpen===m.id&&<div className="message-action-menu" style={{right:messageMenuPos.right,bottom:messageMenuPos.bottom}}>
-                        <div className="message-action-title">Cookie · Current chat</div>
-                        <button onClick={()=>shareMessage(m)}><Share2 size={20}/><span>Share</span></button>
-                        <button onClick={()=>toggleMessagePin(m.id)}><Pin size={20}/><span>{pinnedMessages.includes(m.id)?"Unpin":"Pin"}</span></button>
-                        <button onClick={()=>setMessageMenuOpen(null)}><Paperclip size={20}/><span>Uploaded files</span></button>
-                        <button onClick={()=>findInChat(m.content)}><Search size={20}/><span>Find in chat</span></button>
-                        <button onClick={()=>setMessageMenuOpen(null)}><Archive size={20}/><span>Archive</span></button>
-                        <button className="danger" onClick={()=>deleteMessage(m.id)}><Trash2 size={20}/><span>Delete</span></button>
-                      </div>}
                     </div>
                   </div>}
                 </div>
@@ -257,6 +250,15 @@ export default function App(){
         <input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>attach(e,"image")}/>
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
+      </div>}
+      {menuMessage&&<div className="message-action-menu" style={{right:messageMenuPos.right,bottom:messageMenuPos.bottom}}>
+        <div className="message-action-title">Cookie · Current chat</div>
+        <button onClick={()=>shareMessage(menuMessage)}><Share2 size={20}/><span>Share</span></button>
+        <button onClick={()=>toggleMessagePin(menuMessage.id)}><Pin size={20}/><span>{pinnedMessages.includes(menuMessage.id)?"Unpin":"Pin"}</span></button>
+        <button onClick={()=>setMessageMenuOpen(null)}><Paperclip size={20}/><span>Uploaded files</span></button>
+        <button onClick={()=>findInChat(menuMessage.content)}><Search size={20}/><span>Find in chat</span></button>
+        <button onClick={()=>setMessageMenuOpen(null)}><Archive size={20}/><span>Archive</span></button>
+        <button className="danger" onClick={()=>deleteMessage(menuMessage.id)}><Trash2 size={20}/><span>Delete</span></button>
       </div>}
       {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
       {view==="help"&&<HelpPage/>}
