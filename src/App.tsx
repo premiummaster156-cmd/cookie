@@ -13,7 +13,7 @@ import {
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
 type GeneratedFile={name:string;path:string;content:string;kind?:string};
 type Msg={id:string;role:"user"|"assistant";content:string;attachments?:Attachment[];files?:GeneratedFile[];time?:string};
-type View="chat"|"settings"|"account"|"help";
+type View="chat"|"settings"|"help";
 
 const COOKIE_ICON_URL="https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
 const MODELS=[
@@ -261,7 +261,7 @@ export default function App(){
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="settings"?"active":"")} onClick={()=>openView("settings")}><span className="nav-icon"><Settings size={17}/></span><span>Settings</span></button>
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openPanel("Help Center")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
-        <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
+        <button className={"account "+(view==="settings"?"active":"")} onClick={()=>openView("settings")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
@@ -395,7 +395,7 @@ export default function App(){
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
       {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
-      {view==="account"&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}
+      
       {view==="help"&&<HelpPage/>}
     </section>
 
@@ -559,25 +559,149 @@ function SettingsPage(props:{
   compact:boolean;setCompact:(v:boolean)=>void;animations:boolean;setAnimations:(v:boolean)=>void;
   keyboardHints:boolean;setKeyboardHints:(v:boolean)=>void;
 }){
-  const [tab,setTab]=useState("Appearance");
-  const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
-  return <div className="page-container settings-page">
-    <div className="page-heading"><span className="eyebrow">CHAT / SETTINGS</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves while you use chat. Account settings are available from your profile at the bottom of the sidebar.</p></div>
-    <div className="settings-layout">
-      <nav className="settings-nav" aria-label="Chat settings sections"><div className="settings-nav-label">Chat settings</div>{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={14}/><span>{String(name)}</span></button>)}</nav>
-      <div className="setting-content">
-        {tab==="Appearance"&&<SettingGroup title="Appearance" desc="Keep the interface quiet and readable. Changes apply immediately.">
-          <div className="settings-row-grid"><div><strong>Theme</strong><small>Choose the surface used across Cookie.</small></div><div className="inline-choices">{["dark","light","system"].map(x=><button key={x} className={"text-choice "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"selected":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-dot "+x+"-preview"}/><span>{x[0].toUpperCase()+x.slice(1)}</span></button>)}</div></div>
-          <div className="settings-row-grid"><div><strong>Accent</strong><small>One restrained highlight color for focus and controls.</small></div><div className="accent-row">{(["orange","cream","cocoa"] as const).map(x=><button key={x} aria-label={x+" accent"} className={"accent-swatch "+x+" "+(props.accent===x?"selected":"")} onClick={()=>props.setAccent(x)}/>)}</div></div>
-          <div className="settings-row-grid"><div><strong>Text size</strong><small>Adjust reading size without changing the layout.</small></div><div className="inline-choices">{(["small","medium","large"] as const).map(x=><button key={x} className={"text-choice "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
-        </SettingGroup>}
-        {tab==="Chat"&&<><SettingGroup title="Conversation" desc="Keep the chat focused and control the amount of interface motion around it."><Toggle label="Compact messages" desc="Reduce vertical spacing between messages." value={props.compact} setValue={props.setCompact}/><Toggle label="Keyboard hints" desc="Show useful shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/><Toggle label="Interface animations" desc="Use short transitions for menus and page changes." value={props.animations} setValue={props.setAnimations}/></SettingGroup><SettingGroup title="Composer" desc="The composer stays compact so the conversation remains the primary surface."><div className="settings-note"><Check size={15}/><span>Attachments, generated files, and message tools stay attached to the conversation.</span></div></SettingGroup></>}
-        {tab==="Interface"&&<><SettingGroup title="Navigation" desc="Cookie keeps product navigation in the sidebar instead of turning the chat into a dashboard of controls."><div className="settings-note"><Check size={15}/><span>Chat · Recent · Settings · Help</span></div></SettingGroup><SettingGroup title="Session actions" desc="The three-dot menu in the chat header acts on the current chat session as a whole."><div className="settings-note"><MoreHorizontal size={15}/><span>Share · Rename · Pin · Find · Archive · Delete chat</span></div></SettingGroup></>}
-        {tab==="Privacy"&&<><SettingGroup title="Uploads" desc="Attachments are submitted only when you choose them for a message."><div className="settings-note"><ShieldCheck size={15}/><span>Up to 10 attachments per message · no folder uploads</span></div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Return Cookie’s visual preferences to their original values."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}
+  const [detail,setDetail]=useState<string|null>(null);
+
+  const Row=({icon:Icon,label,value,onClick}:{icon:any;label:string;value?:string;onClick?:()=>void})=>
+    <button className="settings-mobile-row" onClick={onClick||(()=>setDetail(label))}>
+      <span className="settings-mobile-row-icon"><Icon size={22}/></span>
+      <span className="settings-mobile-row-copy"><strong>{label}</strong>{value&&<small>{value}</small>}</span>
+      {value?<span className="settings-mobile-value">{value}</span>:<ChevronRight className="settings-mobile-chevron" size={21}/>}
+    </button>;
+
+  if(detail==="General"){
+    return <div className="page-container settings-reference-page">
+      <div className="settings-detail-head">
+        <button className="settings-back-btn" onClick={()=>setDetail(null)} aria-label="Back to settings"><ArrowLeft size={21}/></button>
+        <div><span className="settings-reference-eyebrow">APP SETTINGS</span><h2>General</h2></div>
       </div>
+
+      <section className="settings-reference-section">
+        <h3>Chat</h3>
+        <div className="settings-reference-card">
+          <div className="settings-control-row">
+            <div><strong>Compact messages</strong><small>Reduce vertical spacing between messages.</small></div>
+            <Toggle label="" desc="" value={props.compact} setValue={props.setCompact}/>
+          </div>
+          <div className="settings-control-row">
+            <div><strong>Keyboard hints</strong><small>Show shortcuts such as ⌘ K and Shift + Enter.</small></div>
+            <Toggle label="" desc="" value={props.keyboardHints} setValue={props.setKeyboardHints}/>
+          </div>
+          <div className="settings-control-row">
+            <div><strong>Interface animations</strong><small>Use short transitions for menus and page changes.</small></div>
+            <Toggle label="" desc="" value={props.animations} setValue={props.setAnimations}/>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-reference-section">
+        <h3>Text</h3>
+        <div className="settings-reference-card">
+          <div className="settings-control-row">
+            <div><strong>Text size</strong><small>Adjust reading size without changing the layout.</small></div>
+            <div className="settings-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-reference-section">
+        <h3>Chat session</h3>
+        <div className="settings-reference-card">
+          <div className="settings-control-note"><MoreHorizontal size={19}/><span>Share, rename, pin, find, archive, and delete are available from the chat header’s three-dot menu.</span></div>
+        </div>
+      </section>
+    </div>;
+  }
+
+  return <div className="page-container settings-reference-page">
+    <div className="settings-reference-head">
+      <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
+      <h2>Settings</h2>
     </div>
+
+    <section className="settings-reference-section settings-profile-section">
+      <div className="settings-profile">
+        <span className="settings-profile-avatar">D</span>
+        <div className="settings-profile-copy"><strong>Cookie user</strong><small>Cookie account</small></div>
+        <button className="settings-profile-edit" aria-label="Edit profile" onClick={()=>setDetail("Profile")}><UserRound size={18}/></button>
+      </div>
+      <div className="settings-upgrade">
+        <div><strong>Do more with Cookie</strong><small>Get higher limits and access to advanced features.</small></div>
+        <button onClick={()=>setDetail("Subscription")}>Manage</button>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Customize Cookie</h3>
+      <div className="settings-reference-card">
+        <Row icon={UserRound} label="Personalization"/>
+        <Row icon={Database} label="Memory"/>
+        <Row icon={Plus} label="Plugins"/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Account</h3>
+      <div className="settings-reference-card">
+        <Row icon={Mail} label="Email" value="Not connected"/>
+        <Row icon={CreditCard} label="Subscription" value="Cookie account"/>
+        <Row icon={RotateCcw} label="Restore purchases"/>
+        <Row icon={BarChart3} label="Usage and limits"/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Theme</h3>
+      <div className="settings-reference-card">
+        <button className="settings-mobile-row" onClick={()=>props.setDark(!props.dark)}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Appearance</strong></span>
+          <span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+        <button className="settings-mobile-row" onClick={()=>props.setAccent(props.accent==="cream"?"orange":props.accent==="orange"?"cocoa":"cream")}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Accent color</strong></span>
+          <span className={"settings-accent-dot "+props.accent}></span>
+          <span className="settings-mobile-value">{props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>App settings</h3>
+      <div className="settings-reference-card">
+        <Row icon={Settings} label="General" value="Chat & interface"/>
+        <Row icon={Bell} label="Notifications"/>
+        <Row icon={Volume2} label="Voice"/>
+        <Row icon={UsersRound} label="Parental controls"/>
+        <Row icon={ShieldCheck} label="Trusted contact"/>
+        <Row icon={ShieldCheck} label="Safety"/>
+        <Row icon={LockKeyhole} label="Security and login"/>
+        <Row icon={Monitor} label="Remote control"/>
+        <Row icon={HardDrive} label="Storage"/>
+        <Row icon={UserRound} label="Data controls"/>
+        <Row icon={Megaphone} label="Ads controls"/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Get help</h3>
+      <div className="settings-reference-card">
+        <Row icon={Flag} label="Report app issue"/>
+        <Row icon={HelpCircle} label="Help Center" onClick={()=>openPanel("Help Center")}/>
+        <Row icon={ShieldCheck} label="Privacy Center"/>
+        <Row icon={Info} label="About"/>
+      </div>
+    </section>
+
+    <button className="settings-logout-row" onClick={()=>setDetail("Log out")}><LogOut size={22}/><span>Log out</span></button>
+    <p className="settings-reference-footer">Cookie settings are kept together so account, chat, and interface controls are in one place.</p>
   </div>;
+
+  function openPanel(name:string){setDetail(name)}
 }
+
 function SettingGroup({title,desc,children}:{title:string;desc:string;children:React.ReactNode}){
   return <section className="setting-group"><h3>{title}</h3><p>{desc}</p>{children}</section>;
 }
