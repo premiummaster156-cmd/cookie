@@ -203,6 +203,7 @@ export default function App(){
       if(p.profileEmail!==undefined)setProfileEmail(String(p.profileEmail));
       if(p.aiPersonality!==undefined)setAiPersonality(String(p.aiPersonality));
     }catch{}
+  },[]);
   useEffect(()=>{
     try{
       const saved=JSON.parse(localStorage.getItem("cookie_chat")||"null");
@@ -222,7 +223,6 @@ export default function App(){
       localStorage.setItem("cookie_chat",JSON.stringify({messages:messages.slice(-80),title:chatTitle,pinned:chatPinned,archived:chatArchived,model}));
     }catch{}
   },[messages,chatTitle,chatPinned,chatArchived,model]);
-  },[]);
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
     dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,
     autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,
