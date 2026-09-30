@@ -419,7 +419,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}\n      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
+      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}\n
       
       {view==="help"&&<HelpPage/>}
     </section>
@@ -446,132 +446,75 @@ function Message({text}:{text:string}){
   })}</div>;
 }
 
-function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa"|"blue";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa"|"blue">>}){
+function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa"|"blue";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa"|"blue">>;textSize:"small"|"medium"|"large";setTextSize:React.Dispatch<React.SetStateAction<"small"|"medium"|"large">>;compact:boolean;setCompact:React.Dispatch<React.SetStateAction<boolean>>;animations:boolean;setAnimations:React.Dispatch<React.SetStateAction<boolean>>;keyboardHints:boolean;setKeyboardHints:React.Dispatch<React.SetStateAction<boolean>>}){
   const [panel,setPanel]=useState<string|null>(null);
-
-  const openPanel=(name:string)=>setPanel(name);
-
-  const Row=({icon:Icon,label,value,onClick,destructive=false}:{icon:any;label:string;value?:string;onClick?:()=>void;destructive?:boolean})=>
-    <button className={"account-mobile-row "+(destructive?"destructive":"")} onClick={onClick||(()=>openPanel(label))}>
-      <span className="account-mobile-row-icon"><Icon size={21}/></span>
-      <span className="account-mobile-row-copy"><strong>{label}</strong>{value&&<small>{value}</small>}</span>
-      <ChevronRight className="account-mobile-chevron" size={20}/>
+  const Row=({icon:Icon,label,value,onClick}:{icon:any;label:string;value?:string;onClick?:()=>void})=>
+    <button className="settings-mobile-row" onClick={onClick||(()=>setPanel(label))}>
+      <span className="settings-mobile-row-icon"><Icon size={21}/></span>
+      <span className="settings-mobile-row-copy"><strong>{label}</strong>{value&&<small>{value}</small>}</span>
+      {value?<span className="settings-mobile-value">{value}</span>:<ChevronRight className="settings-mobile-chevron" size={20}/>}
     </button>;
 
-  if(panel){
-    const detail:Record<string,{title:string;body:string}> = {
-      "Email":{title:"Email",body:"No account email is connected to this Cookie build yet."},
-      "Subscription":{title:"Subscription",body:"Cookie plan billing is not connected yet. Your current local interface remains available without changing these settings."},
-      "Usage & limits":{title:"Usage & limits",body:"Usage reporting is not connected yet. This page is ready for the live limits service when it is added."},
-      "Personalization":{title:"Personalization",body:"Personalization controls will live here. Cookie currently keeps interface preferences locally in this browser."},
-      "Memory":{title:"Memory",body:"Memory controls are not connected to a server account yet. Nothing on this page should imply persistent account memory."},
-      "Plugins":{title:"Plugins",body:"Plugin connections are not configured in this build yet."},
-      "General":{title:"General",body:"General Cookie preferences are available from Settings. Use the back button to return."},
-      "Notifications":{title:"Notifications",body:"Notifications are not connected in this web build yet."},
-      "Voice":{title:"Voice",body:"Voice controls are not connected in this web build yet."},
-      "Parental controls":{title:"Parental controls",body:"Parental controls are not connected in this Cookie build."},
-      "Trusted contact":{title:"Trusted contact",body:"Trusted contact is not connected in this Cookie build."},
-      "Safety":{title:"Safety",body:"Safety and account-protection controls will appear here when the account service is connected."},
-      "Security and login":{title:"Security and login",body:"Login and two-step verification are not connected in this web build yet."},
-      "Remote control":{title:"Remote control",body:"Remote control is not available in this Cookie build."},
-      "Storage":{title:"Storage",body:"Persistent account storage is not connected. Generated files remain response artifacts."},
-      "Data controls":{title:"Data controls",body:"Data controls are not connected to a server account yet. Local interface preferences can be reset from Settings."},
-      "Ads controls":{title:"Ads controls",body:"There are no account-level ad controls connected in this build."},
-      "Report app issue":{title:"Report app issue",body:"For now, use the repository issue tracker or describe the problem directly in Cookie."},
-      "Help Center":{title:"Help Center",body:"Open Help & shortcuts from the sidebar for Cookie's built-in product guide."},
-      "Privacy Center":{title:"Privacy Center",body:"Cookie currently documents its privacy boundaries in Help & shortcuts → Privacy & limitations."},
-      "About":{title:"About Cookie",body:"Cookie is the AI assistant for this website. This screen intentionally shows only capabilities that are actually connected."}
-    };
-    const item=detail[panel]||{title:panel,body:"This control is not connected yet."};
-    return <div className="page-container account-mobile-page">
-      <div className="account-mobile-detail-head">
-        <button className="account-back-btn" onClick={()=>setPanel(null)} aria-label="Back to account settings"><ArrowLeft size={20}/></button>
-        <div><span className="account-mobile-eyebrow">ACCOUNT</span><h2>{item.title}</h2></div>
+  if(panel==="General"){
+    return <div className="page-container settings-reference-page">
+      <div className="settings-detail-head">
+        <button className="settings-back-btn" onClick={()=>setPanel(null)} aria-label="Back to settings"><ArrowLeft size={21}/></button>
+        <div><span className="settings-reference-eyebrow">APP SETTINGS</span><h2>General</h2></div>
       </div>
-      <section className="account-detail-card">
-        <div className="account-detail-icon"><UserRound size={24}/></div>
-        <p>{item.body}</p>
+      <section className="settings-reference-section">
+        <h3>Chat & interface</h3>
+        <div className="settings-reference-card">
+          <div className="settings-control-row"><div><strong>Compact messages</strong><small>Reduce spacing between messages.</small></div><button className={"settings-inline-toggle "+(props.compact?"on":"")} onClick={()=>props.setCompact(v=>!v)}><span/></button></div>
+          <div className="settings-control-row"><div><strong>Keyboard hints</strong><small>Show useful keyboard shortcuts.</small></div><button className={"settings-inline-toggle "+(props.keyboardHints?"on":"")} onClick={()=>props.setKeyboardHints(v=>!v)}><span/></button></div>
+          <div className="settings-control-row"><div><strong>Interface animations</strong><small>Use short page and menu transitions.</small></div><button className={"settings-inline-toggle "+(props.animations?"on":"")} onClick={()=>props.setAnimations(v=>!v)}><span/></button></div>
+          <div className="settings-control-row"><div><strong>Text size</strong><small>Adjust reading size.</small></div><div className="settings-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
+        </div>
       </section>
     </div>;
   }
 
-  return <div className="page-container account-mobile-page">
-    <div className="account-mobile-head">
-      <div>
-        <span className="account-mobile-eyebrow">COOKIE SETTINGS</span>
-        <h2>Settings</h2>
-        <p>Manage your account, appearance, app preferences, privacy, and help.</p>
-      </div>
-    </div>
+  if(panel==="Help Center") return <HelpPage/>;
 
-    <section className="account-profile-card">
-      <div className="account-profile-main">
-        <span className="account-large-avatar">D</span>
-        <div><strong>Cookie user</strong><small>Cookie account</small></div>
-        <button className="account-edit-avatar" onClick={()=>openPanel("Profile photo")} aria-label="Edit profile"><UserRound size={17}/></button>
-      </div>
-      <div className="account-profile-upgrade">
-        <div><strong>Cookie account</strong><small>Connect a plan when billing is available.</small></div>
-        <button onClick={()=>openPanel("Subscription")}>Manage</button>
+  const simplePages:Record<string,{title:string;icon:any;body:string}>={
+    "Report app issue":{title:"Report app issue",icon:Flag,body:"Describe the problem in Cookie with the error message and the steps that caused it. A separate support-ticket service is not connected yet."},
+    "Privacy Center":{title:"Privacy Center",icon:ShieldCheck,body:"Cookie only receives information that the website actually sends with your request. See Help & shortcuts → Privacy & limitations for the full boundary."},
+    "About":{title:"About Cookie",icon:Info,body:"Cookie is the AI assistant for this website. Account billing, memory, plugins, voice, and authentication are not connected in this build."}
+  };
+  if(panel&&simplePages[panel]){
+    const p=simplePages[panel];
+    return <div className="page-container settings-reference-page">
+      <div className="settings-detail-head"><button className="settings-back-btn" onClick={()=>setPanel(null)} aria-label="Back"><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">COOKIE SETTINGS</span><h2>{p.title}</h2></div></div>
+      <section className="settings-detail-card"><div className="settings-detail-icon"><p.icon size={23}/></div><p>{p.body}</p></section>
+    </div>;
+  }
+
+  return <div className="page-container account-mobile-page">
+    <div className="account-mobile-head"><div><span className="account-mobile-eyebrow">COOKIE SETTINGS</span><h2>Settings</h2><p>Only settings that are practical in the current build are shown here.</p></div></div>
+    <section className="settings-reference-section settings-profile-section">
+      <div className="settings-profile"><span className="settings-profile-avatar">D</span><div className="settings-profile-copy"><strong>Cookie user</strong><small>Local account</small></div></div>
+    </section>
+    <section className="settings-reference-section">
+      <h3>Theme</h3>
+      <div className="settings-reference-card">
+        <button className="settings-mobile-row" onClick={()=>props.setDark(v=>!v)}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Appearance</strong></span><span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
+        <button className="settings-mobile-row" onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Accent color</strong></span><span className={"settings-accent-dot "+props.accent}/><span className="settings-mobile-value">{props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
       </div>
     </section>
-
-    <AccountMobileSection title="Account">
-      <Row icon={Mail} label="Email" value="Not connected"/>
-      <Row icon={CreditCard} label="Subscription" value="Cookie account"/>
-      <Row icon={RotateCcw} label="Restore purchases"/>
-      <Row icon={BarChart3} label="Usage & limits"/>
-    </AccountMobileSection>
-
-    <AccountMobileSection title="Customize Cookie">
-      <Row icon={UserRound} label="Personalization"/>
-      <Row icon={Database} label="Memory"/>
-      <Row icon={Plus} label="Plugins"/>
-    </AccountMobileSection>
-
-    <AccountMobileSection title="Theme">
-      <button className="account-mobile-row" onClick={()=>setDarkSafe()}>
-        <span className="account-mobile-row-icon"><Palette size={21}/></span>
-        <span className="account-mobile-row-copy"><strong>Appearance</strong><small>{props.dark?"Dark":"Light"}</small></span>
-        <span className="account-mobile-value">{props.dark?"Dark":"Light"}</span>
-      </button>
-      <button className="account-mobile-row" onClick={()=>cycleAccent()}>
-        <span className="account-mobile-row-icon"><Palette size={21}/></span>
-        <span className="account-mobile-row-copy"><strong>Accent color</strong><small>Cookie interface highlight</small></span>
-        <span className={"account-accent-dot "+props.accent}/><span className="account-mobile-value">{accentLabel()}</span>
-      </button>
-    </AccountMobileSection>
-
-    <AccountMobileSection title="App settings">
-      <Row icon={Settings} label="General"/>
-      <Row icon={Bell} label="Notifications"/>
-      <Row icon={Volume2} label="Voice"/>
-      <Row icon={UsersRound} label="Parental controls"/>
-      <Row icon={ShieldCheck} label="Trusted contact"/>
-      <Row icon={ShieldCheck} label="Safety"/>
-      <Row icon={LockKeyhole} label="Security and login"/>
-      <Row icon={Monitor} label="Remote control"/>
-      <Row icon={HardDrive} label="Storage"/>
-      <Row icon={UserRound} label="Data controls"/>
-      <Row icon={Megaphone} label="Ads controls"/>
-    </AccountMobileSection>
-
-    <AccountMobileSection title="Get help">
-      <Row icon={Flag} label="Report app issue"/>
-      <Row icon={HelpCircle} label="Help Center" onClick={()=>openPanel("Help Center")}/>
-      <Row icon={ShieldCheck} label="Privacy Center"/>
-      <Row icon={Info} label="About"/>
-    </AccountMobileSection>
-
-    <button className="account-logout-row" onClick={()=>openPanel("Log out")}><LogOut size={21}/><span>Log out</span></button>
-    <p className="account-mobile-footer">Cookie account controls are shown only when the related feature is actually connected.</p>
+    <section className="settings-reference-section">
+      <h3>App settings</h3>
+      <div className="settings-reference-card"><Row icon={Settings} label="General" value="Chat & interface"/></div>
+    </section>
+    <section className="settings-reference-section">
+      <h3>Get help</h3>
+      <div className="settings-reference-card">
+        <Row icon={Flag} label="Report app issue"/>
+        <Row icon={HelpCircle} label="Help Center" onClick={()=>setPanel("Help Center")}/>
+        <Row icon={ShieldCheck} label="Privacy Center" onClick={()=>setPanel("Privacy Center")}/>
+        <Row icon={Info} label="About" onClick={()=>setPanel("About")}/>
+      </div>
+    </section>
+    <p className="settings-reference-footer">Billing, memory, plugins, voice, notifications, remote control, parental controls, storage, and authentication are intentionally omitted until their backend services exist.</p>
   </div>;
-
-  function setDarkSafe(){props.setDark(v=>!v)}
-  function cycleAccent(){
-    props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue");
-  }
-  function accentLabel(){return props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}
 }
 
 function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
