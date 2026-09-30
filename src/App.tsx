@@ -503,7 +503,7 @@ export default function App(){
     </main>;
   }
 
-  return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
+  return <main className={"app-shell "+(dark?"theme-dark":"theme-light")+" "+(!animations?"motion-disabled":"")}>
     <CookieMotionScene enabled={animations}/>
     {sidebarOpen&&<div className="sidebar-overlay animate__animated animate__fadeIn" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={"sidebar "+(sidebarOpen?"animate__animated animate__slideInLeft":"")}>
