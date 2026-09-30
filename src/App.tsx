@@ -990,4 +990,91 @@ function HelpPage(){
       </div>
     </div>;
   }
+  return <div className="page-container settings-reference-page">
+    <div className="settings-reference-head">
+      <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
+      <h2>Settings</h2>
+    </div>
+
+    <section className="settings-reference-section settings-profile-section">
+      <div className="settings-profile">
+        <span className="settings-profile-avatar">{(props.profileName.trim().split(/\s+/).map(v=>v[0]).join("").slice(0,2)||"C").toUpperCase()}</span>
+        <div className="settings-profile-copy"><strong>{props.profileName||"Cookie user"}</strong><small>{props.profileEmail||"Local account"}</small></div>
+        <button className="settings-profile-edit" aria-label="Edit profile" onClick={()=>{setDraftName(props.profileName);setDraftUsername(props.profileUsername);setPanel("Profile")}}><UserRound size={18}/></button>
+      </div>
+      <div className="settings-upgrade">
+        <div><strong>Do more with Cookie</strong><small>Get higher limits and access to advanced features.</small></div>
+        <button onClick={()=>{setDraftName(props.profileName);setDraftUsername(props.profileUsername);setPanel("Profile")}}>Edit</button>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Customize Cookie</h3>
+      <div className="settings-reference-card">
+        <Row icon={UserRound} label="Personalization" value={props.aiPersonality} onClick={()=>setPanel("Personality")}/>
+        <Row icon={Brain} label="Memory" value={props.memoryEnabled?"On":"Off"} onClick={()=>setPanel("Memory")}/>
+        <Row icon={Plus} label="Plugins" value="Coming later" onClick={()=>setPanel("Plugins")}/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Account</h3>
+      <div className="settings-reference-card">
+        <Row icon={UserRound} label="Username" value={props.profileUsername} onClick={()=>{setDraftUsername(props.profileUsername);setPanel("Username")}}/>
+        <Row icon={Mail} label="Email" value={props.profileEmail||"Not connected"} onClick={()=>{setDraftEmail(props.profileEmail);setPanel("Email")}}/>
+        <Row icon={CreditCard} label="Subscription" value="Cookie account" onClick={()=>setPanel("Subscription")}/>
+        <Row icon={RotateCcw} label="Restore purchases" onClick={()=>setPanel("Restore purchases")}/>
+        <Row icon={BarChart3} label="Usage and limits" value={props.sessionMessages+" responses"} onClick={()=>setPanel("Usage and limits")}/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Theme</h3>
+      <div className="settings-reference-card">
+        <button className="settings-mobile-row" onClick={()=>setPanel("Appearance")}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Appearance</strong></span>
+          <span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+        <button className="settings-mobile-row" onClick={()=>setPanel("Accent color")}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Theme color</strong></span>
+          <span className={"settings-accent-dot "+props.accent}></span>
+          <span className="settings-mobile-value">{props.accent==="blue"?"Cookie":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>App settings</h3>
+      <div className="settings-reference-card">
+        <Row icon={Settings} label="General" value="Chat & interface" onClick={()=>setPanel("General")}/>
+        <Row icon={Bell} label="Notifications" value="Coming later" onClick={()=>setPanel("Notifications")}/>
+        <Row icon={Volume2} label="Voice" value="Coming later" onClick={()=>setPanel("Voice")}/>
+        <Row icon={UsersRound} label="Parental controls" value="Coming later" onClick={()=>setPanel("Parental controls")}/>
+        <Row icon={ShieldCheck} label="Trusted contact" value="Coming later" onClick={()=>setPanel("Trusted contact")}/>
+        <Row icon={ShieldCheck} label="Safety" value="Built in"/>
+        <Row icon={LockKeyhole} label="Security and login" value="Local account"/>
+        <Row icon={Monitor} label="Remote control" value="Coming later" onClick={()=>setPanel("Remote control")}/>
+        <Row icon={HardDrive} label="Storage" value="Browser"/>
+        <Row icon={UserRound} label="Data controls" value="Local preferences"/>
+        <Row icon={Megaphone} label="Ads controls" value="Coming later" onClick={()=>setPanel("Ads controls")}/>
+      </div>
+    </section>
+
+    <section className="settings-reference-section">
+      <h3>Get help</h3>
+      <div className="settings-reference-card">
+        <Row icon={Flag} label="Report app issue" onClick={()=>setPanel("Report app issue")}/>
+        <Row icon={HelpCircle} label="Help Center" onClick={()=>setPanel("Help Center")}/>
+        <Row icon={ShieldCheck} label="Privacy Center" onClick={()=>setPanel("Privacy Center")}/>
+        <Row icon={Info} label="About" onClick={()=>setPanel("About")}/>
+      </div>
+    </section>
+
+    <button className="settings-logout-row" onClick={()=>setPanel("Log out")}><LogOut size={22}/><span>Log out</span></button>
+    <p className="settings-reference-footer">Cookie settings are kept together so account, chat, and interface controls are in one place.</p>
+
 }
