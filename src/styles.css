@@ -4461,23 +4461,18 @@ html[data-theme=dark] .profile-edit-save{background:#fff;color:#111}
 
 
 .settings-main-back{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  min-height:36px;
+  width:56px;
+  height:56px;
+  display:grid;
+  place-items:center;
   margin:0 0 18px 2px;
-  padding:0 12px 0 9px;
-  border:1px solid color-mix(in srgb,var(--line) 78%,transparent);
-  border-radius:999px;
-  background:var(--surface);
+  padding:0;
+  border-radius:50%;
   color:var(--text);
-  box-shadow:0 3px 12px rgba(0,0,0,.06);
-  font-size:12px;
-  font-weight:600;
+  cursor:pointer;
 }
 .settings-main-back:hover{
-  background:var(--accent-soft);
   color:var(--accent-strong);
-  transform:translateX(-1px);
+  transform:translateY(-1px);
 }
-.settings-main-back:active{transform:scale(.98)}
+.settings-main-back:active{transform:scale(.96)}
