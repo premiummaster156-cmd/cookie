@@ -4525,3 +4525,106 @@ html[data-theme=dark] .profile-edit-save{background:#fff;color:#111}
   .composer-model select{max-width:82px;font-size:9px}
   .shortcut-hint{font-size:9px}
 }
+
+
+/* ===== Product-quality UX pass ===== */
+:focus-visible{
+  outline:2px solid var(--accent-strong);
+  outline-offset:3px;
+}
+button,input,textarea,select{touch-action:manipulation}
+.search-inline{
+  position:relative;
+}
+.search-inline input{
+  padding-right:42px;
+}
+.search-clear{
+  position:absolute;
+  right:10px;
+  top:50%;
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  transform:translateY(-50%);
+  border:0;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--surface-3) 75%,transparent);
+  color:var(--muted);
+}
+.search-clear:hover{
+  color:var(--text);
+  background:var(--surface-3);
+}
+.search-no-results{
+  min-height:180px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:6px;
+  margin:20px 0 50px;
+  color:var(--muted);
+  text-align:center;
+}
+.search-no-results svg{color:var(--accent-strong)}
+.search-no-results strong{color:var(--text);font-size:14px}
+.search-no-results span{font-size:12px}
+.welcome-prompts{
+  width:min(680px,100%);
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:9px;
+  margin:25px auto 0;
+}
+.welcome-prompts button{
+  min-height:38px;
+  padding:0 15px;
+  border:1px solid color-mix(in srgb,var(--line) 78%,transparent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--surface) 76%,transparent);
+  color:var(--text);
+  font:inherit;
+  font-size:11px;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease;
+}
+.welcome-prompts button:hover{
+  transform:translateY(-1px);
+  background:var(--accent-soft);
+  border-color:color-mix(in srgb,var(--accent-strong) 25%,var(--line));
+}
+.welcome-prompts button:active{transform:scale(.98)}
+.composer textarea{
+  max-height:180px;
+  overflow-y:auto;
+  resize:none;
+}
+.composer-wrap{
+  padding-bottom:max(10px,env(safe-area-inset-bottom));
+}
+.sidebar-overlay{
+  overscroll-behavior:contain;
+}
+@media(max-width:620px){
+  .welcome-prompts{
+    justify-content:flex-start;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding:2px 2px 7px;
+    scrollbar-width:none;
+  }
+  .welcome-prompts::-webkit-scrollbar{display:none}
+  .welcome-prompts button{
+    flex:0 0 auto;
+    min-height:36px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.001ms!important;
+  }
+}
