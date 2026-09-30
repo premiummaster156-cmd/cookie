@@ -183,7 +183,7 @@ export async function onRequestPost({ request, env }) {
       } catch { return {name:a.name,content:"[Binary or non-text attachment]"}; }
     });
     const attachmentContext = readableFiles.length
-      ? "\\n\\nUSER ATTACHED FILES:\\n" + readableFiles.map(f => "\\n--- " + f.name + " ---\\n" + f.content).join("\\n")
+      ? "\n\nUSER ATTACHED FILES:\n" + readableFiles.map(f => "\n--- " + f.name + " ---\n" + f.content).join("\n")
       : "";
     const apiMessages = [{ role: "system", content: system }, ...messages];
     if (attachmentContext) {
