@@ -307,9 +307,9 @@ function SettingsPage(props:{
   const [tab,setTab]=useState("Appearance");
   const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
   return <div className="page-container settings-page">
-    <div className="page-heading"><span className="eyebrow">ACCOUNT / PREFERENCES</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves. Your profile and account controls can be managed separately.</p></div>
+    <div className="page-heading"><span className="eyebrow">CHAT / SETTINGS</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves while you use chat. Account settings will be added separately later.</p></div>
     <div className="settings-layout">
-      <nav className="settings-nav" aria-label="Settings sections"><div className="settings-nav-label">Preferences</div>{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={14}/><span>{String(name)}</span></button>)}</nav>
+      <nav className="settings-nav" aria-label="Chat settings sections"><div className="settings-nav-label">Chat settings</div>{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={14}/><span>{String(name)}</span></button>)}</nav>
       <div className="setting-content">
         {tab==="Appearance"&&<SettingGroup title="Appearance" desc="Keep the interface quiet and readable. Changes apply immediately.">
           <div className="settings-row-grid"><div><strong>Theme</strong><small>Choose the surface used across Cookie.</small></div><div className="inline-choices">{["dark","light","system"].map(x=><button key={x} className={"text-choice "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"selected":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-dot "+x+"-preview"}/><span>{x[0].toUpperCase()+x.slice(1)}</span></button>)}</div></div>
