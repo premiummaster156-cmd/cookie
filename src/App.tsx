@@ -60,7 +60,7 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
 
     const waves:{mesh:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>;born:number;life:number}[]=[];
     const cursor=new THREE.Mesh(
-      new THREE.RingGeometry(.06,.085,48),
+      new THREE.RingGeometry(.045,.11,64),
       waveMaterial.clone()
     );
     cursor.material.opacity=.2;
@@ -68,9 +68,9 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
     scene.add(cursor);
 
     const makeWave=(x:number,y:number)=>{
-      const geometry=new THREE.RingGeometry(.08,.115,64);
+      const geometry=new THREE.RingGeometry(.08,.145,64);
       const material=waveMaterial.clone();
-      material.opacity=.34;
+      material.opacity=.62;
       const mesh=new THREE.Mesh(geometry,material);
       const nx=(x/window.innerWidth-.5)*2;
       const ny=-(y/window.innerHeight-.5)*2;
@@ -117,14 +117,14 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
       py+=(ty-py)*.12;
       cursor.position.x=px*3.05;
       cursor.position.y=py*3.05;
-      cursor.material.opacity=pointerInside?.16:0;
+      cursor.material.opacity=pointerInside?.42:0;
 
       for(let i=waves.length-1;i>=0;i--){
         const wave=waves[i];
         const p=Math.min(1,(now-wave.born)/wave.life);
         const ease=1-Math.pow(1-p,3);
-        wave.mesh.scale.setScalar(.12+ease*2.25);
-        wave.mesh.material.opacity=(1-p)*.34;
+        wave.mesh.scale.setScalar(.12+ease*2.65);
+        wave.mesh.material.opacity=(1-p)*.62;
         wave.mesh.rotation.z=now*.00015;
         if(p>=1){
           wave.mesh.geometry.dispose();
