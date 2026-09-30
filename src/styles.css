@@ -4837,3 +4837,47 @@ html,body,#root{
     max-width:100%;
   }
 }
+
+
+/* Hard mobile layout mode for iPhone/iPad browser modes, including
+   Safari's "Request Desktop Website" viewport. */
+.touch-phone .app-shell{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+}
+.touch-phone .main{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin-left:0!important;
+}
+.touch-phone .sidebar{
+  width:min(260px,86vw)!important;
+}
+.touch-phone .composer-wrap{
+  left:0!important;
+  right:0!important;
+}
+.touch-phone .topbar{
+  width:100%!important;
+  max-width:100%!important;
+}
+.touch-phone .chat-scroll{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow-x:hidden!important;
+}
+.touch-phone .chat-content{
+  width:100%!important;
+  max-width:820px;
+  min-width:0!important;
+}
+.touch-phone .message-row{
+  min-width:0!important;
+}
+@media (max-device-width:900px){
+  .main{width:100%!important;max-width:100%!important;margin-left:0!important;min-width:0!important}
+  .composer-wrap{left:0!important}
+}
