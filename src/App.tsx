@@ -406,7 +406,7 @@ export default function App(){
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
-          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation" title="Search this conversation · ⌘K"><Search size={18}/></button>
+          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation" title="Search this conversation · ⌘K" aria-keyshortcuts="Meta+K Control+K"><Search size={18}/></button>
           <div ref={chatMenuRef} className="chat-session-menu-wrap">
             <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
             {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
