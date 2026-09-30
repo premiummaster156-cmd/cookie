@@ -13,7 +13,7 @@ import {
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
 type GeneratedFile={name:string;path:string;content:string;kind?:string};
 type Msg={id:string;role:"user"|"assistant";content:string;attachments?:Attachment[];files?:GeneratedFile[];time?:string};
-type View="chat"|"settings"|"help";
+type View="chat"|"settings"|"account"|"help";
 
 const COOKIE_ICON_URL="https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
 const MODELS=[
@@ -260,8 +260,8 @@ export default function App(){
       </div>
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="settings"?"active":"")} onClick={()=>openView("settings")}><span className="nav-icon"><Settings size={17}/></span><span>Settings</span></button>
-        <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openPanel("Help Center")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
-        <button className={"account "+(view==="settings"?"active":"")} onClick={()=>openView("settings")} aria-label="Open account settings">
+        <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
+        <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
@@ -394,7 +394,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
+      {view==="account"&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}\n      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
       
       {view==="help"&&<HelpPage/>}
     </section>
