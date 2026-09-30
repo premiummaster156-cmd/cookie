@@ -39,6 +39,7 @@ export default function App(){
   const [chatPinned,setChatPinned]=useState(false);
   const [chatArchived,setChatArchived]=useState(false);
   const [copiedMessage,setCopiedMessage]=useState<string|null>(null);
+  const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
   const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
@@ -61,10 +62,19 @@ export default function App(){
         document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
       }
       setCopiedMessage(messageId);
+      setMessageMenuOpen(null);
       window.setTimeout(()=>setCopiedMessage(v=>v===messageId?null:v),1400);
     }catch{}
   }
-  function toggleChatMenu(){setChatMenuOpen(v=>!v)}
+  function toggleChatMenu(){setChatMenuOpen(v=>!v);setMessageMenuOpen(null)}
+  async function shareMessage(text:string){
+    try{
+      if(navigator.share)await navigator.share({title:"Cookie response",text});
+      else if(navigator.clipboard)await navigator.clipboard.writeText(text);
+      else window.prompt("Copy response",text);
+    }catch{}
+    setMessageMenuOpen(null);
+  }
 
   useEffect(()=>{
     const onKeyDown=(e:KeyboardEvent)=>{
@@ -147,7 +157,7 @@ export default function App(){
     setMessages(next);
     setChatTitle(v=>v==="New chat"?(text.slice(0,42)+(text.length>42?"…":"")):v);
     setChatArchived(false);
-    setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);
+    setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);setMessageMenuOpen(null);
     try{
       const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
@@ -261,6 +271,15 @@ export default function App(){
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
+                    <div className="message-actions-wrap">
+                      <button className={"message-more "+(messageMenuOpen===m.id?"active":"")} onClick={()=>{setMessageMenuOpen(v=>v===m.id?null:m.id);setChatMenuOpen(false);setAttachMenuOpen(false)}} aria-label="Message actions" aria-expanded={messageMenuOpen===m.id}>
+                        <MoreHorizontal size={15}/>
+                      </button>
+                      {messageMenuOpen===m.id&&<div className="message-action-menu glass-popover" role="menu">
+                        <button onClick={()=>copyMessage(m.content,m.id)}><Copy size={15}/><span>{copiedMessage===m.id?"Copied":"Copy response"}</span></button>
+                        <button onClick={()=>shareMessage(m.content)}><Share2 size={15}/><span>Share response</span></button>
+                      </div>}
+                    </div>
                   </div>}
                 </div>
               </article>)}
