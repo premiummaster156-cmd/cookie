@@ -1884,3 +1884,20 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .chat-session-menu button,.message-action-menu button,.attachment-menu-item,
   .topbar-actions,.mobile-brand .cookie-ai-icon{animation:none!important;transition:none!important}
 }
+
+
+/* Make the mobile navigation feel like the same translucent product surface. */
+@media(max-width:900px){
+  .sidebar{
+    background:color-mix(in srgb,var(--surface) 70%,transparent);
+    backdrop-filter:blur(24px) saturate(140%);
+    -webkit-backdrop-filter:blur(24px) saturate(140%);
+    box-shadow:18px 0 55px rgba(0,0,0,.24),inset -1px 0 0 rgba(255,255,255,.045);
+  }
+  .sidebar-overlay{background:rgba(0,0,0,.28)}
+  .topbar{
+    background:color-mix(in srgb,var(--surface) 70%,transparent);
+    backdrop-filter:blur(24px) saturate(140%);
+    -webkit-backdrop-filter:blur(24px) saturate(140%);
+  }
+}
