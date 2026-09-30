@@ -124,7 +124,6 @@ export default function App(){
         </div>
         <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span>{keyboardHints&&<kbd>⌘ K</kbd>}</button>
         <button className={"nav-item "+(view==="chat"?"active":"")} onClick={()=>openView("chat")}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
-        <button className="nav-item" onClick={()=>setWorkspaceOpen(true)}><span className="nav-icon"><Folder size={17}/></span><span>Project files</span>{workspace.length>0&&<small className="nav-count">{workspace.length}</small>}</button>
         <div className="recent-block">
           <div className="section-label">Recent</div>
           {messages.length?<button className="recent-item active" onClick={()=>openView("chat")}>{messages[0].content}</button>:<div className="recent-empty">Your conversations will appear here.</div>}
@@ -135,7 +134,7 @@ export default function App(){
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
         <div className="account">
           <span className="avatar">D</span>
-          <span className="account-copy"><strong>Cookie user</strong><small>Personal workspace</small></span>
+          <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
           <span className="account-more">•••</span>
         </div>
       </div>
@@ -159,7 +158,6 @@ export default function App(){
         </div>}
         <div className="topbar-spacer"/>
         {view==="chat"&&<button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"": " ")} aria-label="Search conversations"><Search size={18}/></button>}
-        {view==="chat"&&<button className="icon-btn" onClick={()=>setWorkspaceOpen(true)} aria-label="Project files"><Folder size={18}/></button>}
       </header>
 
       {view==="chat"&&<div ref={chatScroll} className="chat-scroll">
@@ -221,7 +219,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints} clearWorkspace={clearWorkspace}/>}
+      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
@@ -256,17 +254,17 @@ function SettingsPage(props:{
   const [tab,setTab]=useState("Appearance");
   const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
   return <div className="page-container settings-page">
-    <div className="page-heading"><span className="eyebrow">PREFERENCES</span><h2>Settings</h2><p>Customize Cookie's workspace, conversation behavior, and local data.</p></div>
+    <div className="page-heading"><span className="eyebrow">PREFERENCES</span><h2>Settings</h2><p>Customize Cookie's appearance, conversation behavior, uploads, and interface.</p></div>
     <div className="settings-layout">
       <nav className="settings-nav">{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={16}/><span>{String(name)}</span></button>)}</nav>
       <div className="setting-content">
         {tab==="Appearance"&&<><SettingGroup title="Theme" desc="Choose the appearance used across Cookie."><div className="theme-options">
-          {["dark","light","system"].map(x=><button key={x} className={"theme-card "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"active":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-preview "+x+"-preview"}/><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="dark"?"Near-black workspace":x==="light"?"Bright workspace":"Follow device preference"}</small></button>)}
+          {["dark","light","system"].map(x=><button key={x} className={"theme-card "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"active":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-preview "+x+"-preview"}/><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="dark"?"Near-black interface":x==="light"?"Bright workspace":"Follow device preference"}</small></button>)}
         </div></SettingGroup><SettingGroup title="Accent" desc="Pick the restrained highlight color used for controls and focus."><div className="accent-row">
           {(["orange","cream","cocoa"] as const).map(x=><button key={x} aria-label={x+" accent"} className={"accent-swatch "+x+" "+(props.accent===x?"selected":"")} onClick={()=>props.setAccent(x)}/>)}
         </div></SettingGroup><SettingGroup title="Text size" desc="Adjust reading size without changing the layout."><div className="choice-grid">{(["small","medium","large"] as const).map(x=><button key={x} className={"choice-card "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="small"?"Compact":x==="medium"?"Default":"More comfortable"}</small></button>)}</div></SettingGroup></>}
         {tab==="Chat"&&<><SettingGroup title="Conversation density" desc="Control how much vertical space messages use."><Toggle label="Compact messages" desc="Reduce the gap between messages." value={props.compact} setValue={props.setCompact}/></SettingGroup><SettingGroup title="Keyboard" desc="Control the hints shown around the composer."><Toggle label="Keyboard hints" desc="Show shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/></SettingGroup><SettingGroup title="Motion" desc="Keep transitions subtle and functional."><Toggle label="Interface animations" desc="Disable non-essential transitions and entrance effects." value={props.animations} setValue={props.setAnimations}/></SettingGroup></>}
-        {tab==="Interface"&&<><SettingGroup title="Workspace layout" desc="Cookie keeps the conversation centered and leaves tools out of the way until you need them."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · right-side workspace</div></SettingGroup><SettingGroup title="Model" desc="Choose the model from the selector in the chat header."><div className="choice-grid">{MODELS.map(m=><button key={m.id} className="choice-card"><strong>{m.name}</strong><small>{m.desc}</small></button>)}</div></SettingGroup></>}
+        {tab==="Interface"&&<><SettingGroup title="Chat layout" desc="Cookie keeps the conversation centered and leaves tools out of the way until you need them."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · tools on demand</div></SettingGroup><SettingGroup title="Model" desc="Choose the model from the selector in the chat header."><div className="choice-grid">{MODELS.map(m=><button key={m.id} className="choice-card"><strong>{m.name}</strong><small>{m.desc}</small></button>)}</div></SettingGroup></>}
         {tab==="Privacy"&&<>{/* privacy controls */}<SettingGroup title="Uploads" desc="Attachments stay in the current conversation and are submitted only with your message."><div className="data-status"><ShieldCheck size={16}/> Up to 10 attachments per message · no folder uploads</div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Reset visual preferences for Cookie."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}}
       </div>
     </div>
@@ -284,7 +282,7 @@ function HelpPage(){
   const faqs=[
     ["How do I send a message?","Type in the composer and press Enter. Use Shift + Enter when you want a new line."],
     ["What can Cookie work with?","Cookie can answer questions, reason through coding tasks, inspect images and files, and create downloadable files directly in chat."],
-    ["How does Project files work?","Ask Cookie to create files when you need them. Generated files appear directly in the chat and can be downloaded with one tap."],
+    ["How do downloadable files work?","Ask Cookie to create files when you need them. Generated files appear directly in the chat and can be downloaded with one tap."],
     ["How do I switch models?","Use the model selector in the chat header. Each Cookie model is shown with its capability description."],
     ["Can I change the interface?","Yes. Settings includes appearance, chat density, keyboard hints, motion, text size, accent, and local-data controls."]
   ];
