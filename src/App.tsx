@@ -3,15 +3,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
-  ArrowUp, ChevronDown, Check, Copy, Download, FileCode2, Folder,
+  ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
   HelpCircle, Menu, MessageSquare, MoreHorizontal, Paperclip, Plus,
-  Search, Settings, Sun, Moon, X, PanelRight, SlidersHorizontal,
-  Keyboard, ShieldCheck, Database, Palette, MessageCircleQuestion,
-  Trash2, RotateCcw
+  Search, Settings, X, PanelRight, SlidersHorizontal,
+  Keyboard, ShieldCheck, Palette, MessageCircleQuestion, Wrench,
+  Code2, Globe2, ScanSearch
 } from "lucide-react";
 
-type Msg={id:string;role:"user"|"assistant";content:string;images?:string[];time?:string};
-type FileItem={path:string;content:string;kind?:string};
+type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
+type GeneratedFile={name:string;path:string;content:string;kind?:string};
+type Msg={id:string;role:"user"|"assistant";content:string;attachments?:Attachment[];files?:GeneratedFile[];time?:string};
 type View="chat"|"settings"|"help";
 
 const COOKIE_ICON_URL="https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
@@ -31,11 +32,11 @@ export default function App(){
   const [input,setInput]=useState("");
   const [model,setModel]=useState("standard");
   const [modelOpen,setModelOpen]=useState(false);
-  const [workspace,setWorkspace]=useState<FileItem[]>([]);
-  const [workspaceOpen,setWorkspaceOpen]=useState(false);
   const [sidebarOpen,setSidebarOpen]=useState(false);
   const [loading,setLoading]=useState(false);
-  const [images,setImages]=useState<string[]>([]);
+  const [attachments,setAttachments]=useState<Attachment[]>([]);
+  const [attachMenuOpen,setAttachMenuOpen]=useState(false);
+  const [toolsOpen,setToolsOpen]=useState(false);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
   const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
@@ -43,16 +44,14 @@ export default function App(){
   const [compact,setCompact]=useState(false);
   const [animations,setAnimations]=useState(true);
   const [keyboardHints,setKeyboardHints]=useState(true);
-  const [query,setQuery]=useState("");
   const [search,setSearch]=useState("");
+  const imageRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const chatScroll=useRef<HTMLDivElement>(null);
   const active=useMemo(()=>MODELS.find(x=>x.id===model)||MODELS[0],[model]);
 
   useEffect(()=>{
     try{
-      const x=JSON.parse(localStorage.getItem("cookie_workspace")||"[]");
-      if(Array.isArray(x))setWorkspace(x);
       const p=JSON.parse(localStorage.getItem("cookie_preferences")||"{}");
       if(p.dark!==undefined)setDark(Boolean(p.dark));
       if(p.accent)setAccent(p.accent);
@@ -62,8 +61,11 @@ export default function App(){
       if(p.keyboardHints!==undefined)setKeyboardHints(Boolean(p.keyboardHints));
     }catch{}
   },[]);
-  useEffect(()=>localStorage.setItem("cookie_workspace",JSON.stringify(workspace)),[workspace]);
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({dark,accent,textSize,compact,animations,keyboardHints})),[dark,accent,textSize,compact,animations,keyboardHints]);
+  useEffect(()=>{
+    document.body.classList.toggle("sidebar-open",sidebarOpen);
+    return ()=>document.body.classList.remove("sidebar-open");
+  },[sidebarOpen]);
   useEffect(()=>{
     document.documentElement.dataset.theme=dark?"dark":"light";
     document.documentElement.dataset.accent=accent;
@@ -86,43 +88,32 @@ export default function App(){
 
   async function send(raw=input){
     const text=raw.trim();
-    if(!text||loading)return;
+    if((!text&&!attachments.length)||loading)return;
     const now=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-    const next=[...messages,{id:id(),role:"user" as const,content:text,images,time:now}];
-    setMessages(next);setInput("");setImages([]);setLoading(true);setView("chat");
+    const next=[...messages,{id:id(),role:"user" as const,content:text,attachments,time:now}];
+    setMessages(next);setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setToolsOpen(false);
     try{
-      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          messages:next.map(m=>({role:m.role,content:m.content})),
-          preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},
-          workspace,
-          attachments:images.map(data=>({kind:"image",data}))
-        })
-      });
+      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
       if(!r.ok)throw Error(d.error||"Cookie could not answer.");
-      if(Array.isArray(d.workspace))setWorkspace(d.workspace);
-      setMessages(v=>[...v,{id:id(),role:"assistant",content:d.message||"Done.",time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}]);
-    }catch(e){
-      setMessages(v=>[...v,{id:id(),role:"assistant",content:"Error: "+(e instanceof Error?e.message:"Something went wrong.")}]);
-    }finally{setLoading(false)}
+      setMessages(v=>[...v,{id:id(),role:"assistant",content:d.message||"Done.",files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}]);
+    }catch(e){setMessages(v=>[...v,{id:id(),role:"assistant",content:"Error: "+(e instanceof Error?e.message:"Something went wrong.")}] );}
+    finally{setLoading(false)}
   }
-
-  async function attach(e:React.ChangeEvent<HTMLInputElement>){
-    const fs=Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")).slice(0,4);
-    const xs=await Promise.all(fs.map(f=>new Promise<string>(res=>{
-      const r=new FileReader();r.onload=()=>res(String(r.result));r.readAsDataURL(f);
+  async function attach(e:React.ChangeEvent<HTMLInputElement>,kind:"image"|"file"){
+    const selected=Array.from(e.target.files||[]);
+    const valid=selected.filter(f=>kind==="image"?f.type.startsWith("image/"):!f.type.startsWith("image/")).slice(0,10-attachments.length);
+    const xs=await Promise.all(valid.map(f=>new Promise<Attachment>(res=>{
+      const reader=new FileReader();reader.onload=()=>res({id:id(),kind,name:f.name,mime:f.type||"application/octet-stream",data:String(reader.result)});reader.readAsDataURL(f);
     })));
-    setImages(v=>[...v,...xs]);e.target.value="";
+    setAttachments(v=>[...v,...xs].slice(0,10));e.target.value="";setAttachMenuOpen(false);
   }
-  function newChat(){setMessages([]);setInput("");setImages([]);setView("chat");setSidebarOpen(false)}
-  function clearWorkspace(){setWorkspace([])}
-  function download(){
-    const blob=new Blob([workspace.map(f=>"===== "+f.path+" =====\n"+f.content).join("\n\n")],{type:"text/plain"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cookie-project.txt";a.click();URL.revokeObjectURL(a.href);
-  }
-  function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false)}
-  const visibleFiles=workspace.filter(f=>f.path.toLowerCase().includes(query.toLowerCase()));
+  function openPicker(kind:"image"|"file"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="image"?imageRef:fileRef).current?.click()})}
+  function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
+  function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
+  function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setToolsOpen(false)}
+  function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
+  function useTool(prompt:string){setInput(v=>v?`${v} ${prompt}`:prompt);setToolsOpen(false)}
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <aside className="sidebar">
