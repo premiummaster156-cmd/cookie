@@ -547,125 +547,91 @@ function AccountSettingsPage(props:{
 
   if(panel==="Profile"){
     return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">PROFILE</span><h2>Edit profile</h2></div></div>
-      <section className="settings-reference-section">
-        <h3>Profile</h3>
-        <div className="settings-reference-card settings-form-card">
-          <label>Username<input value={draftUsername} onChange={e=>setDraftUsername(e.target.value)} placeholder="Username"/></label>
-          <label>Email<input type="email" value={draftEmail} onChange={e=>setDraftEmail(e.target.value)} placeholder="Email address"/></label>
-          <button className="settings-primary-button" onClick={()=>{props.setProfileUsername(draftUsername.trim()||"Cookie user");props.setProfileEmail(draftEmail.trim());setPanel(null)}}>Save changes</button>
-        </div>
-      </section>
-    </div>;
-  }
-
-  if(panel==="Email"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">ACCOUNT</span><h2>Email</h2></div></div>
-      <section className="settings-reference-section"><h3>Email address</h3><div className="settings-reference-card settings-form-card"><label>Email<input type="email" value={draftEmail} onChange={e=>setDraftEmail(e.target.value)} placeholder="name@example.com"/></label><button className="settings-primary-button" onClick={()=>{props.setProfileEmail(draftEmail.trim());setPanel(null)}}>Save</button></div></section>
-    </div>;
-  }
-
-  if(panel==="Username"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">PROFILE</span><h2>Username</h2></div></div>
-      <section className="settings-reference-section"><h3>Username</h3><div className="settings-reference-card settings-form-card"><label>Username<input value={draftUsername} onChange={e=>setDraftUsername(e.target.value)} placeholder="Username"/></label><button className="settings-primary-button" onClick={()=>{props.setProfileUsername(draftUsername.trim()||"Cookie user");setPanel(null)}}>Save</button></div></section>
-    </div>;
-  }
-
-  if(panel==="Personality"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">COOKIE AI</span><h2>AI personality</h2></div></div>
-      <section className="settings-reference-section"><h3>How Cookie responds</h3><div className="settings-reference-card">
-        {personalities.map(p=><button key={p} className={"settings-mobile-row personality-row "+(props.aiPersonality===p?"selected":"")} onClick={()=>props.setAiPersonality(p)}><span className="settings-mobile-row-copy"><strong>{p}</strong><small>{p==="Balanced"?"Natural and adaptable":p==="Friendly"?"Warm and conversational":p==="Professional"?"Clear and formal":p==="Concise"?"Short and direct":p==="Creative"?"Imaginative and expressive":"Explains concepts step by step"}</small></span>{props.aiPersonality===p&&<Check size={20}/>}</button>)}
-      </div></section>
-    </div>;
-  }
-
-  if(panel==="General"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">APP SETTINGS</span><h2>General</h2></div></div>
-      <section className="settings-reference-section"><h3>Language</h3><div className="settings-reference-card"><Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>setPanel("App language")}/></div></section>
-      <section className="settings-reference-section"><h3>Chat</h3><div className="settings-reference-card">
-        <ToggleRow icon={SpellCheck} label="Auto-correct spelling" value={props.autoCorrect} onChange={()=>props.setAutoCorrect(v=>!v)}/>
-        <ToggleRow icon={Smartphone} label="Haptic feedback" value={props.haptics} onChange={()=>props.setHaptics(v=>!v)}/>
-        <ToggleRow icon={SlidersHorizontal} label="Compact messages" value={props.compact} onChange={()=>props.setCompact(v=>!v)}/>
-        <ToggleRow icon={Monitor} label="Interface animations" value={props.animations} onChange={()=>props.setAnimations(v=>!v)}/>
-        <ToggleRow icon={Keyboard} label="Keyboard hints" value={props.keyboardHints} onChange={()=>props.setKeyboardHints(v=>!v)}/>
-      </div></section>
-      <section className="settings-reference-section"><h3>Intelligence</h3><div className="settings-reference-card">
-        <Row icon={Sparkles} label="Model" value={modelInfo.name} onClick={()=>props.setModel(MODELS[(MODELS.findIndex(m=>m.id===props.model)+1)%MODELS.length].id)}/>
-        <ToggleRow icon={Shuffle} label="Auto switch" value={props.autoSwitch} onChange={()=>props.setAutoSwitch(v=>!v)}/>
-      </div></section>
-      <section className="settings-reference-section"><h3>Text</h3><div className="settings-reference-card"><div className="settings-control-row"><div><strong>Text size</strong></div><div className="settings-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div></div></section>
-    </div>;
-  }
-
-  if(panel==="App language"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel("General")}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">LANGUAGE</span><h2>App language</h2></div></div>
-      <section className="settings-reference-section"><h3>Languages</h3><div className="settings-reference-card">{APP_LANGUAGES.map(([name,code])=><button key={code} className={"settings-mobile-row personality-row "+(props.appLanguage===name?"selected":"")} onClick={()=>{props.setAppLanguage(name);setPanel("General")}}><span className="settings-mobile-row-copy"><strong>{name}</strong></span>{props.appLanguage===name&&<Check size={20}/>}</button>)}</div></section>
-    </div>;
-  }
-
-  if(panel==="Memory"){
-    return <div className="page-container settings-reference-page"><div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">CUSTOMIZE COOKIE</span><h2>Memory</h2></div></div>
-      <section className="settings-reference-section"><h3>Memory</h3><div className="settings-reference-card"><ToggleRow icon={Brain} label="Enable memory" value={props.memoryEnabled} onChange={()=>props.setMemoryEnabled(v=>!v)}/><Row icon={Info} label="Memory summary" onClick={()=>setPanel("Memory summary")}/></div></section>
-      <section className="settings-reference-section"><h3>About you</h3><div className="settings-reference-card settings-form-card"><label>Nickname<input value={props.memoryName} onChange={e=>props.setMemoryName(e.target.value)} placeholder="Name"/></label><label>Occupation<input value={props.memoryOccupation} onChange={e=>props.setMemoryOccupation(e.target.value)} placeholder="Engineer, student, etc."/></label><label>More about you<textarea value={props.memoryAbout} onChange={e=>props.setMemoryAbout(e.target.value)} placeholder="Interests, values, preferences..."/></label></div></section>
-    </div>;
-  }
-
-  if(panel==="Memory summary"){
-    return <div className="page-container settings-reference-page"><div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel("Memory")}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">MEMORY</span><h2>Memory summary</h2></div></div><section className="settings-reference-section"><h3>Saved information</h3><div className="settings-detail-card"><p><b>{props.memoryEnabled?"Memory is on":"Memory is off"}</b></p><p>{props.memoryName||"No nickname saved."}</p><p>{props.memoryOccupation||"No occupation saved."}</p><p>{props.memoryAbout||"No additional preferences saved."}</p></div></section></div>;
-  }
-
-  if(panel==="Usage and limits"){
-    return <div className="page-container settings-reference-page"><div className="settings-detail-head"><button className="settings-back-btn glass-settings-back" onClick={()=>setPanel(null)}><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">ACCOUNT</span><h2>Usage and limits</h2></div></div><section className="settings-reference-section"><h3>Session</h3><div className="settings-reference-card"><div className="settings-control-row"><div><strong>Assistant responses</strong></div><span className="settings-mobile-value">{props.sessionMessages}</span></div></div></section></div>;
-  }
-
-  return <div className="page-container settings-reference-page">
-    <div className="settings-reference-head"><span className="settings-reference-eyebrow">COOKIE SETTINGS</span><h2>Settings</h2></div>
+    <div className="settings-reference-head">
+      <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
+      <h2>Settings</h2>
+    </div>
 
     <section className="settings-reference-section settings-profile-section">
       <div className="settings-profile">
         <span className="settings-profile-avatar">{(props.profileUsername.trim()[0]||"C").toUpperCase()}</span>
         <div className="settings-profile-copy"><strong>{props.profileUsername||"Cookie user"}</strong><small>{props.profileEmail||"Local account"}</small></div>
-        <button className="settings-profile-edit" onClick={()=>setPanel("Profile")} aria-label="Edit profile"><UserRound size={18}/></button>
+        <button className="settings-profile-edit" aria-label="Edit profile" onClick={()=>setPanel("Profile")}><UserRound size={18}/></button>
       </div>
       <div className="settings-upgrade">
-        <div><strong>Cookie account</strong><small>Manage your profile and Cookie preferences.</small></div>
+        <div><strong>Do more with Cookie</strong><small>Get higher limits and access to advanced features.</small></div>
         <button onClick={()=>setPanel("Profile")}>Edit</button>
       </div>
     </section>
 
-    <section className="settings-reference-section"><h3>Customize Cookie</h3><div className="settings-reference-card">
-      <Row icon={UserRound} label="Personalization" value={props.aiPersonality} onClick={()=>setPanel("Personality")}/>
-      <Row icon={Brain} label="Memory" value={props.memoryEnabled?"On":"Off"} onClick={()=>setPanel("Memory")}/>
-    </div></section>
+    <section className="settings-reference-section">
+      <h3>Customize Cookie</h3>
+      <div className="settings-reference-card">
+        <Row icon={UserRound} label="Personalization" value={props.aiPersonality} onClick={()=>setPanel("Personality")}/>
+        <Row icon={Brain} label="Memory" value={props.memoryEnabled?"On":"Off"} onClick={()=>setPanel("Memory")}/>
+        <Row icon={Plus} label="Plugins" value="Coming later"/>
+      </div>
+    </section>
 
-    <section className="settings-reference-section"><h3>Account</h3><div className="settings-reference-card">
-      <Row icon={UserRound} label="Username" value={props.profileUsername} onClick={()=>setPanel("Username")}/>
-      <Row icon={Mail} label="Email" value={props.profileEmail||"Add email"} onClick={()=>setPanel("Email")}/>
-      <Row icon={BarChart3} label="Usage and limits" value={props.sessionMessages+" responses"} onClick={()=>setPanel("Usage and limits")}/>
-    </div></section>
+    <section className="settings-reference-section">
+      <h3>Account</h3>
+      <div className="settings-reference-card">
+        <Row icon={UserRound} label="Username" value={props.profileUsername} onClick={()=>setPanel("Username")}/>
+        <Row icon={Mail} label="Email" value={props.profileEmail||"Not connected"} onClick={()=>setPanel("Email")}/>
+        <Row icon={CreditCard} label="Subscription" value="Cookie account"/>
+        <Row icon={RotateCcw} label="Restore purchases"/>
+        <Row icon={BarChart3} label="Usage and limits" value={props.sessionMessages+" responses"} onClick={()=>setPanel("Usage and limits")}/>
+      </div>
+    </section>
 
-    <section className="settings-reference-section"><h3>Theme</h3><div className="settings-reference-card">
-      <button className="settings-mobile-row" onClick={()=>props.setDark(v=>!v)}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Appearance</strong></span><span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
-      <button className="settings-mobile-row" onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Accent color</strong></span><span className={"settings-accent-dot "+props.accent}/><span className="settings-mobile-value">{props.accent[0].toUpperCase()+props.accent.slice(1)}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
-    </div></section>
+    <section className="settings-reference-section">
+      <h3>Theme</h3>
+      <div className="settings-reference-card">
+        <button className="settings-mobile-row" onClick={()=>props.setDark(v=>!v)}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Appearance</strong></span>
+          <span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+        <button className="settings-mobile-row" onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}>
+          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
+          <span className="settings-mobile-row-copy"><strong>Accent color</strong></span>
+          <span className={"settings-accent-dot "+props.accent}></span>
+          <span className="settings-mobile-value">{props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span>
+          <ChevronRight className="settings-mobile-chevron" size={21}/>
+        </button>
+      </div>
+    </section>
 
-    <section className="settings-reference-section"><h3>App settings</h3><div className="settings-reference-card">
-      <Row icon={Settings} label="General" value="Chat & interface" onClick={()=>setPanel("General")}/>
-      <Row icon={Sparkles} label="AI personality" value={props.aiPersonality} onClick={()=>setPanel("Personality")}/>
-      <Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>setPanel("General")}/>
-    </div></section>
+    <section className="settings-reference-section">
+      <h3>App settings</h3>
+      <div className="settings-reference-card">
+        <Row icon={Settings} label="General" value="Chat & interface" onClick={()=>setPanel("General")}/>
+        <Row icon={Bell} label="Notifications" value="Coming later"/>
+        <Row icon={Volume2} label="Voice" value="Coming later"/>
+        <Row icon={UsersRound} label="Parental controls" value="Coming later"/>
+        <Row icon={ShieldCheck} label="Trusted contact" value="Coming later"/>
+        <Row icon={ShieldCheck} label="Safety" value="Built in"/>
+        <Row icon={LockKeyhole} label="Security and login" value="Local account"/>
+        <Row icon={Monitor} label="Remote control" value="Coming later"/>
+        <Row icon={HardDrive} label="Storage" value="Browser"/>
+        <Row icon={UserRound} label="Data controls" value="Local preferences"/>
+        <Row icon={Megaphone} label="Ads controls" value="Coming later"/>
+      </div>
+    </section>
 
-    <section className="settings-reference-section"><h3>Get help</h3><div className="settings-reference-card">
-      <Row icon={Flag} label="Report app issue"/>
-      <Row icon={HelpCircle} label="Help Center"/>
-      <Row icon={ShieldCheck} label="Privacy Center"/>
-      <Row icon={Info} label="About"/>
-    </div></section>
+    <section className="settings-reference-section">
+      <h3>Get help</h3>
+      <div className="settings-reference-card">
+        <Row icon={Flag} label="Report app issue"/>
+        <Row icon={HelpCircle} label="Help Center"/>
+        <Row icon={ShieldCheck} label="Privacy Center"/>
+        <Row icon={Info} label="About"/>
+      </div>
+    </section>
+
+    <button className="settings-logout-row" onClick={()=>setPanel("Log out")}><LogOut size={22}/><span>Log out</span></button>
+    <p className="settings-reference-footer">Cookie settings are kept together so account, chat, and interface controls are in one place.</p>
   </div>;
 }
 
