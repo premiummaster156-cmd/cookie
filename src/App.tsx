@@ -260,7 +260,7 @@ export default function App(){
       </div>
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="settings"?"active":"")} onClick={()=>openView("settings")}><span className="nav-icon"><Settings size={17}/></span><span>Settings</span></button>
-        <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
+        <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openPanel("Help Center")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
         <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
@@ -395,7 +395,7 @@ export default function App(){
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
       {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
-      {view==="account"&&<AccountSettingsPage/>}
+      {view==="account"&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
@@ -421,7 +421,7 @@ function Message({text}:{text:string}){
   })}</div>;
 }
 
-function AccountSettingsPage(){
+function AccountSettingsPage(props:{dark:boolean;setDark:(v:boolean|((v:boolean)=>boolean))=>void;accent:"orange"|"cream"|"cocoa";setAccent:(v:"orange"|"cream"|"cocoa"|((v:"orange"|"cream"|"cocoa")=>"orange"|"cream"|"cocoa"))=>void}){
   const [panel,setPanel]=useState<string|null>(null);
 
   const openPanel=(name:string)=>setPanel(name);
@@ -513,7 +513,7 @@ function AccountSettingsPage(){
       <button className="account-mobile-row" onClick={()=>cycleAccent()}>
         <span className="account-mobile-row-icon"><Palette size={21}/></span>
         <span className="account-mobile-row-copy"><strong>Accent color</strong><small>Cookie interface highlight</small></span>
-        <span className={"account-accent-dot "+accent}/><span className="account-mobile-value">{accentLabel()}</span>
+        <span className={"account-accent-dot "+props.accent}/><span className="account-mobile-value">{accentLabel()}</span>
       </button>
     </AccountMobileSection>
 
@@ -542,11 +542,11 @@ function AccountSettingsPage(){
     <p className="account-mobile-footer">Cookie account controls are shown only when the related feature is actually connected.</p>
   </div>;
 
-  function setDarkSafe(){setDark(v=>!v)}
+  function setDarkSafe(){props.setDark(v=>!v)}
   function cycleAccent(){
-    setAccent(v=>v==="cream"?"orange":v==="orange"?"cocoa":"cream");
+    props.setAccent(v=>v==="cream"?"orange":v==="orange"?"cocoa":"cream");
   }
-  function accentLabel(){return accent==="cream"?"Cream":accent==="orange"?"Orange":"Cocoa"}
+  function accentLabel(){return props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}
 }
 
 function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
