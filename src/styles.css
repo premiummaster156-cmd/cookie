@@ -1707,3 +1707,180 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 @media(prefers-reduced-motion:reduce){
   .mobile-brand,.topbar-actions,.brand .cookie-ai-icon{transition:none!important;transform:none!important}
 }
+
+
+/* --- Glass UI refresh: floating controls, no dashboard-card look --- */
+.glass-popover,
+.chat-session-menu,
+.composer-menu,
+.message-action-menu{
+  background:color-mix(in srgb,var(--surface) 70%,transparent)!important;
+  border:1px solid color-mix(in srgb,var(--line) 78%,transparent)!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.055)!important;
+  backdrop-filter:blur(24px) saturate(145%)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(145%)!important;
+  isolation:isolate;
+}
+.chat-session-menu{
+  opacity:1;
+  transform-origin:top right;
+  animation:glass-menu-in 220ms cubic-bezier(.2,.8,.2,1) both;
+  overflow:hidden;
+}
+.chat-session-menu button,
+.message-action-menu button,
+.attachment-menu-item{
+  transition:background 150ms ease,transform 180ms cubic-bezier(.2,.8,.2,1),color 150ms ease;
+}
+.chat-session-menu button:hover,
+.message-action-menu button:hover,
+.attachment-menu-item:hover{
+  background:color-mix(in srgb,var(--surface-2) 62%,transparent);
+  transform:translateX(2px);
+}
+.chat-session-menu button:active,
+.message-action-menu button:active,
+.attachment-menu-item:active{transform:scale(.975)}
+.chat-session-menu button,
+.message-action-menu button{
+  animation:menu-item-in 260ms cubic-bezier(.2,.8,.2,1) both;
+}
+.chat-session-menu button:nth-child(2){animation-delay:25ms}
+.chat-session-menu button:nth-child(3){animation-delay:45ms}
+.chat-session-menu button:nth-child(4){animation-delay:65ms}
+.chat-session-menu button:nth-child(5){animation-delay:85ms}
+.chat-session-menu button:nth-child(6){animation-delay:105ms}
+.chat-session-menu button:nth-child(7){animation-delay:125ms}
+
+.message-actions-wrap{position:relative;display:inline-flex;align-items:center}
+.message-more{
+  width:28px!important;
+  height:28px!important;
+  display:inline-grid!important;
+  place-items:center;
+  padding:0!important;
+  border-radius:8px!important;
+  color:var(--faint)!important;
+  transition:background 160ms ease,color 160ms ease,transform 180ms cubic-bezier(.2,.8,.2,1)!important;
+}
+.message-more:hover,.message-more.active{
+  background:color-mix(in srgb,var(--surface-2) 70%,transparent)!important;
+  color:var(--text)!important;
+}
+.message-more:active{transform:scale(.9)}
+.message-action-menu{
+  position:absolute;
+  left:0;
+  bottom:calc(100% + 8px);
+  width:190px;
+  padding:6px;
+  border-radius:14px;
+  z-index:140;
+  transform-origin:bottom left;
+  animation:glass-menu-up 210ms cubic-bezier(.2,.8,.2,1) both;
+}
+.message-action-menu button{
+  width:100%;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 10px;
+  border-radius:9px;
+  color:var(--text);
+  text-align:left;
+}
+.message-action-menu button svg{color:var(--muted);flex:0 0 auto}
+.message-action-menu button span{font-size:12px}
+
+.composer-menu{
+  animation:glass-menu-up 230ms cubic-bezier(.2,.8,.2,1) both;
+}
+.attachment-menu-item{
+  animation:menu-item-in 280ms cubic-bezier(.2,.8,.2,1) both;
+}
+.attachment-menu-item:nth-child(2){animation-delay:45ms}
+.attachment-menu-item:nth-child(3){animation-delay:90ms}
+
+.chat-session-more{
+  transition:background 180ms ease,color 180ms ease,transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms ease!important;
+}
+.chat-session-more.active{
+  background:color-mix(in srgb,var(--surface-2) 70%,transparent)!important;
+  color:var(--text)!important;
+  box-shadow:0 8px 30px rgba(0,0,0,.18);
+}
+.chat-session-more.active svg{animation:more-pop 220ms cubic-bezier(.2,.8,.2,1)}
+
+.topbar-actions{animation:header-controls-in 360ms cubic-bezier(.2,.8,.2,1) both}
+.mobile-brand .cookie-ai-icon{transition:transform 420ms cubic-bezier(.2,.8,.2,1),filter 420ms ease}
+.mobile-brand.scrolled .cookie-ai-icon{transform:translateY(-2px) scale(.92) rotate(-4deg);filter:drop-shadow(0 5px 10px rgba(0,0,0,.16))}
+
+.composer{
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(18px) saturate(120%);
+  -webkit-backdrop-filter:blur(18px) saturate(120%);
+}
+.composer-attachment{position:relative}
+.composer-menu-wrap{position:relative;z-index:120}
+.attachment-menu{
+  position:absolute!important;
+  left:0!important;
+  bottom:calc(100% + 12px)!important;
+  top:auto!important;
+  transform-origin:bottom left!important;
+  z-index:130!important;
+}
+.round-tool{
+  transition:background 180ms ease,color 180ms ease,transform 220ms cubic-bezier(.2,.8,.2,1),box-shadow 220ms ease!important;
+}
+.round-tool.selected{
+  background:color-mix(in srgb,var(--surface-2) 70%,transparent)!important;
+  color:var(--text)!important;
+  box-shadow:0 7px 26px rgba(0,0,0,.16);
+}
+.round-tool.selected svg{animation:plus-turn 260ms cubic-bezier(.2,.8,.2,1) both}
+
+@keyframes glass-menu-in{
+  from{opacity:0;transform:translateY(-7px) scale(.94)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes glass-menu-up{
+  from{opacity:0;transform:translateY(8px) scale(.94)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes menu-item-in{
+  from{opacity:0;transform:translateX(-5px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes plus-turn{
+  from{transform:rotate(-45deg) scale(.78)}
+  to{transform:rotate(0) scale(1)}
+}
+@keyframes more-pop{
+  0%{transform:scale(.7) rotate(-8deg);opacity:.45}
+  65%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+@keyframes header-controls-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:none}
+}
+
+/* Smaller mobile composer: keep the conversation visually dominant. */
+@media(max-width:620px){
+  .composer-wrap{padding:6px 10px max(8px,env(safe-area-inset-bottom))}
+  .composer{width:100%;border-radius:18px}
+  .composer-main{padding:8px 11px 0;min-height:48px}
+  .composer textarea{min-height:22px;max-height:74px;font-size:15px}
+  .composer-toolbar{min-height:32px;padding:1px 5px 5px}
+  .round-tool{width:34px;height:34px;border-radius:50%}
+  .send-btn{width:34px;height:34px;border-radius:11px}
+  .disclaimer{margin-top:4px}
+  .message-action-menu{width:178px}
+}
+@media(prefers-reduced-motion:reduce){
+  .glass-popover,.chat-session-menu,.composer-menu,.message-action-menu,
+  .chat-session-menu button,.message-action-menu button,.attachment-menu-item,
+  .topbar-actions,.mobile-brand .cookie-ai-icon{animation:none!important;transition:none!important}
+}
