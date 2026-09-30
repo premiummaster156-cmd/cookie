@@ -39,11 +39,9 @@ function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"num
 function safeTextParts(text:string){ return [text]; }
 function Inline({text}:{text:string}){
   return <>{safeTextParts(text).map((p,i)=>{
-    if(/^\\*\\*.*\\*\\*$/.test(p)) return <strong key={i}>{p.slice(2,-2)}</strong>;
+    if(p.startsWith("**")&&p.endsWith("**")) return <strong key={i}>{p.slice(2,-2)}</strong>;
     const t=String.fromCharCode(96);
     if(p.startsWith(t)&&p.endsWith(t)) return <code key={i} className="inline-code">{p.slice(1,-1)}</code>;
-    const a=p.match(/^\\[([^\\]]+)\\]\\(([^\\)]+)\\)$/);
-    if(a) return <a key={i} href={a[2]} target="_blank" rel="noreferrer">{a[1]}</a>;
     return <React.Fragment key={i}>{p}</React.Fragment>;
   })}</>;
 }
