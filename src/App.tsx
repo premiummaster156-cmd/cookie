@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Archive, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download,
+  Archive, ArrowUp, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download,
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus,
   RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Sparkles, Square, Trash2, UserRound,
@@ -36,10 +36,7 @@ function Avatar({size="sm"}:{size?:"sm"|"md"|"lg"}) {
   return <div className={"avatar avatar-"+size}><span>CR</span></div>;
 }
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
-function safeTextParts(text:string){
-  const tick=String.fromCharCode(96);
-  return text.split(new RegExp("(\\\\*\\\\*[^*]+\\\\*\\\\*|"+tick+"[^"+tick+"]+"+tick+"|\\\\[[^\\\\]]+\\\\]\\\\([^\\\\)]+\\\\))","g"));
-}
+function safeTextParts(text:string){ return [text]; }
 function Inline({text}:{text:string}){
   return <>{safeTextParts(text).map((p,i)=>{
     if(/^\\*\\*.*\\*\\*$/.test(p)) return <strong key={i}>{p.slice(2,-2)}</strong>;
