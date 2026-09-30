@@ -5939,68 +5939,351 @@ html,body,#root{
   }
 }
 
-/* ===== Liquid Glass buttons =====
-   Recreates the frosted/refraction language of the referenced Liquid Glass
-   CodePen while preserving Cookie's existing button sizes and layout. */
-.cookie-liquid-glass-defs{
-  position:fixed;width:0!important;height:0!important;overflow:hidden!important;
-  pointer-events:none!important;opacity:0!important;
+/* ===== Cookie Liquid Glass system — surfaces, panels, fields and UI chrome =====
+   Extends the referenced Liquid Glass visual language beyond buttons.
+   Existing dimensions/layouts remain intact; this only changes the material. */
+:root{
+  --cookie-glass-blur:22px;
+  --cookie-glass-sat:155%;
+  --cookie-glass-line:rgba(255,255,255,.14);
+  --cookie-glass-highlight:rgba(255,255,255,.10);
+  --cookie-glass-shadow:rgba(0,0,0,.22);
 }
-.liquid-glass-button{
-  position:relative!important;
+.theme-light,.settings-shell.theme-light{
+  --cookie-glass-line:rgba(20,18,16,.10);
+  --cookie-glass-highlight:rgba(255,255,255,.58);
+  --cookie-glass-shadow:rgba(50,40,30,.10);
+}
+
+/* Core material: translucent body + blur + internal highlight + soft depth. */
+.sidebar,
+.topbar,
+.composer,
+.large-search,
+.chat-session-menu,
+.composer-menu,
+.message-action-menu,
+.activity-panel,
+.suggestion,
+.welcome-prompts button,
+.attachment-tray,
+.attachment-chip,
+.generated-file,
+.session-archived,
+.help-nav,
+.help-content,
+.help-code-block,
+.help-note,
+.help-footer,
+.settings-reference-card,
+.settings-profile-section,
+.settings-detail-card,
+.settings-logout-row,
+.settings-form-card,
+.profile-edit-modal,
+.account-mobile-card,
+.account-profile-card,
+.account-detail-card,
+.account-logout-row,
+.usage-card,
+.usage-grid>div,
+.plan,
+.theme-card,
+.profile-card,
+.settings-page .settings-row-grid,
+.settings-page .toggle-row,
+.settings-page .settings-note,
+.settings-page .settings-nav{
+  position:relative;
   isolation:isolate;
-  overflow:hidden;
   background:
-    radial-gradient(circle at 30% 18%,rgba(255,255,255,.16),transparent 42%),
-    linear-gradient(135deg,rgba(255,255,255,.095),rgba(255,255,255,.025) 52%,rgba(0,0,0,.12))!important;
-  border:1px solid rgba(255,255,255,.16)!important;
+    radial-gradient(circle at 18% 8%,rgba(255,255,255,.095),transparent 34%),
+    linear-gradient(135deg,rgba(255,255,255,.065),rgba(255,255,255,.018) 52%,rgba(0,0,0,.085))!important;
+  border-color:var(--cookie-glass-line)!important;
   box-shadow:
+    0 12px 34px var(--cookie-glass-shadow),
+    inset 0 1px 0 var(--cookie-glass-highlight),
+    inset 0 -1px 0 rgba(0,0,0,.10)!important;
+  backdrop-filter:blur(var(--cookie-glass-blur)) saturate(var(--cookie-glass-sat))!important;
+  -webkit-backdrop-filter:blur(var(--cookie-glass-blur)) saturate(var(--cookie-glass-sat))!important;
+}
+
+/* A moving specular band gives panels the same liquid/glass feel as the controls. */
+.sidebar::before,
+.topbar::before,
+.composer::before,
+.large-search::before,
+.chat-session-menu::before,
+.composer-menu::before,
+.message-action-menu::before,
+.activity-panel::before,
+.suggestion::before,
+.welcome-prompts button::before,
+.attachment-chip::before,
+.generated-file::before,
+.session-archived::before,
+.help-nav::before,
+.help-content::before,
+.help-code-block::before,
+.help-note::before,
+.help-footer::before,
+.settings-reference-card::before,
+.settings-profile-section::before,
+.settings-detail-card::before,
+.settings-logout-row::before,
+.settings-form-card::before,
+.profile-edit-modal::before,
+.account-mobile-card::before,
+.account-profile-card::before,
+.account-detail-card::before,
+.account-logout-row::before,
+.usage-card::before,
+.usage-grid>div::before,
+.plan::before,
+.theme-card::before,
+.profile-card::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  z-index:-1;
+  background:
+    linear-gradient(112deg,transparent 18%,rgba(255,255,255,.075) 47%,transparent 72%);
+  opacity:.75;
+  transform:translateX(-18%);
+  transition:transform 700ms cubic-bezier(.16,1,.3,1),opacity 300ms ease;
+}
+.sidebar:hover::before,
+.topbar:hover::before,
+.composer:focus-within::before,
+.large-search:focus-within::before,
+.chat-session-menu:hover::before,
+.composer-menu:hover::before,
+.message-action-menu:hover::before,
+.activity-panel:hover::before,
+.suggestion:hover::before,
+.welcome-prompts button:hover::before,
+.attachment-chip:hover::before,
+.generated-file:hover::before,
+.session-archived:hover::before,
+.help-nav:hover::before,
+.help-content:hover::before,
+.help-code-block:hover::before,
+.help-note:hover::before,
+.help-footer:hover::before,
+.settings-reference-card:hover::before,
+.settings-profile-section:hover::before,
+.settings-detail-card:hover::before,
+.settings-logout-row:hover::before,
+.settings-form-card:hover::before,
+.profile-edit-modal:hover::before,
+.account-mobile-card:hover::before,
+.account-profile-card:hover::before,
+.account-detail-card:hover::before,
+.account-logout-row:hover::before,
+.usage-card:hover::before,
+.usage-grid>div:hover::before,
+.plan:hover::before,
+.theme-card:hover::before,
+.profile-card:hover::before{
+  transform:translateX(18%);
+  opacity:1;
+}
+
+/* Glass overlays should stay visually separated from the page behind them. */
+.sidebar{
+  background:
+    radial-gradient(circle at 20% 5%,rgba(255,255,255,.11),transparent 36%),
+    linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025) 55%,rgba(0,0,0,.12))!important;
+}
+.topbar{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important;
+}
+.composer{
+  background:
+    radial-gradient(circle at 22% 5%,rgba(255,255,255,.13),transparent 38%),
+    linear-gradient(135deg,rgba(255,255,255,.095),rgba(255,255,255,.025) 55%,rgba(0,0,0,.10))!important;
+}
+.composer:focus-within{
+  border-color:rgba(255,255,255,.24)!important;
+  box-shadow:
+    0 16px 44px rgba(0,0,0,.25),
+    0 0 0 1px rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.16)!important;
+}
+
+/* Inputs inherit the material instead of looking like flat browser controls. */
+.large-search,
+.profile-edit-fields input,
+.profile-edit-fields textarea,
+.settings-form-card input,
+.settings-form-card textarea,
+.composer textarea{
+  background:rgba(255,255,255,.025)!important;
+}
+.large-search:focus-within,
+.profile-edit-fields input:focus,
+.profile-edit-fields textarea:focus,
+.settings-form-card input:focus,
+.settings-form-card textarea:focus{
+  border-color:rgba(255,255,255,.25)!important;
+  box-shadow:0 0 0 3px rgba(255,255,255,.045),inset 0 1px rgba(255,255,255,.08)!important;
+}
+
+/* Conversation material: user bubbles and generated/attachment objects become glass objects. */
+.message-row.user .message-body{
+  background:
+    radial-gradient(circle at 25% 8%,rgba(255,255,255,.105),transparent 38%),
+    linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 58%,rgba(0,0,0,.08))!important;
+  border-color:var(--cookie-glass-line)!important;
+  box-shadow:
+    0 8px 26px rgba(0,0,0,.13),
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -1px 0 rgba(0,0,0,.08)!important;
+  backdrop-filter:blur(18px) saturate(150%)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(150%)!important;
+}
+.attachment-tray{
+  padding:8px 10px 4px;
+  border-radius:18px;
+}
+.attachment-chip{
+  border:1px solid var(--cookie-glass-line)!important;
+  background:rgba(255,255,255,.045)!important;
+  box-shadow:0 6px 20px rgba(0,0,0,.12),inset 0 1px rgba(255,255,255,.10)!important;
+}
+.generated-file{
+  background:
+    radial-gradient(circle at 20% 8%,rgba(255,255,255,.10),transparent 38%),
+    linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.018) 55%,rgba(0,0,0,.08))!important;
+}
+
+/* Menus and sheets get deeper refraction than ordinary cards. */
+.chat-session-menu,
+.composer-menu,
+.message-action-menu,
+.profile-edit-modal{
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.32),
     0 0 0 1px rgba(255,255,255,.045),
-    0 10px 30px rgba(0,0,0,.18),
-    inset 0 1px 0 rgba(255,255,255,.14),
-    inset 0 -1px 0 rgba(0,0,0,.14)!important;
-  backdrop-filter:blur(18px) saturate(165%)!important;
-  -webkit-backdrop-filter:blur(18px) saturate(165%)!important;
-  transition:transform 180ms cubic-bezier(.16,1,.3,1),box-shadow 220ms ease,border-color 220ms ease,background 220ms ease!important;
+    inset 0 1px 0 rgba(255,255,255,.14)!important;
+  backdrop-filter:blur(28px) saturate(175%)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(175%)!important;
 }
-.liquid-glass-button::before{
-  content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;z-index:-1;
-  background:
-    radial-gradient(circle at 22% 8%,rgba(255,255,255,.24),transparent 31%),
-    linear-gradient(110deg,transparent 20%,rgba(255,255,255,.09) 48%,transparent 74%);
-  opacity:.72;transform:translateX(-18%);
-  transition:transform 520ms cubic-bezier(.16,1,.3,1),opacity 220ms ease;
+.chat-session-menu button:hover,
+.composer-menu button:hover,
+.message-action-menu button:hover,
+.help-topic:hover,
+.settings-mobile-row:hover{
+  background:rgba(255,255,255,.065)!important;
 }
-.liquid-glass-button::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.055),inset 0 0 18px rgba(255,255,255,.035);
-  opacity:.9;
+
+/* Help and Settings surfaces: retain their hierarchy, but make every container feel glass. */
+.help-nav,
+.help-content,
+.help-code-block,
+.help-note,
+.help-footer{
+  border-color:var(--cookie-glass-line)!important;
 }
-.liquid-glass-button:hover{
-  transform:translateY(-1px) scale(1.018)!important;
-  border-color:rgba(255,255,255,.28)!important;
+.help-code-block pre{
+  background:rgba(0,0,0,.16)!important;
+  border-color:rgba(255,255,255,.07)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.05),inset 0 -12px 28px rgba(0,0,0,.10)!important;
+}
+.settings-reference-card,
+.settings-profile-section,
+.settings-detail-card,
+.settings-form-card,
+.settings-logout-row{
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.07),
-    0 14px 38px rgba(0,0,0,.25),
-    inset 0 1px 0 rgba(255,255,255,.19),
-    inset 0 -1px 0 rgba(0,0,0,.12)!important;
+    0 12px 34px rgba(0,0,0,.16),
+    inset 0 1px 0 rgba(255,255,255,.10)!important;
 }
-.liquid-glass-button:hover::before{transform:translateX(18%);opacity:1}
-.liquid-glass-button:active{
-  transform:translateY(1px) scale(.965)!important;
-  transition-duration:90ms!important;
-  box-shadow:0 4px 14px rgba(0,0,0,.22),inset 0 2px 8px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.12)!important;
+.settings-upgrade{
+  background:rgba(255,255,255,.035)!important;
+  backdrop-filter:blur(14px) saturate(145%)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(145%)!important;
 }
-.liquid-glass-button:focus-visible{
-  outline:none!important;
-  box-shadow:0 0 0 2px var(--accent),0 10px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.16)!important;
+.settings-mobile-row:hover,
+.settings-mobile-row:active{
+  background:rgba(255,255,255,.055)!important;
 }
-.icon-btn.liquid-glass-button,.mobile-brand.liquid-glass-button,.round-tool.liquid-glass-button,.send-btn.liquid-glass-button,.search-clear.liquid-glass-button{
-  backdrop-filter:blur(16px) saturate(175%)!important;
-  -webkit-backdrop-filter:blur(16px) saturate(175%)!important;
+
+/* Toggle tracks and segmented controls also become miniature glass pieces. */
+.settings-inline-toggle,
+.toggle,
+.settings-segmented button,
+.text-choice{
+  border:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.10);
+  backdrop-filter:blur(10px) saturate(140%)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(140%)!important;
 }
-.motion-disabled .liquid-glass-button,.motion-disabled .liquid-glass-button::before{transition:none!important}
+.settings-inline-toggle:not(.on),
+.toggle:not(.on),
+.settings-segmented button:not(.selected),
+.text-choice:not(.selected){
+  background:rgba(255,255,255,.045)!important;
+}
+
+/* Mobile glass sheets: let the page behind show through without losing readability. */
+@media(max-width:900px){
+  .app-shell>.sidebar{
+    background:
+      radial-gradient(circle at 22% 4%,rgba(255,255,255,.12),transparent 35%),
+      linear-gradient(135deg,rgba(18,18,18,.30),rgba(255,255,255,.025) 52%,rgba(0,0,0,.15))!important;
+    backdrop-filter:blur(34px) saturate(175%)!important;
+    -webkit-backdrop-filter:blur(34px) saturate(175%)!important;
+  }
+  .app-shell>.sidebar-overlay{
+    background:rgba(0,0,0,.20)!important;
+    backdrop-filter:blur(14px) saturate(120%)!important;
+    -webkit-backdrop-filter:blur(14px) saturate(120%)!important;
+  }
+  .app-shell .composer{
+    backdrop-filter:blur(26px) saturate(175%)!important;
+    -webkit-backdrop-filter:blur(26px) saturate(175%)!important;
+  }
+  .help-nav,.help-content,.settings-reference-card,.settings-profile-section{
+    backdrop-filter:blur(24px) saturate(160%)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(160%)!important;
+  }
+}
+
+/* Reduced motion keeps the material static without removing the glass itself. */
+.motion-disabled [class*="liquid"],
+.motion-disabled .sidebar::before,
+.motion-disabled .topbar::before,
+.motion-disabled .composer::before,
+.motion-disabled .suggestion::before,
+.motion-disabled .help-content::before,
+.motion-disabled .settings-reference-card::before{
+  transition:none!important;
+}
 @media(prefers-reduced-motion:reduce){
-  .liquid-glass-button,.liquid-glass-button::before{transition:none!important}
-  .liquid-glass-button:hover{transform:none!important}
+  .sidebar::before,.topbar::before,.composer::before,.suggestion::before,
+  .help-content::before,.settings-reference-card::before{transition:none!important}
+}
+
+/* Keep the liquid treatment legible in light mode. */
+html[data-theme=light] .liquid-glass-button,
+html[data-theme=light] .sidebar,
+html[data-theme=light] .topbar,
+html[data-theme=light] .composer,
+html[data-theme=light] .large-search,
+html[data-theme=light] .suggestion,
+html[data-theme=light] .help-nav,
+html[data-theme=light] .help-content,
+html[data-theme=light] .settings-reference-card,
+html[data-theme=light] .settings-profile-section,
+html[data-theme=light] .settings-detail-card,
+html[data-theme=light] .settings-form-card,
+html[data-theme=light] .profile-edit-modal{
+  box-shadow:
+    0 12px 34px rgba(60,48,38,.10),
+    inset 0 1px 0 rgba(255,255,255,.65),
+    inset 0 -1px 0 rgba(50,40,30,.06)!important;
 }
