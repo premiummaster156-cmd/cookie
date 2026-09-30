@@ -53,6 +53,9 @@ export default function App(){
   const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const chatScroll=useRef<HTMLDivElement>(null);
+  const chatMenuRef=useRef<HTMLDivElement>(null);
+  const attachMenuRef=useRef<HTMLDivElement>(null);
+  const messageMenuRef=useRef<HTMLDivElement>(null);
   async function copyMessage(text:string,messageId:string){
     try{
       if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(text);
@@ -66,7 +69,11 @@ export default function App(){
       window.setTimeout(()=>setCopiedMessage(v=>v===messageId?null:v),1400);
     }catch{}
   }
-  function toggleChatMenu(){setChatMenuOpen(v=>!v);setMessageMenuOpen(null)}
+  function toggleChatMenu(){
+    setChatMenuOpen(v=>!v);
+    setAttachMenuOpen(false);
+    setMessageMenuOpen(null);
+  }
   async function shareMessage(text:string){
     try{
       if(navigator.share)await navigator.share({title:"Cookie response",text});
@@ -85,9 +92,19 @@ export default function App(){
         setMessageMenuOpen(null);
       }
     };
+    const onPointerDown=(e:PointerEvent)=>{
+      const target=e.target as Node;
+      if(chatMenuOpen && !chatMenuRef.current?.contains(target)) setChatMenuOpen(false);
+      if(attachMenuOpen && !attachMenuRef.current?.contains(target)) setAttachMenuOpen(false);
+      if(messageMenuOpen && !messageMenuRef.current?.contains(target)) setMessageMenuOpen(null);
+    };
     window.addEventListener("keydown",onKeyDown);
-    return ()=>window.removeEventListener("keydown",onKeyDown);
-  },[]);
+    document.addEventListener("pointerdown",onPointerDown);
+    return ()=>{
+      window.removeEventListener("keydown",onKeyDown);
+      document.removeEventListener("pointerdown",onPointerDown);
+    };
+  },[chatMenuOpen,attachMenuOpen,messageMenuOpen]);
 
   useEffect(()=>{
     const hash=window.location.hash;
@@ -230,7 +247,7 @@ export default function App(){
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
           <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search conversations"><Search size={18}/></button>
-          <div className="chat-session-menu-wrap">
+          <div ref={chatMenuRef} className="chat-session-menu-wrap">
             <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
             {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
               <div className="chat-menu-heading">{chatTitle}{chatPinned?" · Pinned":""}</div>
@@ -272,7 +289,7 @@ export default function App(){
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
-                    <div className="message-actions-wrap">
+                    <div ref={messageMenuRef} className="message-actions-wrap">
                       <button className={"message-more "+(messageMenuOpen===m.id?"active":"")} onClick={()=>{setMessageMenuOpen(v=>v===m.id?null:m.id);setChatMenuOpen(false);setAttachMenuOpen(false)}} aria-label="Message actions" aria-expanded={messageMenuOpen===m.id}>
                         <MoreHorizontal size={15}/>
                       </button>
@@ -295,8 +312,12 @@ export default function App(){
         <div className="composer">
           <div className="composer-main">
             <div className="composer-attachment">
-              <div className="composer-menu-wrap">
-                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>setAttachMenuOpen(v=>!v)} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
+              <div ref={attachMenuRef} className="composer-menu-wrap">
+                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>{
+  setAttachMenuOpen(v=>!v);
+  setChatMenuOpen(false);
+  setMessageMenuOpen(null);
+}} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
                   <CirclePlus size={22}/>
                 </button>
                 {attachMenuOpen&&<div className="composer-menu attachment-menu">
