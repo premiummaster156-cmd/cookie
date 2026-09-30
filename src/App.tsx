@@ -491,7 +491,7 @@ function SettingsPage(props:{
   const [tab,setTab]=useState("Appearance");
   const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
   return <div className="page-container settings-page">
-    <div className="page-heading"><span className="eyebrow">CHAT / SETTINGS</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves while you use chat. Account settings will be added separately later.</p></div>
+    <div className="page-heading"><span className="eyebrow">CHAT / SETTINGS</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves while you use chat. Account settings are available from your profile at the bottom of the sidebar.</p></div>
     <div className="settings-layout">
       <nav className="settings-nav" aria-label="Chat settings sections"><div className="settings-nav-label">Chat settings</div>{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={14}/><span>{String(name)}</span></button>)}</nav>
       <div className="setting-content">
