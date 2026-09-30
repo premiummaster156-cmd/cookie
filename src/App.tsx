@@ -7,7 +7,7 @@ import {
   ArrowUp, Copy, FileText, FileUp, ImagePlus,
   Camera, Images, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, CirclePlus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
-  ShieldCheck, Palette, Plus, Check, ChevronRight, ArrowLeft, Mail, CreditCard, RotateCcw, BarChart3, UserRound, LockKeyhole, Database, Bell, Volume2, UsersRound, Monitor, HardDrive, Megaphone, Flag, Info, LogOut
+  ShieldCheck, Palette, Plus, Check, ChevronRight, ArrowLeft, Mail, CreditCard, RotateCcw, BarChart3, UserRound, LockKeyhole, Database, Bell, Volume2, UsersRound, Monitor, HardDrive, Megaphone, Flag, Info, LogOut, Globe2, SpellCheck, Smartphone, Keyboard, Type, Sparkles, Shuffle, TrendingUp, Brain, Gauge
 } from "lucide-react";
 
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
@@ -524,7 +524,7 @@ function AccountSettingsPage(props:{
         <div className="ios-control-row"><span className="ios-row-icon"><SlidersHorizontal size={21}/></span><span className="ios-row-main"><strong>Compact messages</strong></span><Toggle value={props.compact} onChange={()=>props.setCompact(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Monitor size={21}/></span><span className="ios-row-main"><strong>Interface animations</strong></span><Toggle value={props.animations} onChange={()=>props.setAnimations(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Keyboard size={21}/><span/></span><span className="ios-row-main"><strong>Keyboard hints</strong></span><Toggle value={props.keyboardHints} onChange={()=>props.setKeyboardHints(v=>!v)}/></div>
-        <div className="ios-control-row"><span className="ios-row-icon"><TypeIcon size={21}/></span><span className="ios-row-main"><strong>Text size</strong></span><div className="ios-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><Type size={21}/></span><span className="ios-row-main"><strong>Text size</strong></span><div className="ios-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
       </section>
     </div>;
   }
@@ -581,7 +581,7 @@ function AccountSettingsPage(props:{
     <div className="ios-settings-head"><h2>Settings</h2></div>
     <h3 className="ios-section-title">General</h3>
     <section className="ios-card">
-      <Row icon={Settings} label="General" value="English" onClick={()=>setPanel("General")}/>
+      <Row icon={Settings} label="General" value={props.appLanguage} onClick={()=>setPanel("General")}/>
     </section>
 
     <h3 className="ios-section-title">Intelligence</h3>
