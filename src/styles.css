@@ -490,76 +490,72 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 .message-tools .message-more-wrap>button{width:28px;justify-content:center;padding:0}
 .message-tools .message-more-wrap>button.active{background:var(--surface-2);color:var(--text)}
 .message-action-menu{
-  position:absolute;
-  right:-4px;
-  bottom:calc(100% + 10px);
-  z-index:180;
-  width:min(320px,calc(100vw - 28px));
-  padding:9px;
+  position:fixed;
+  z-index:9999;
+  width:min(260px,calc(100vw - 24px));
+  padding:7px;
   border:1px solid color-mix(in srgb,var(--line) 78%,white 22%);
-  border-radius:24px;
-  background:color-mix(in srgb,var(--surface) 92%,transparent);
-  box-shadow:0 24px 70px rgba(0,0,0,.34),0 8px 25px rgba(0,0,0,.14);
-  backdrop-filter:blur(24px) saturate(1.08);
-  -webkit-backdrop-filter:blur(24px) saturate(1.08);
+  border-radius:18px;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  box-shadow:0 18px 48px rgba(0,0,0,.28),0 6px 18px rgba(0,0,0,.12);
+  backdrop-filter:blur(20px) saturate(1.05);
+  -webkit-backdrop-filter:blur(20px) saturate(1.05);
   transform-origin:bottom right;
-  animation:message-menu-in 300ms cubic-bezier(.16,1.12,.3,1) both;
+  animation:message-menu-in 280ms cubic-bezier(.16,1.12,.3,1) both;
 }
 .message-action-title{
-  padding:7px 13px 9px;
+  padding:6px 10px 7px;
   color:var(--muted);
-  font-size:13px;
-  font-weight:600;
-  letter-spacing:-.01em;
+  font-size:10px;
+  font-weight:650;
+  letter-spacing:.02em;
 }
 .message-action-menu button{
   width:100%;
-  min-height:54px;
+  min-height:42px;
   display:flex;
   align-items:center;
-  gap:15px;
-  padding:6px 11px;
+  gap:11px;
+  padding:5px 9px;
   border:0;
-  border-radius:15px;
+  border-radius:11px;
   background:transparent;
   color:var(--text);
   text-align:left;
-  font-size:14px;
-  animation:message-item-in 280ms cubic-bezier(.16,1.12,.3,1) both;
+  font-size:12px;
+  animation:message-item-in 220ms cubic-bezier(.16,1.12,.3,1) both;
 }
-.message-action-menu button:nth-of-type(1){animation-delay:25ms}
-.message-action-menu button:nth-of-type(2){animation-delay:50ms}
-.message-action-menu button:nth-of-type(3){animation-delay:75ms}
-.message-action-menu button:nth-of-type(4){animation-delay:100ms}
-.message-action-menu button:nth-of-type(5){animation-delay:125ms}
-.message-action-menu button:nth-of-type(6){animation-delay:150ms}
-.message-action-menu button svg{flex:0 0 auto;stroke-width:1.9}
+.message-action-menu button:nth-of-type(1){animation-delay:20ms}
+.message-action-menu button:nth-of-type(2){animation-delay:40ms}
+.message-action-menu button:nth-of-type(3){animation-delay:60ms}
+.message-action-menu button:nth-of-type(4){animation-delay:80ms}
+.message-action-menu button:nth-of-type(5){animation-delay:100ms}
+.message-action-menu button:nth-of-type(6){animation-delay:120ms}
+.message-action-menu button svg{width:17px;height:17px;flex:0 0 auto;stroke-width:1.9}
 .message-action-menu button:hover{background:var(--surface-2)}
 .message-action-menu button:active{transform:scale(.975)}
 .message-action-menu button.danger{color:#e4574f}
+.message-tools button.copied{color:var(--accent-strong)}
 @keyframes message-menu-in{
-  from{opacity:0;transform:translateY(12px) scale(.88)}
+  from{opacity:0;transform:translateY(8px) scale(.94)}
   65%{opacity:1;transform:translateY(-1px) scale(1.01)}
   to{opacity:1;transform:none}
 }
 @keyframes message-item-in{
-  from{opacity:0;transform:translateY(8px)}
+  from{opacity:0;transform:translateY(5px)}
   to{opacity:1;transform:none}
 }
 @media(max-width:620px){
   .message-action-menu{
-    right:-4px;
-    bottom:calc(100% + 9px);
-    width:min(330px,calc(100vw - 18px));
-    border-radius:24px;
+    width:min(260px,calc(100vw - 24px));
+    border-radius:18px;
   }
-  .message-action-title{font-size:13px;padding:8px 14px 10px}
-  .message-action-menu button{min-height:58px;padding:6px 12px;font-size:15px;border-radius:16px}
+  .message-action-title{font-size:10px;padding:6px 10px 7px}
+  .message-action-menu button{min-height:42px;padding:5px 9px;font-size:12px;border-radius:11px}
 }
 @media(prefers-reduced-motion:reduce){
   .message-action-menu,.message-action-menu button{animation:none!important}
 }
-
 
 /* Final mobile composer polish */
 .composer-main{position:relative}
