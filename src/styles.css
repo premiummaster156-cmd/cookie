@@ -5417,3 +5417,57 @@ html,body,#root{
     font-size:11px!important;
   }
 }
+
+
+/* ===== Final visual correction: glass sheet + visible 3D touch waves ===== */
+@media screen and (max-width:900px){
+  .app-shell .sidebar{
+    width:min(82vw,560px)!important;
+    max-width:min(82vw,560px)!important;
+    background:rgba(18,18,18,.30)!important;
+    background-image:
+      linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 48%,rgba(0,0,0,.10))!important;
+    border:1px solid rgba(255,255,255,.13)!important;
+    border-left:0!important;
+    border-radius:0 32px 32px 0!important;
+    box-shadow:
+      22px 0 75px rgba(0,0,0,.42),
+      inset -1px 0 rgba(255,255,255,.10),
+      inset 0 1px rgba(255,255,255,.055)!important;
+    backdrop-filter:blur(32px) saturate(170%)!important;
+    -webkit-backdrop-filter:blur(32px) saturate(170%)!important;
+  }
+
+  .app-shell .sidebar-overlay{
+    background:rgba(0,0,0,.24)!important;
+    backdrop-filter:blur(13px) saturate(115%)!important;
+    -webkit-backdrop-filter:blur(13px) saturate(115%)!important;
+  }
+
+  /* The wave must be visible over BOTH the chat and the glass sheet. */
+  .app-shell .cookie-three-motion{
+    z-index:500!important;
+    pointer-events:none!important;
+    mix-blend-mode:screen!important;
+  }
+  .app-shell .sidebar{
+    z-index:200!important;
+  }
+  .app-shell .sidebar-overlay{
+    z-index:40!important;
+  }
+
+  /* Reduce the heavy card treatment so the glass does the visual work. */
+  .app-shell .sidebar .new-chat,
+  .app-shell .sidebar .nav-item,
+  .app-shell .sidebar .account{
+    box-shadow:none!important;
+  }
+}
+
+@media screen and (max-width:420px){
+  .app-shell .sidebar{
+    width:82vw!important;
+    max-width:82vw!important;
+  }
+}
