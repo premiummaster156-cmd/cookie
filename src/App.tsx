@@ -99,6 +99,18 @@ export default function App(){
   }
 
   useEffect(()=>{
+    if(!messageMenuOpen)return;
+    const closeOnScroll=()=>{setMessageMenuOpen(null);setMessageMenuPosition(null)};
+    const onResize=()=>{setMessageMenuOpen(null);setMessageMenuPosition(null)};
+    chatScroll.current?.addEventListener("scroll",closeOnScroll,{passive:true});
+    window.addEventListener("resize",onResize);
+    return ()=>{
+      chatScroll.current?.removeEventListener("scroll",closeOnScroll);
+      window.removeEventListener("resize",onResize);
+    };
+  },[messageMenuOpen]);
+
+  useEffect(()=>{
     const onKeyDown=(e:KeyboardEvent)=>{
       if(e.key==="Escape"){
         setSidebarOpen(false);
