@@ -854,6 +854,7 @@ if(panel==="Subscription"){
     </div>;
   }
   return <div className="page-container settings-reference-page">
+    <button className="settings-main-back" onClick={props.goBack} aria-label="Back to chat"><ArrowLeft size={21}/><span>Back</span></button>
     <div className="settings-reference-head">
       <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
       <h2>Settings</h2>
