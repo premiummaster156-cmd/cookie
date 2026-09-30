@@ -288,6 +288,22 @@ export default function App(){
   function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
 
 
+  if(view==="account"||view==="settings"){
+    return <main className={"settings-shell "+(dark?"theme-dark":"theme-light")}>
+      <AccountSettingsPage
+        dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}
+        textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact}
+        animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}
+        appLanguage={appLanguage} setAppLanguage={setAppLanguage} autoCorrect={autoCorrect} setAutoCorrect={setAutoCorrect}
+        haptics={haptics} setHaptics={setHaptics} autoSwitch={autoSwitch} setAutoSwitch={setAutoSwitch}
+        autocomplete={autocomplete} setAutocomplete={setAutocomplete} trendingSearches={trendingSearches} setTrendingSearches={setTrendingSearches}
+        memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} memoryName={memoryName} setMemoryName={setMemoryName}
+        memoryOccupation={memoryOccupation} setMemoryOccupation={setMemoryOccupation} memoryAbout={memoryAbout} setMemoryAbout={setMemoryAbout}
+        model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length}
+      />
+    </main>;
+  }
+
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -588,7 +604,7 @@ function AccountSettingsPage(props:{
         <div className="ios-progress"><span style={{width:"100%"}}/></div>
       </section>
       <h3 className="ios-section-title">Credits</h3>
-      <p className="ios-explainer">No account-level credit system is connected to this build yet. Server-side plan limits should be added only when the backend supports them.</p>
+      <p className="ios-explainer">Credits are not available in this account.</p>
     </div>;
   }
 
@@ -629,7 +645,6 @@ function AccountSettingsPage(props:{
       <Row icon={ShieldCheck} label="Privacy Center" onClick={()=>setPanel("About")}/>
       <Row icon={Info} label="About" onClick={()=>setPanel("About")}/>
     </section>
-    <p className="ios-footer">Advanced account, billing, remote-control, plugins, voice, and server-side usage features are omitted until their required backend services exist.</p>
   </div>;
 }
 
