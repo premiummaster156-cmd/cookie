@@ -559,3 +559,66 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 @media(prefers-reduced-motion:reduce){
   .message-action-menu,.message-action-menu button{animation:none!important}
 }
+
+
+/* Final mobile composer polish */
+.composer-main{position:relative}
+.composer-main>textarea{padding-left:52px!important;padding-bottom:44px!important}
+.composer-attachment{
+  position:absolute;
+  left:11px;
+  bottom:10px;
+  z-index:40;
+}
+.composer-attachment .composer-menu-wrap{position:relative}
+.composer-attachment .round-tool{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:transparent;
+  color:var(--muted);
+  border:0;
+}
+.composer-attachment .round-tool:hover{
+  background:var(--surface-2);
+  color:var(--text);
+}
+.composer-attachment .attachment-trigger svg{
+  transition:transform 420ms cubic-bezier(.16,1.2,.3,1),filter 220ms ease;
+}
+.composer-attachment .attachment-trigger.selected svg{
+  transform:rotate(45deg) scale(1.12);
+  filter:drop-shadow(0 2px 6px rgba(201,160,106,.25));
+}
+.composer-attachment .attachment-menu{
+  left:-7px;
+  bottom:calc(100% + 10px);
+  transform-origin:bottom left;
+  animation:cookie-attach-open 520ms cubic-bezier(.16,1.22,.3,1) both;
+}
+.composer-attachment .attachment-menu-item{
+  animation:cookie-attach-item 420ms cubic-bezier(.16,1.18,.3,1) both;
+}
+@keyframes cookie-attach-open{
+  0%{opacity:0;transform:translateY(24px) scale(.72);filter:blur(5px)}
+  45%{opacity:1;transform:translateY(-4px) scale(1.025);filter:blur(0)}
+  72%{transform:translateY(1px) scale(.995)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:none}
+}
+@keyframes cookie-attach-item{
+  0%{opacity:0;transform:translateX(-14px) scale(.9)}
+  60%{opacity:1;transform:translateX(2px) scale(1.01)}
+  100%{opacity:1;transform:none}
+}
+.composer-attachment .attachment-menu-item:nth-child(1){animation-delay:45ms}
+.composer-attachment .attachment-menu-item:nth-child(2){animation-delay:85ms}
+.composer-attachment .attachment-menu-item:nth-child(3){animation-delay:125ms}
+.composer-attachment .attachment-menu .menu-limit{animation:cookie-attach-item 420ms 165ms cubic-bezier(.16,1.18,.3,1) both}
+@media(max-width:620px){
+  .composer-main>textarea{padding-left:52px!important;padding-bottom:45px!important}
+  .composer-attachment{left:9px;bottom:9px}
+  .composer-attachment .round-tool{width:38px;height:38px}
+  .composer-attachment .attachment-menu{width:min(318px,calc(100vw - 22px));left:-4px}
+}
