@@ -1,6 +1,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
@@ -31,6 +32,80 @@ const APP_LANGUAGES=[
 
 function CookieIcon({size=22}:{size?:number}){
   return <img className="cookie-ai-icon" src={COOKIE_ICON_URL} width={size} height={size} alt="Cookie AI" draggable={false}/>;
+}
+
+function CookieMotionScene({enabled=true}:{enabled?:boolean}){
+  const hostRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const host=hostRef.current;
+    if(!host||!enabled||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,.1,100);
+    camera.position.z=7;
+    const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:"high-performance"});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+    renderer.setSize(window.innerWidth,window.innerHeight,false);
+    renderer.setClearColor(0x000000,0);
+    host.appendChild(renderer.domElement);
+    const group=new THREE.Group();
+    scene.add(group);
+    const count=window.innerWidth<700?36:68;
+    const geometry=new THREE.BufferGeometry();
+    const positions=new Float32Array(count*3);
+    const phases=new Float32Array(count);
+    for(let i=0;i<count;i++){
+      const radius=2.5+Math.random()*3.4;
+      const angle=Math.random()*Math.PI*2;
+      positions[i*3]=Math.cos(angle)*radius;
+      positions[i*3+1]=(Math.random()-.5)*5;
+      positions[i*3+2]=(Math.random()-.5)*2.2;
+      phases[i]=Math.random()*Math.PI*2;
+    }
+    geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
+    const material=new THREE.PointsMaterial({color:0xb69b86,size:window.innerWidth<700?.035:.045,transparent:true,opacity:.28,depthWrite:false});
+    group.add(new THREE.Points(geometry,material));
+    const ringGeometry=new THREE.TorusGeometry(2.6,.012,8,96);
+    const ringMaterial=new THREE.MeshBasicMaterial({color:0xd08b5a,transparent:true,opacity:.055,depthWrite:false});
+    const ring=new THREE.Mesh(ringGeometry,ringMaterial);
+    ring.rotation.x=.9;
+    group.add(ring);
+    let raf=0;
+    let px=0,py=0,tx=0,ty=0;
+    const start=performance.now();
+    const onPointer=(e:PointerEvent)=>{tx=(e.clientX/window.innerWidth-.5)*.28;ty=(e.clientY/window.innerHeight-.5)*-.18};
+    const resize=()=>{
+      camera.aspect=window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+      renderer.setSize(window.innerWidth,window.innerHeight,false);
+    };
+    const tick=(now:number)=>{
+      const t=(now-start)*.001;
+      px+=(tx-px)*.035;py+=(ty-py)*.035;
+      group.rotation.y=px+Math.sin(t*.16)*.03;
+      group.rotation.x=py+Math.cos(t*.13)*.016;
+      ring.rotation.z=t*.03;
+      const pos=geometry.attributes.position.array as Float32Array;
+      for(let i=0;i<count;i++){
+        const b=i*3;
+        pos[b+1]+=Math.sin(t*.45+phases[i])*.0005;
+      }
+      geometry.attributes.position.needsUpdate=true;
+      renderer.render(scene,camera);
+      raf=requestAnimationFrame(tick);
+    };
+    window.addEventListener("pointermove",onPointer,{passive:true});
+    window.addEventListener("resize",resize);
+    raf=requestAnimationFrame(tick);
+    return ()=>{
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove",onPointer);
+      window.removeEventListener("resize",resize);
+      geometry.dispose();material.dispose();ringGeometry.dispose();ringMaterial.dispose();
+      renderer.dispose();renderer.domElement.remove();
+    };
+  },[enabled]);
+  return <div ref={hostRef} className="cookie-three-motion" aria-hidden="true"/>;
 }
 
 export default function App(){
@@ -370,6 +445,7 @@ export default function App(){
   }
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
+    <CookieMotionScene enabled={animations}/>
     <aside className="sidebar">
       <div className="sidebar-top">
         <div className="brand-row">
