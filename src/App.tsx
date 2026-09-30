@@ -174,7 +174,7 @@ export default function App(){
         <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={20}/></button>
         <div className="mobile-brand"><CookieIcon size={27}/><strong>Cookie</strong></div>
         <div className="topbar-spacer"/>
-        {view==="chat"&&messages.length>0&&<div className="chat-session-bar">
+        {view==="chat"&&messages.length>0&&<div className="chat-session-bar" aria-label="Current chat session">
           <button className="chat-session-title" onClick={toggleChatMenu} aria-expanded={chatMenuOpen}>{chatTitle}{chatPinned?" · Pinned":""}</button>
           <div className="chat-session-menu-wrap">
             <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={19}/></button>
@@ -299,23 +299,22 @@ function SettingsPage(props:{
   const [tab,setTab]=useState("Appearance");
   const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
   return <div className="page-container settings-page">
-    <div className="page-heading"><span className="eyebrow">PREFERENCES</span><h2>Settings</h2><p>Customize Cookie's appearance, conversation behavior, uploads, and interface.</p></div>
+    <div className="page-heading"><span className="eyebrow">ACCOUNT / PREFERENCES</span><h2>Settings</h2><p>Control how Cookie looks, feels, and behaves. Your profile and account controls can be managed separately.</p></div>
     <div className="settings-layout">
-      <nav className="settings-nav">{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={16}/><span>{String(name)}</span></button>)}</nav>
+      <nav className="settings-nav" aria-label="Settings sections"><div className="settings-nav-label">Preferences</div>{tabs.map(([name,Icon])=><button key={String(name)} className={"setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(String(name))}><Icon size={14}/><span>{String(name)}</span></button>)}</nav>
       <div className="setting-content">
-        {tab==="Appearance"&&<><SettingGroup title="Theme" desc="Choose the appearance used across Cookie."><div className="theme-options">
-          {["dark","light","system"].map(x=><button key={x} className={"theme-card "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"active":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-preview "+x+"-preview"}/><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="dark"?"Near-black interface":x==="light"?"Bright interface":"Follow device preference"}</small></button>)}
-        </div></SettingGroup><SettingGroup title="Accent" desc="Pick the restrained highlight color used for controls and focus."><div className="accent-row">
-          {(["orange","cream","cocoa"] as const).map(x=><button key={x} aria-label={x+" accent"} className={"accent-swatch "+x+" "+(props.accent===x?"selected":"")} onClick={()=>props.setAccent(x)}/>)}
-        </div></SettingGroup><SettingGroup title="Text size" desc="Adjust reading size without changing the layout."><div className="choice-grid">{(["small","medium","large"] as const).map(x=><button key={x} className={"choice-card "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="small"?"Compact":x==="medium"?"Default":"More comfortable"}</small></button>)}</div></SettingGroup></>}
-        {tab==="Chat"&&<><SettingGroup title="Conversation density" desc="Control how much vertical space messages use."><Toggle label="Compact messages" desc="Reduce the gap between messages." value={props.compact} setValue={props.setCompact}/></SettingGroup><SettingGroup title="Keyboard" desc="Control the hints shown around the composer."><Toggle label="Keyboard hints" desc="Show shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/></SettingGroup><SettingGroup title="Motion" desc="Keep transitions subtle and functional."><Toggle label="Interface animations" desc="Disable non-essential transitions and entrance effects." value={props.animations} setValue={props.setAnimations}/></SettingGroup></>}
-        {tab==="Interface"&&<><SettingGroup title="Chat layout" desc="Cookie keeps the conversation focused with navigation and attachments available when needed."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · focused interface</div></SettingGroup></>}
-        {tab==="Privacy"&&<>{/* privacy controls */}<SettingGroup title="Uploads" desc="Attachments stay in the current conversation and are submitted only with your message."><div className="data-status"><ShieldCheck size={16}/> Up to 10 attachments per message · no folder uploads</div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Reset visual preferences for Cookie."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}
+        {tab==="Appearance"&&<SettingGroup title="Appearance" desc="Keep the interface quiet and readable. Changes apply immediately.">
+          <div className="settings-row-grid"><div><strong>Theme</strong><small>Choose the surface used across Cookie.</small></div><div className="inline-choices">{["dark","light","system"].map(x=><button key={x} className={"text-choice "+((x==="dark"&&props.dark)||(x==="light"&&!props.dark)?"selected":"")} onClick={()=>props.setDark(x!=="light")}><span className={"theme-dot "+x+"-preview"}/><span>{x[0].toUpperCase()+x.slice(1)}</span></button>)}</div></div>
+          <div className="settings-row-grid"><div><strong>Accent</strong><small>One restrained highlight color for focus and controls.</small></div><div className="accent-row">{(["orange","cream","cocoa"] as const).map(x=><button key={x} aria-label={x+" accent"} className={"accent-swatch "+x+" "+(props.accent===x?"selected":"")} onClick={()=>props.setAccent(x)}/>)}</div></div>
+          <div className="settings-row-grid"><div><strong>Text size</strong><small>Adjust reading size without changing the layout.</small></div><div className="inline-choices">{(["small","medium","large"] as const).map(x=><button key={x} className={"text-choice "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
+        </SettingGroup>}
+        {tab==="Chat"&&<><SettingGroup title="Conversation" desc="Keep the chat focused and control the amount of interface motion around it."><Toggle label="Compact messages" desc="Reduce vertical spacing between messages." value={props.compact} setValue={props.setCompact}/><Toggle label="Keyboard hints" desc="Show useful shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/><Toggle label="Interface animations" desc="Use short transitions for menus and page changes." value={props.animations} setValue={props.setAnimations}/></SettingGroup><SettingGroup title="Composer" desc="The composer stays compact so the conversation remains the primary surface."><div className="settings-note"><Check size={15}/><span>Attachments, generated files, and message tools stay attached to the conversation.</span></div></SettingGroup></>}
+        {tab==="Interface"&&<><SettingGroup title="Navigation" desc="Cookie keeps product navigation in the sidebar instead of turning the chat into a dashboard of controls."><div className="settings-note"><Check size={15}/><span>Chat · Recent · Settings · Help</span></div></SettingGroup><SettingGroup title="Session actions" desc="The three-dot menu in the chat header acts on the current chat session as a whole."><div className="settings-note"><MoreHorizontal size={15}/><span>Share · Rename · Pin · Find · Archive · Delete chat</span></div></SettingGroup></>}
+        {tab==="Privacy"&&<><SettingGroup title="Uploads" desc="Attachments are submitted only when you choose them for a message."><div className="settings-note"><ShieldCheck size={15}/><span>Up to 10 attachments per message · no folder uploads</span></div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Return Cookie’s visual preferences to their original values."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}
       </div>
     </div>
   </div>;
 }
-
 function SettingGroup({title,desc,children}:{title:string;desc:string;children:React.ReactNode}){
   return <section className="setting-group"><h3>{title}</h3><p>{desc}</p>{children}</section>;
 }
@@ -417,16 +416,16 @@ function HelpPage(){
   };
   const selected=content[topic]||content["Getting started"];
   const examples:Record<string,string>={
-    "Getting started":"# Start here\nType a request → Enter\nShift + Enter → new line\n+ → attachments",
-    "Chat & conversations":"# Chat session\n••• → Share chat\n••• → Rename chat\n••• → Find in chat",
-    "Files & images":"# Attachments\n+ → Camera\n+ → Photos\n+ → Files\nLimit → 10 items per message",
-    "Generated files":"# Generated files\nCookie creates the artifact → Download file",
-    "Models":"# Profiles\nCPT-1 → everyday\nCPT-2 MAX → deeper reasoning + coding\nCPT-3 ULTRA → maximum Cookie profile",
-    "Message actions":"# Chat actions\n••• → Share · Rename · Pin · Find · Archive · Delete\nCopy → individual assistant response",
-    "Settings & interface":"# Preferences\nAppearance → theme, accent, text size\nChat → density, motion, keyboard hints",
-    "Privacy & limitations":"# Boundary\nCookie only receives information supplied to the current request."
+    "Getting started":"# Start here\n\n## First message\nType what you need → Enter\nShift + Enter → new line\n+ → attachments",
+    "Chat & conversations":"# Chat session\n\n## Session menu\n••• → Share\n••• → Rename\n••• → Pin\n••• → Find\n••• → Archive\n••• → Delete",
+    "Files & images":"# Attachments\n\n## Add context\n+ → Camera\n+ → Photos\n+ → Files\nLimit → 10 items per message",
+    "Generated files":"# Generated files\n\n## Result\nCookie creates the artifact\nDownload file → save the result",
+    "Models":"# Profiles\n\n## Available\nCPT-1 → everyday\nCPT-2 MAX → deeper reasoning + coding\nCPT-3 ULTRA → maximum Cookie profile",
+    "Message actions":"# Chat actions\n\n## Current session\n••• → Share · Rename · Pin · Find · Archive · Delete\nCopy → individual assistant response",
+    "Settings & interface":"# Preferences\n\n## Appearance\nTheme → dark, light\nAccent → interface highlight\nText size → reading scale\n\n## Chat\nDensity · motion · keyboard hints",
+    "Privacy & limitations":"# Boundary\n\n## What Cookie receives\nOnly information supplied to the current request.\nAttachments are explicit; folder access is not provided."
   };
-  const sectionNames=["Overview","How it works","Useful to know","Tips","Current behavior","Important"];
+  const sectionNames=["Overview","How it works","Details","Tips","Current behavior","Important"];
   return <div className="page-container help-page">
     <div className="page-heading"><span className="eyebrow">SUPPORT</span><h2>Help & shortcuts</h2><p>A practical guide to Cookie. Pick a topic and jump straight to what you need.</p></div>
     <div className="help-layout">
