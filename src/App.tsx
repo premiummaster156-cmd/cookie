@@ -13,15 +13,16 @@ type FileItem={path:string;content:string;kind?:string};
 const MODELS=[
  {id:"standard",name:"CPT-1",desc:"Fast everyday assistant",icon:Zap},
  {id:"max",name:"CPT-2 MAX",desc:"Deep reasoning & coding",icon:BrainCircuit},
- {id:"ultra",name:"CPT-3 ULTRA",desc:"Maximum agentic capability",icon:Sparkles}
+ {id:"ultra",name:"CPT-3 ULTRA",desc:"Maximum agentic capability",icon:CookieIcon}
 ];
 const STARTERS=[
- {title:"Build something",desc:"Create a complete project",icon:Code2,prompt:"Build a complete project in my workspace."},
- {title:"Explain a topic",desc:"Learn something difficult",icon:BrainCircuit,prompt:"Explain a difficult topic simply and clearly."},
- {title:"Debug my code",desc:"Find and fix issues",icon:Code2,prompt:"Inspect my project and find the most important bug to fix."},
- {title:"Write for me",desc:"Draft polished content",icon:SquarePen,prompt:"Draft polished content for me."}
+ {title:"Build something",desc:"Create a complete project",icon:CookieIcon,prompt:"Build a complete project in my workspace."},
+ {title:"Explain a topic",desc:"Learn something difficult",icon:CookieIcon,prompt:"Explain a difficult topic simply and clearly."},
+ {title:"Debug my code",desc:"Find and fix issues",icon:CookieIcon,prompt:"Inspect my project and find the most important bug to fix."},
+ {title:"Write for me",desc:"Draft polished content",icon:CookieIcon,prompt:"Draft polished content for me."}
 ];
 const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+function CookieIcon({size=22}:{size?:number}){return <img className="cookie-ai-icon" src="/cookie-ai-icon.png" width={size} height={size} alt="Cookie AI"/>}
 
 export default function App(){
  const reduce=useReducedMotion();
@@ -75,7 +76,7 @@ export default function App(){
     {sidebar&&<motion.aside className="sidebar" initial={{width:0,opacity:0}} animate={{width:260,opacity:1}} exit={{width:0,opacity:0}} transition={{duration:.22}}>
       <div className="sidebar-inner">
         <div className="brand-row">
-          <div className="brand-mark">C</div><span className="brand-name">Cookie</span>
+          <div className="brand-mark"><CookieIcon size={23}/></div><span className="brand-name">Cookie</span>
           <button className="icon-btn subtle" aria-label="Close sidebar" onClick={()=>setSidebar(false)}><PanelRight size={17}/></button>
         </div>
         <button className="new-chat" onClick={newChat}><Plus size={17}/><span>New chat</span><kbd>⌘ K</kbd></button>
@@ -123,7 +124,7 @@ export default function App(){
      <div className="chat-scroll">
        {messages.length===0?
          <motion.div className="welcome" initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} transition={{duration:.35}}>
-           <div className="welcome-mark"><Sparkles size={25}/></div>
+           <div className="welcome-mark"><CookieIcon size={38}/></div>
            <div className="eyebrow">COOKIE AI WORKSPACE</div>
            <h1>What are you working on?</h1>
            <p>Ask a question, share an image, or give Cookie a project to build.</p>
@@ -136,7 +137,7 @@ export default function App(){
        :
          <div className="conversation">
            {messages.map(m=><motion.article key={m.id} className={"message "+m.role} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} transition={{duration:.22}}>
-             <div className="message-meta">{m.role==="assistant"?<><span className="mini-mark">C</span><b>Cookie</b></>:<><span>You</span></>}</div>
+             <div className="message-meta">{m.role==="assistant"?<><span className="mini-mark"><CookieIcon size={17}/></span><b>Cookie</b></>:<><span>You</span></>}</div>
              <div className="message-body">
                {m.images?.map((x,i)=><img className="message-image" key={i} src={x} alt="Uploaded attachment"/>)}
                <Message text={m.content}/>
@@ -145,7 +146,7 @@ export default function App(){
            </motion.article>)}
          </div>
        }
-       {loading&&<div className="thinking"><span className="thinking-mark"><Sparkles size={13}/></span><span>Cookie is working</span><i/><i/><i/></div>}
+       {loading&&<div className="thinking"><span className="thinking-mark"><CookieIcon size={18}/></span><span>Cookie is working</span><i/><i/><i/></div>}
        <div ref={bottom}/>
      </div>
 
