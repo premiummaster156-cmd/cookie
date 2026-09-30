@@ -39,72 +39,126 @@ function CookieMotionScene({enabled=true}:{enabled?:boolean}){
   useEffect(()=>{
     const host=hostRef.current;
     if(!host||!enabled||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+
     const scene=new THREE.Scene();
-    const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,.1,100);
-    camera.position.z=7;
+    const camera=new THREE.PerspectiveCamera(38,window.innerWidth/window.innerHeight,.1,100);
+    camera.position.z=8;
+
     const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:"high-performance"});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
     renderer.setSize(window.innerWidth,window.innerHeight,false);
     renderer.setClearColor(0x000000,0);
     host.appendChild(renderer.domElement);
-    const group=new THREE.Group();
-    scene.add(group);
-    const count=window.innerWidth<700?36:68;
-    const geometry=new THREE.BufferGeometry();
-    const positions=new Float32Array(count*3);
-    const phases=new Float32Array(count);
-    for(let i=0;i<count;i++){
-      const radius=2.5+Math.random()*3.4;
-      const angle=Math.random()*Math.PI*2;
-      positions[i*3]=Math.cos(angle)*radius;
-      positions[i*3+1]=(Math.random()-.5)*5;
-      positions[i*3+2]=(Math.random()-.5)*2.2;
-      phases[i]=Math.random()*Math.PI*2;
-    }
-    geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
-    const material=new THREE.PointsMaterial({color:0xb69b86,size:window.innerWidth<700?.035:.045,transparent:true,opacity:.28,depthWrite:false});
-    group.add(new THREE.Points(geometry,material));
-    const ringGeometry=new THREE.TorusGeometry(2.6,.012,8,96);
-    const ringMaterial=new THREE.MeshBasicMaterial({color:0xd08b5a,transparent:true,opacity:.055,depthWrite:false});
-    const ring=new THREE.Mesh(ringGeometry,ringMaterial);
-    ring.rotation.x=.9;
-    group.add(ring);
-    let raf=0;
+
+    const waveMaterial=new THREE.MeshBasicMaterial({
+      color:0xffffff,
+      transparent:true,
+      opacity:.13,
+      side:THREE.DoubleSide,
+      depthWrite:false
+    });
+
+    const waves:{mesh:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>;born:number;life:number}[]=[];
+    const cursor=new THREE.Mesh(
+      new THREE.RingGeometry(.06,.085,48),
+      waveMaterial.clone()
+    );
+    cursor.material.opacity=.2;
+    cursor.position.z=.1;
+    scene.add(cursor);
+
+    const makeWave=(x:number,y:number)=>{
+      const geometry=new THREE.RingGeometry(.08,.115,64);
+      const material=waveMaterial.clone();
+      material.opacity=.34;
+      const mesh=new THREE.Mesh(geometry,material);
+      const nx=(x/window.innerWidth-.5)*2;
+      const ny=-(y/window.innerHeight-.5)*2;
+      const distance=7;
+      const halfHeight=Math.tan(THREE.MathUtils.degToRad(38/2))*distance;
+      const halfWidth=halfHeight*(window.innerWidth/window.innerHeight);
+      mesh.position.set(nx*halfWidth,ny*halfHeight,0);
+      scene.add(mesh);
+      waves.push({mesh,born:performance.now(),life:1050});
+      if(waves.length>7){
+        const old=waves.shift();
+        if(old){old.mesh.geometry.dispose();old.mesh.material.dispose();scene.remove(old.mesh);}
+      }
+    };
+
     let px=0,py=0,tx=0,ty=0;
-    const start=performance.now();
-    const onPointer=(e:PointerEvent)=>{tx=(e.clientX/window.innerWidth-.5)*.28;ty=(e.clientY/window.innerHeight-.5)*-.18};
+    let pointerInside=false;
+    let raf=0;
+    let lastWave=0;
+    const onPointerMove=(e:PointerEvent)=>{
+      tx=(e.clientX/window.innerWidth-.5)*2;
+      ty=-(e.clientY/window.innerHeight-.5)*2;
+      pointerInside=true;
+      if(e.buttons&&performance.now()-lastWave>170){
+        makeWave(e.clientX,e.clientY);
+        lastWave=performance.now();
+      }
+    };
+    const onPointerDown=(e:PointerEvent)=>{
+      makeWave(e.clientX,e.clientY);
+      lastWave=performance.now();
+    };
+    const onPointerLeave=()=>{pointerInside=false};
+
     const resize=()=>{
       camera.aspect=window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
       renderer.setSize(window.innerWidth,window.innerHeight,false);
     };
+
     const tick=(now:number)=>{
-      const t=(now-start)*.001;
-      px+=(tx-px)*.035;py+=(ty-py)*.035;
-      group.rotation.y=px+Math.sin(t*.16)*.03;
-      group.rotation.x=py+Math.cos(t*.13)*.016;
-      ring.rotation.z=t*.03;
-      const pos=geometry.attributes.position.array as Float32Array;
-      for(let i=0;i<count;i++){
-        const b=i*3;
-        pos[b+1]+=Math.sin(t*.45+phases[i])*.0005;
+      px+=(tx-px)*.12;
+      py+=(ty-py)*.12;
+      cursor.position.x=px*3.05;
+      cursor.position.y=py*3.05;
+      cursor.material.opacity=pointerInside?.16:0;
+
+      for(let i=waves.length-1;i>=0;i--){
+        const wave=waves[i];
+        const p=Math.min(1,(now-wave.born)/wave.life);
+        const ease=1-Math.pow(1-p,3);
+        wave.mesh.scale.setScalar(.12+ease*2.25);
+        wave.mesh.material.opacity=(1-p)*.34;
+        wave.mesh.rotation.z=now*.00015;
+        if(p>=1){
+          wave.mesh.geometry.dispose();
+          wave.mesh.material.dispose();
+          scene.remove(wave.mesh);
+          waves.splice(i,1);
+        }
       }
-      geometry.attributes.position.needsUpdate=true;
+
       renderer.render(scene,camera);
       raf=requestAnimationFrame(tick);
     };
-    window.addEventListener("pointermove",onPointer,{passive:true});
+
+    window.addEventListener("pointermove",onPointerMove,{passive:true});
+    window.addEventListener("pointerdown",onPointerDown,{passive:true});
+    window.addEventListener("pointerleave",onPointerLeave);
     window.addEventListener("resize",resize);
     raf=requestAnimationFrame(tick);
+
     return ()=>{
       cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove",onPointer);
+      window.removeEventListener("pointermove",onPointerMove);
+      window.removeEventListener("pointerdown",onPointerDown);
+      window.removeEventListener("pointerleave",onPointerLeave);
       window.removeEventListener("resize",resize);
-      geometry.dispose();material.dispose();ringGeometry.dispose();ringMaterial.dispose();
-      renderer.dispose();renderer.domElement.remove();
+      waves.forEach(w=>{w.mesh.geometry.dispose();w.mesh.material.dispose();scene.remove(w.mesh)});
+      cursor.geometry.dispose();
+      cursor.material.dispose();
+      waveMaterial.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
     };
   },[enabled]);
+
   return <div ref={hostRef} className="cookie-three-motion" aria-hidden="true"/>;
 }
 
@@ -610,17 +664,17 @@ export default function App(){
                   </button>
                 </div>}
               </div>
-            </div>
-            <textarea value={input} onChange={e=>{setInput(e.target.value);e.currentTarget.style.height="auto";e.currentTarget.style.height=Math.min(e.currentTarget.scrollHeight,180)+"px"}} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
-          </div>
-          <div className="composer-toolbar">
-            <div className="toolbar-left">
-              <label className="composer-model" aria-label="Cookie model profile">
-                <SlidersHorizontal size={13} strokeWidth={1.7}/>
+              <label className="composer-model composer-model-inline" aria-label="Cookie model profile">
+                <SlidersHorizontal size={14} strokeWidth={1.7}/>
                 <select value={model} onChange={e=>setModel(e.target.value)}>
                   {MODELS.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </label>
+            </div>
+            <textarea value={input} onChange={e=>{setInput(e.target.value);e.currentTarget.style.height="auto";e.currentTarget.style.height=Math.min(e.currentTarget.scrollHeight,96)+"px"}} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
+          </div>
+          <div className="composer-toolbar">
+            <div className="toolbar-left">
               {keyboardHints&&<span className="shortcut-hint">Shift + Enter</span>}
             </div>
             <div className="toolbar-right">
