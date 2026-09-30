@@ -185,7 +185,7 @@ export default function App(){
               {messages.map(m=><article key={m.id} className={"message-row "+m.role}>
                 <div className={m.role==="assistant"?"assistant-mark":"message-avatar"}>{m.role==="assistant"?<CookieIcon size={25}/>: "D"}</div>
                 <div className="message-body">
-                  {m.images?.length>0&&<div className="message-attachments">{m.images.map((x,i)=><img key={i} className="message-image" src={x} alt="Uploaded attachment"/>)}</div>}
+                  {m.images && m.images.length>0&&<div className="message-attachments">{m.images.map((x,i)=><img key={i} className="message-image" src={x} alt="Uploaded attachment"/>)}</div>}
                   <Message text={m.content}/>
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools"><button onClick={()=>navigator.clipboard?.writeText(m.content)}><Copy size={13}/> Copy</button><button><MoreHorizontal size={13}/> More</button></div>}
