@@ -176,8 +176,9 @@ export default function App(){
               {messages.map(m=><article key={m.id} className={"message-row "+m.role}>
                 <div className={m.role==="assistant"?"assistant-mark":"message-avatar"}>{m.role==="assistant"?<CookieIcon size={25}/>: "D"}</div>
                 <div className="message-body">
-                  {m.images && m.images.length>0&&<div className="message-attachments">{m.images.map((x,i)=><img key={i} className="message-image" src={x} alt="Uploaded attachment"/>)}</div>}
+                  {m.attachments && m.attachments.length>0&&<div className="message-attachments">{m.attachments.map(a=>a.kind==="image"?<img key={a.id} className="message-image" src={a.data} alt={a.name}/>:<div key={a.id} className="message-file"><FileText size={15}/><span>{a.name}</span></div>)}</div>}
                   <Message text={m.content}/>
+                  {m.files && m.files.length>0&&<div className="generated-files">{m.files.map(f=><button className="generated-file" key={f.path} onClick={()=>downloadFile(f)}><FileText size={18}/><span><b>{f.name||f.path.split("/").pop()}</b><small>{f.path} · Download file</small></span><ArrowUp className="download-arrow" size={15}/></button>)}</div>
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools"><button onClick={()=>navigator.clipboard?.writeText(m.content)}><Copy size={13}/> Copy</button><button><MoreHorizontal size={13}/> More</button></div>}
                 </div>
@@ -189,37 +190,41 @@ export default function App(){
       </div>}
 
       {view==="chat"&&<div className="composer-wrap">
-        {images.length>0&&<div className="attachment-tray">{images.map((x,i)=><div className="attachment-chip" key={i}><img src={x} alt="Preview"/><button className="attachment-remove" onClick={()=>setImages(v=>v.filter((_,j)=>j!==i))} aria-label="Remove attachment"><X size={14}/></button></div>)}</div>}
+        {attachments.length>0&&<div className="attachment-tray">{attachments.map(a=><div className={"attachment-chip "+a.kind} key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileText size={16}/>}<span>{a.name}</span><button className="attachment-remove" onClick={()=>removeAttachment(a.id)} aria-label={"Remove "+a.name}><X size={14}/></button></div>)}</div>}
         <div className="composer">
-          <div className="composer-main">
-            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie"/>
-          </div>
+          <div className="composer-main"><textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie"/></div>
           <div className="composer-toolbar">
             <div className="toolbar-left">
-              <button className="round-tool" onClick={()=>fileRef.current?.click()} aria-label="Attach image"><Paperclip size={19}/></button>
-              <button className="tool-label" onClick={()=>setWorkspaceOpen(true)}><SlidersHorizontal size={15}/><span>Tools</span><ChevronDown className="tiny-chevron" size={13}/></button>
+              <div className="composer-menu-wrap">
+                <button className={"round-tool "+(attachMenuOpen?"selected":"")} onClick={()=>{setAttachMenuOpen(v=>!v);setToolsOpen(false)}} aria-label="Upload"><Paperclip size={19}/></button>
+                {attachMenuOpen&&<div className="composer-menu attachment-menu">
+                  <button onClick={()=>openPicker("image")}><ImagePlus size={17}/><span><b>Upload image</b><small>Images only · up to {10-attachments.length}</small></span></button>
+                  <button onClick={()=>openPicker("file")}><FileUp size={17}/><span><b>Upload file</b><small>Non-image files only · up to {10-attachments.length}</small></span></button>
+                  <div className="menu-limit">{attachments.length}/10 attachments · folders are not supported</div>
+                </div>}
+              </div>
+              <div className="composer-menu-wrap">
+                <button className={"tool-label "+(toolsOpen?"selected":"")} onClick={()=>{setToolsOpen(v=>!v);setAttachMenuOpen(false)}}><Wrench size={15}/><span>Tools</span><ChevronDown className="tiny-chevron" size={13}/></button>
+                {toolsOpen&&<div className="composer-menu tools-menu">
+                  <button onClick={()=>useTool("Create a downloadable file for me.")}><Code2 size={17}/><span><b>Create files</b><small>Generate code and downloadable files</small></span></button>
+                  <button onClick={()=>useTool("Analyze the files or images I attached.")}><ScanSearch size={17}/><span><b>Analyze uploads</b><small>Inspect attached content</small></span></button>
+                  <button onClick={()=>useTool("Help me debug or improve this code.")}><Wrench size={17}/><span><b>Code tools</b><small>Debug, review, refactor</small></span></button>
+                  <button onClick={()=>useTool("Research this using available web knowledge and cite current sources when needed.")}><Globe2 size={17}/><span><b>Web research</b><small>Research current information</small></span></button>
+                </div>}
+              </div>
               {keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}
             </div>
-            <div className="toolbar-right">
-              <button className="send-btn" disabled={!input.trim()||loading} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button>
-            </div>
+            <div className="toolbar-right"><button className="send-btn" disabled={(!input.trim()&&!attachments.length)||loading} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button></div>
           </div>
         </div>
-        <input ref={fileRef} hidden type="file" accept="image/*" multiple onChange={attach}/>
+        <input ref={imageRef} hidden type="file" accept="image/*" multiple onChange={e=>attach(e,"image")}/>
+        <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-
       {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints} clearWorkspace={clearWorkspace}/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
-    {workspaceOpen&&<div className="workspace-overlay" onClick={()=>setWorkspaceOpen(false)}>
-      <aside className="workspace-panel" onClick={e=>e.stopPropagation()}>
-        <div className="panel-header"><div><span className="eyebrow">PROJECT</span><h2>Workspace</h2><p>{workspace.length} {workspace.length===1?"file":"files"} · local preview</p></div><button className="icon-btn" onClick={()=>setWorkspaceOpen(false)} aria-label="Close workspace"><X size={18}/></button></div>
-        <div className="panel-toolbar"><div className="large-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Find a file"/></div><button className="icon-btn" onClick={download} disabled={!workspace.length} aria-label="Download project"><Download size={17}/></button></div>
-        <div className="file-list">{visibleFiles.length?visibleFiles.map(f=><div className="file-row" key={f.path}><span className="file-icon">{f.kind==="folder"?<Folder size={15}/>:<FileCode2 size={15}/>}</span><span className="file-info"><b>{f.path}</b><small>{f.content.length.toLocaleString()} characters</small></span></div>):<div className="files-empty"><Folder size={28}/><b>No project files yet</b><p>Ask Cookie to create a project and its files will appear here.</p></div>}</div>
-      </aside>
-    </div>}
   </main>;
 }
 
@@ -246,10 +251,10 @@ function SettingsPage(props:{
   dark:boolean;setDark:(v:boolean)=>void;accent:"orange"|"cream"|"cocoa";setAccent:(v:"orange"|"cream"|"cocoa")=>void;
   textSize:"small"|"medium"|"large";setTextSize:(v:"small"|"medium"|"large")=>void;
   compact:boolean;setCompact:(v:boolean)=>void;animations:boolean;setAnimations:(v:boolean)=>void;
-  keyboardHints:boolean;setKeyboardHints:(v:boolean)=>void;clearWorkspace:()=>void;
+  keyboardHints:boolean;setKeyboardHints:(v:boolean)=>void;
 }){
   const [tab,setTab]=useState("Appearance");
-  const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Data & privacy",ShieldCheck]];
+  const tabs=[["Appearance",Palette],["Chat",MessageSquare],["Interface",SlidersHorizontal],["Privacy",ShieldCheck]];
   return <div className="page-container settings-page">
     <div className="page-heading"><span className="eyebrow">PREFERENCES</span><h2>Settings</h2><p>Customize Cookie's workspace, conversation behavior, and local data.</p></div>
     <div className="settings-layout">
@@ -262,7 +267,7 @@ function SettingsPage(props:{
         </div></SettingGroup><SettingGroup title="Text size" desc="Adjust reading size without changing the layout."><div className="choice-grid">{(["small","medium","large"] as const).map(x=><button key={x} className={"choice-card "+(props.textSize===x?"selected":"")} onClick={()=>props.setTextSize(x)}><strong>{x[0].toUpperCase()+x.slice(1)}</strong><small>{x==="small"?"Compact":x==="medium"?"Default":"More comfortable"}</small></button>)}</div></SettingGroup></>}
         {tab==="Chat"&&<><SettingGroup title="Conversation density" desc="Control how much vertical space messages use."><Toggle label="Compact messages" desc="Reduce the gap between messages." value={props.compact} setValue={props.setCompact}/></SettingGroup><SettingGroup title="Keyboard" desc="Control the hints shown around the composer."><Toggle label="Keyboard hints" desc="Show shortcuts such as ⌘ K and Shift + Enter." value={props.keyboardHints} setValue={props.setKeyboardHints}/></SettingGroup><SettingGroup title="Motion" desc="Keep transitions subtle and functional."><Toggle label="Interface animations" desc="Disable non-essential transitions and entrance effects." value={props.animations} setValue={props.setAnimations}/></SettingGroup></>}
         {tab==="Interface"&&<><SettingGroup title="Workspace layout" desc="Cookie keeps the conversation centered and leaves tools out of the way until you need them."><div className="data-status"><Check size={16}/> Centered chat · fixed composer · right-side workspace</div></SettingGroup><SettingGroup title="Model" desc="Choose the model from the selector in the chat header."><div className="choice-grid">{MODELS.map(m=><button key={m.id} className="choice-card"><strong>{m.name}</strong><small>{m.desc}</small></button>)}</div></SettingGroup></>}
-        {tab==="Data & privacy"&&<><SettingGroup title="Local workspace" desc="Project files created in this preview are stored in your browser."><div className="data-status"><Database size={16}/> {localStorage.getItem("cookie_workspace")?"Local workspace contains saved files.":"No local project data yet."}</div></SettingGroup><SettingGroup title="Reset project data" desc="Remove locally stored project files from this browser."><button className="danger-btn" onClick={()=>{props.clearWorkspace();localStorage.removeItem("cookie_workspace")}}><Trash2 size={15}/> Clear project files</button></SettingGroup><SettingGroup title="Restore interface defaults" desc="Reset visual preferences for Cookie."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}><RotateCcw size={15}/> Restore defaults</button></SettingGroup></>}
+        {tab==="Privacy"&&<>{/* privacy controls */}<SettingGroup title="Uploads" desc="Attachments stay in the current conversation and are submitted only with your message."><div className="data-status"><ShieldCheck size={16}/> Up to 10 attachments per message · no folder uploads</div></SettingGroup><SettingGroup title="Restore interface defaults" desc="Reset visual preferences for Cookie."><button className="secondary-btn" onClick={()=>{props.setDark(true);props.setAccent("cream");props.setTextSize("medium");props.setCompact(false);props.setAnimations(true);props.setKeyboardHints(true)}}>Restore defaults</button></SettingGroup></>}}
       </div>
     </div>
   </div>;
@@ -278,8 +283,8 @@ function Toggle({label,desc,value,setValue}:{label:string;desc:string;value:bool
 function HelpPage(){
   const faqs=[
     ["How do I send a message?","Type in the composer and press Enter. Use Shift + Enter when you want a new line."],
-    ["What can Cookie work with?","Cookie can answer questions, reason through coding tasks, inspect images, and work with project files in the workspace."],
-    ["How does Project files work?","Ask Cookie to create or modify files. The local workspace panel lets you inspect and download the generated project."],
+    ["What can Cookie work with?","Cookie can answer questions, reason through coding tasks, inspect images and files, and create downloadable files directly in chat."],
+    ["How does Project files work?","Ask Cookie to create files when you need them. Generated files appear directly in the chat and can be downloaded with one tap."],
     ["How do I switch models?","Use the model selector in the chat header. Each Cookie model is shown with its capability description."],
     ["Can I change the interface?","Yes. Settings includes appearance, chat density, keyboard hints, motion, text size, accent, and local-data controls."]
   ];
