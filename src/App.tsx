@@ -607,6 +607,136 @@ function AccountSettingsPage(props:{
       </section>
     </div>;
   }
+  const PanelHead=({title,subtitle}:{title:string;subtitle?:string})=>
+    <div className="settings-reference-head settings-compact-head">
+      <button className="settings-panel-back" onClick={()=>setPanel(null)} aria-label="Back"><ArrowLeft size={19}/></button>
+      <div><span className="settings-reference-eyebrow">COOKIE SETTINGS</span><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>
+    </div>;
+
+  const CompactRow=({label,desc,value,onClick}:{label:string;desc?:string;value?:string;onClick?:()=>void})=>
+    <button className="settings-compact-row" onClick={onClick}>
+      <span className="settings-compact-copy"><strong>{label}</strong>{desc&&<small>{desc}</small>}</span>
+      {value&&<span className="settings-compact-value">{value}</span>}
+      {onClick&&<ChevronRight size={17} className="settings-mobile-chevron"/>}
+    </button>;
+
+  if(panel==="Personality"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Personalization" subtitle="Choose how Cookie talks and explains things."/>
+      <div className="settings-reference-card compact-card">
+        {personalities.map(p=><button key={p} className={"settings-compact-choice "+(props.aiPersonality===p?"selected":"")} onClick={()=>{props.setAiPersonality(p);setPanel(null)}}><span><strong>{p}</strong><small>{{Balanced:"Natural and adaptable",Friendly:"Warm and conversational",Professional:"Clear and formal",Concise:"Short and direct",Creative:"Imaginative and expressive",Teacher:"Step-by-step and educational"}[p]}</small></span>{props.aiPersonality===p&&<Check size={18}/>}</button>)}
+      </div>
+    </div>;
+  }
+
+  if(panel==="Memory"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Memory" subtitle="Control the information Cookie uses to personalize chats."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-compact-control"><span><strong>Memory</strong><small>Use saved preferences in conversations.</small></span><button className={"settings-inline-toggle "+(props.memoryEnabled?"on":"")} onClick={()=>props.setMemoryEnabled(v=>!v)}><span/></button></div>
+        <CompactRow label="Name" value={props.memoryName||"Not set"} onClick={()=>window.setTimeout(()=>setPanel("Memory details"),0)}/>
+        <CompactRow label="Occupation" value={props.memoryOccupation||"Not set"} onClick={()=>setPanel("Memory details")}/>
+        <CompactRow label="About you" value={props.memoryAbout?"Saved":"Not set"} onClick={()=>setPanel("Memory details")}/>
+      </div>
+      <p className="settings-panel-note">These preferences stay in this browser. You can change or clear them at any time.</p>
+    </div>;
+  }
+
+  if(panel==="Memory details"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Memory details" subtitle="Tell Cookie what you want it to remember."/>
+      <div className="settings-form-card settings-reference-card">
+        <label>Name<input value={props.memoryName} onChange={e=>props.setMemoryName(e.target.value)} /></label>
+        <label>Occupation<input value={props.memoryOccupation} onChange={e=>props.setMemoryOccupation(e.target.value)} /></label>
+        <label>About you<textarea value={props.memoryAbout} onChange={e=>props.setMemoryAbout(e.target.value)} /></label>
+        <button className="settings-primary-button" onClick={()=>setPanel("Memory")}>Save</button>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Username"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Username" subtitle="Choose the username shown on your Cookie profile."/>
+      <div className="settings-form-card settings-reference-card">
+        <label>Username<input value={draftUsername} onChange={e=>setDraftUsername(e.target.value)} autoComplete="username"/></label>
+        <button className="settings-primary-button" onClick={()=>{props.setProfileUsername(draftUsername.trim()||"Cookie user");setPanel(null)}}>Save username</button>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Email"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Email" subtitle="Your email is optional for this local Cookie profile."/>
+      <div className="settings-form-card settings-reference-card">
+        <label>Email<input type="email" value={draftEmail} onChange={e=>setDraftEmail(e.target.value)} autoComplete="email"/></label>
+        <button className="settings-primary-button" onClick={()=>{props.setProfileEmail(draftEmail.trim());setPanel(null)}}>Save email</button>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Usage and limits"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Usage and limits" subtitle="A simple view of this browser session."/>
+      <div className="settings-reference-card compact-card">
+        <CompactRow label="Responses in this session" value={String(props.sessionMessages)}/>
+        <CompactRow label="Profile" value={modelInfo.name}/>
+        <CompactRow label="Storage" value="Browser"/>
+      </div>
+    </div>;
+  }
+
+  if(panel==="General"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="General" subtitle="Small controls for the Cookie chat experience."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-compact-control"><span><strong>Auto-correct</strong><small>Improve typing suggestions.</small></span><button className={"settings-inline-toggle "+(props.autoCorrect?"on":"")} onClick={()=>props.setAutoCorrect(v=>!v)}><span/></button></div>
+        <div className="settings-compact-control"><span><strong>Haptics</strong><small>Use small touch feedback.</small></span><button className={"settings-inline-toggle "+(props.haptics?"on":"")} onClick={()=>props.setHaptics(v=>!v)}><span/></button></div>
+        <div className="settings-compact-control"><span><strong>Animations</strong><small>Keep interface transitions enabled.</small></span><button className={"settings-inline-toggle "+(props.animations?"on":"")} onClick={()=>props.setAnimations(v=>!v)}><span/></button></div>
+        <div className="settings-compact-control"><span><strong>Compact messages</strong><small>Use tighter chat spacing.</small></span><button className={"settings-inline-toggle "+(props.compact?"on":"")} onClick={()=>props.setCompact(v=>!v)}><span/></button></div>
+        <CompactRow label="Text size" value={props.textSize==="small"?"Small":props.textSize==="large"?"Large":"Medium"} onClick={()=>props.setTextSize(v=>v==="small"?"medium":v==="medium"?"large":"small")}/>
+        <CompactRow label="App language" value={props.appLanguage} onClick={()=>setPanel("App language")}/>
+        <CompactRow label="Model" value={modelInfo.name} onClick={()=>setPanel("Model")}/>
+      </div>
+    </div>;
+  }
+
+  if(panel==="App language"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="App language" subtitle="Choose the language used by Cookie's interface."/>
+      <div className="settings-reference-card compact-card language-list">
+        {APP_LANGUAGES.map(([name,code])=><button key={code} className={"settings-compact-language "+(props.appLanguage===name?"selected":"")} onClick={()=>{props.setAppLanguage(name);setPanel(null)}}><span>{name}</span>{props.appLanguage===name&&<Check size={17}/>}</button>)}
+      </div>
+    </div>;
+  }
+
+  if(panel==="Model"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Model" subtitle="Select the Cookie profile used for new requests."/>
+      <div className="settings-reference-card compact-card">
+        {MODELS.map(m=><button key={m.id} className={"settings-compact-choice "+(props.model===m.id?"selected":"")} onClick={()=>{props.setModel(m.id);setPanel(null)}}><span><strong>{m.name}</strong><small>{m.desc}</small></span>{props.model===m.id&&<Check size={18}/>}</button>)}
+      </div>
+    </div>;
+  }
+
+  if(panel==="Appearance"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Appearance" subtitle="Keep the interface simple and close to Cookie's style."/>
+      <div className="settings-reference-card compact-card">
+        {["Dark","Light"].map(v=><button key={v} className={"settings-compact-choice "+((v==="Dark")===props.dark?"selected":"")} onClick={()=>{props.setDark(v==="Dark");setPanel(null)}}><span><strong>{v}</strong></span>{((v==="Dark")===props.dark)&&<Check size={18}/>}</button>)}
+      </div>
+    </div>;
+  }
+
+  if(panel==="Accent color"){
+    const colors:[string,typeof props.accent][]=[["Cookie","blue"],["Cream","cream"],["Orange","orange"],["Cocoa","cocoa"]];
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Theme color" subtitle="Use a small Cookie-style accent across the interface."/>
+      <div className="settings-reference-card compact-card">
+        {colors.map(([name,value])=><button key={value} className={"settings-compact-choice "+(props.accent===value?"selected":"")} onClick={()=>{props.setAccent(value);setPanel(null)}}><span className="settings-color-choice"><i className={"settings-accent-dot "+value}/><strong>{name}</strong></span>{props.accent===value&&<Check size={18}/>}</button>)}
+      </div>
+    </div>;
+  }
+
 }
 
 function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
@@ -744,4 +874,120 @@ function HelpPage(){
       </article>
     </div>
   </div>;
+  if(panel==="Subscription"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Subscription" subtitle="Your Cookie account and plan information."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>This browser currently uses a local Cookie profile.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Restore purchases"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Restore purchases" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Notifications"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Notifications" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Voice"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Voice" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Parental controls"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Parental controls" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Trusted contact"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Trusted contact" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Remote control"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Remote control" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Ads controls"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Ads controls" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Report app issue"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Report app issue" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Help Center"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Help Center" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Privacy Center"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Privacy Center" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="About"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="About" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Coming soon</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
+
+  if(panel==="Log out"){
+    return <div className="page-container settings-reference-page settings-panel-page">
+      <PanelHead title="Log out" subtitle="This section is ready for the next Cookie update."/>
+      <div className="settings-reference-card compact-card">
+        <div className="settings-empty-panel"><div className="settings-empty-icon"><Info size={18}/></div><strong>Log out is not connected to a server account yet.</strong><small>The control is kept here without changing the existing Settings layout.</small><button className="settings-small-button" onClick={()=>setPanel(null)}>Done</button></div>
+      </div>
+    </div>;
+  }
 }
