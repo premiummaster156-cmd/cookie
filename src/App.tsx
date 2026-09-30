@@ -75,9 +75,11 @@ export default function App(){
   function openMessageMenu(messageId:string,button:HTMLButtonElement){
     if(messageMenuOpen===messageId){ setMessageMenuOpen(null); setMessageMenuPosition(null); return; }
     const r=button.getBoundingClientRect();
-    const width=Math.min(178,window.innerWidth-16);
+    const width=Math.min(154,window.innerWidth-16);
     const estimatedHeight=82;
-    const left=Math.max(8,Math.min(r.left,window.innerWidth-width-8));
+    // Keep the popover attached to the three-dot control by aligning its
+    // right edge with the button's right edge.
+    const left=Math.max(8,Math.min(r.right-width,window.innerWidth-width-8));
     const top=r.top>=estimatedHeight+10 ? r.top-estimatedHeight-8 : r.bottom+8;
     setMessageMenuPosition({top,left});
     setMessageMenuOpen(messageId);
