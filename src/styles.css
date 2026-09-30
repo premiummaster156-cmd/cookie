@@ -240,8 +240,6 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 .typing-row i:nth-last-child(2){animation-delay:120ms}.typing-row i:last-child{animation-delay:240ms}
 .search-inline{max-width:820px;margin:0 auto 18px}
 .search-inline input{font-size:13px}
-.workspace-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:90}
-.workspace-panel{position:absolute;right:0;top:0;bottom:0;width:min(430px,92vw);padding:18px;background:var(--surface);border-left:1px solid var(--line);box-shadow:-20px 0 50px rgba(0,0,0,.25);overflow:auto}
 .panel-header{display:flex;justify-content:space-between;gap:15px;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .panel-header h2{margin:4px 0 5px;font-size:22px;letter-spacing:-.03em}
 .panel-header p{margin:0;color:var(--muted);font-size:11px}
@@ -287,7 +285,6 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .welcome{padding-top:54px}
   .page-container{padding-left:16px;padding-right:16px}
   .help-shortcuts{grid-template-columns:1fr}
-  .workspace-panel{width:100%}
 }
 @media(prefers-reduced-motion:reduce){
   .typing-row i{animation:none!important}
