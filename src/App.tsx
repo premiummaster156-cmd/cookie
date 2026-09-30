@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
@@ -40,6 +41,7 @@ export default function App(){
   const [chatArchived,setChatArchived]=useState(false);
   const [copiedMessage,setCopiedMessage]=useState<string|null>(null);
   const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
+  const [messageMenuPosition,setMessageMenuPosition]=useState<{top:number;left:number}|null>(null);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
   const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
@@ -56,6 +58,7 @@ export default function App(){
   const chatMenuRef=useRef<HTMLDivElement>(null);
   const attachMenuRef=useRef<HTMLDivElement>(null);
   const messageMenuRef=useRef<HTMLDivElement>(null);
+  const messageMenuButtonRef=useRef<HTMLButtonElement>(null);
   async function copyMessage(text:string,messageId:string){
     try{
       if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(text);
@@ -68,6 +71,18 @@ export default function App(){
       setMessageMenuOpen(null);
       window.setTimeout(()=>setCopiedMessage(v=>v===messageId?null:v),1400);
     }catch{}
+  }
+  function openMessageMenu(messageId:string,button:HTMLButtonElement){
+    if(messageMenuOpen===messageId){ setMessageMenuOpen(null); setMessageMenuPosition(null); return; }
+    const r=button.getBoundingClientRect();
+    const width=Math.min(178,window.innerWidth-16);
+    const estimatedHeight=82;
+    const left=Math.max(8,Math.min(r.left,window.innerWidth-width-8));
+    const top=r.top>=estimatedHeight+10 ? r.top-estimatedHeight-8 : r.bottom+8;
+    setMessageMenuPosition({top,left});
+    setMessageMenuOpen(messageId);
+    setChatMenuOpen(false);
+    setAttachMenuOpen(false);
   }
   function toggleChatMenu(){
     setChatMenuOpen(v=>!v);
@@ -96,7 +111,7 @@ export default function App(){
       const target=e.target as Node;
       if(chatMenuOpen && !chatMenuRef.current?.contains(target)) setChatMenuOpen(false);
       if(attachMenuOpen && !attachMenuRef.current?.contains(target)) setAttachMenuOpen(false);
-      if(messageMenuOpen && !messageMenuRef.current?.contains(target)) setMessageMenuOpen(null);
+      if(messageMenuOpen && !messageMenuRef.current?.contains(target) && !messageMenuButtonRef.current?.contains(target)) { setMessageMenuOpen(null); setMessageMenuPosition(null); }
     };
     window.addEventListener("keydown",onKeyDown);
     document.addEventListener("pointerdown",onPointerDown);
