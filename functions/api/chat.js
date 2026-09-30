@@ -50,13 +50,13 @@ function normalizeFiles(input) {
   if (!Array.isArray(input)) return [];
   return input.filter(f => f && typeof f.path === "string" && typeof f.content === "string")
     .slice(0, FILE_LIMITS.maxFiles)
-    .map(f => ({path:f.path.replace(/^\\/+/, "").slice(0, FILE_LIMITS.maxPathChars), content:f.content.slice(0, FILE_LIMITS.maxFileChars), kind:"file"}))
+    .map(f => ({path:f.path.replace(/^\/+/, "").slice(0, FILE_LIMITS.maxPathChars), content:f.content.slice(0, FILE_LIMITS.maxFileChars), kind:"file"}))
     .filter(f => f.path && !f.path.includes(".."));
 }
 
 function executeFileTool(files, name, args) {
   const a = args && typeof args === "object" ? args : {};
-  const path = String(a.path || "").replace(/^\\/+/, "");
+  const path = String(a.path || "").replace(/^\/+/, "");
   if (name === "file_create" || name === "file_update") {
     if (!path || path.includes("..")) return {files, result:JSON.stringify({ok:false,error:"Invalid file path."})};
     if (path.length > FILE_LIMITS.maxPathChars) return {files,result:JSON.stringify({ok:false,error:"File path is too long."})};
