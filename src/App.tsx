@@ -320,11 +320,11 @@ export default function App(){
       </div>
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
+        <button className="account" onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Settings</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
         </button>
-      </div>
     </aside>
 
     {sidebarOpen&&<div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)}/>}
