@@ -580,15 +580,15 @@ function SettingsPage(props:{
         <div className="settings-reference-card">
           <div className="settings-control-row">
             <div><strong>Compact messages</strong><small>Reduce vertical spacing between messages.</small></div>
-            <Toggle label="" desc="" value={props.compact} setValue={props.setCompact}/>
+            <button className={"settings-inline-toggle "+(props.compact?"on":"")} onClick={()=>props.setCompact(!props.compact)} aria-pressed={props.compact}><span/></button>
           </div>
           <div className="settings-control-row">
             <div><strong>Keyboard hints</strong><small>Show shortcuts such as ⌘ K and Shift + Enter.</small></div>
-            <Toggle label="" desc="" value={props.keyboardHints} setValue={props.setKeyboardHints}/>
+            <button className={"settings-inline-toggle "+(props.keyboardHints?"on":"")} onClick={()=>props.setKeyboardHints(!props.keyboardHints)} aria-pressed={props.keyboardHints}><span/></button>
           </div>
           <div className="settings-control-row">
             <div><strong>Interface animations</strong><small>Use short transitions for menus and page changes.</small></div>
-            <Toggle label="" desc="" value={props.animations} setValue={props.setAnimations}/>
+            <button className={"settings-inline-toggle "+(props.animations?"on":"")} onClick={()=>props.setAnimations(!props.animations)} aria-pressed={props.animations}><span/></button>
           </div>
         </div>
       </section>
