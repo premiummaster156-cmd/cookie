@@ -1,0 +1,14 @@
+{
+  "name":"Cookie AI",
+  "short_name":"Cookie",
+  "description":"Cookie AI — a fast, focused AI assistant.",
+  "start_url":"/",
+  "display":"standalone",
+  "background_color":"#0b0b0a",
+  "theme_color":"#0b0b0a",
+  "orientation":"portrait-primary",
+  "icons":[
+    {"src":"https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png","sizes":"192x192","type":"image/png"},
+    {"src":"https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png","sizes":"512x512","type":"image/png"}
+  ]
+}
