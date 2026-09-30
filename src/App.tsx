@@ -4,7 +4,7 @@ import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
   ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
-  Camera, Images, Plug, Brain, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
+  Camera, Images, Brain, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
   ShieldCheck, Palette
 } from "lucide-react";
@@ -220,7 +220,7 @@ export default function App(){
           <div className="composer-toolbar">
             <div className="toolbar-left">
               <div className="composer-menu-wrap">
-                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>{setAttachMenuOpen(v=>!v);setToolsOpen(false)}} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
+                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>setAttachMenuOpen(v=>!v)} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
                   <Plus size={21}/>
                 </button>
                 {attachMenuOpen&&<div className="composer-menu attachment-menu">
@@ -235,10 +235,6 @@ export default function App(){
                   <button className="attachment-menu-item" onClick={()=>openPicker("file")}>
                     <span className="attachment-menu-icon"><FileUp size={22}/></span>
                     <span><b>Files</b><small>Files only · up to {10-attachments.length}</small></span>
-                  </button>
-                  <button className="attachment-menu-item" onClick={()=>useTool("Help me with available plugins and integrations.")}>
-                    <span className="attachment-menu-icon"><Plug size={22}/></span>
-                    <span><b>Plugins</b><small>Tools and integrations</small></span>
                   </button>
                   <button className="attachment-menu-item" onClick={()=>{setModel("max");setAttachMenuOpen(false)}}>
                     <span className="attachment-menu-icon"><Brain size={22}/></span>
