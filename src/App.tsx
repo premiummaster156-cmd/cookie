@@ -67,6 +67,36 @@ export default function App(){
   function toggleChatMenu(){setChatMenuOpen(v=>!v)}
 
   useEffect(()=>{
+    const onKeyDown=(e:KeyboardEvent)=>{
+      if(e.key==="Escape"){
+        setSidebarOpen(false);
+        setChatMenuOpen(false);
+        setAttachMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown",onKeyDown);
+    return ()=>window.removeEventListener("keydown",onKeyDown);
+  },[]);
+
+  useEffect(()=>{
+    const hash=window.location.hash;
+    if(!hash.startsWith("#share="))return;
+    try{
+      const raw=decodeURIComponent(escape(window.atob(hash.slice(7))));
+      const shared=JSON.parse(raw);
+      if(Array.isArray(shared.messages)){
+        setMessages(shared.messages.map((m:any)=>({
+          id:id(),
+          role:m.role==="user"?"user":"assistant",
+          content:String(m.content||""),
+          time:m.time||""
+        })));
+        setChatTitle(typeof shared.title==="string"&&shared.title.trim()?shared.title:"Shared chat");
+      }
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
     try{
       const p=JSON.parse(localStorage.getItem("cookie_preferences")||"{}");
       if(p.dark!==undefined)setDark(Boolean(p.dark));
@@ -140,9 +170,14 @@ export default function App(){
   function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setChatMenuOpen(false)}
   function renameChat(){const next=window.prompt("Rename chat",chatTitle);if(next?.trim())setChatTitle(next.trim().slice(0,80));setChatMenuOpen(false)}
   async function shareChat(){
-    const transcript=messages.map(m=>`${m.role==="user"?"You":"Cookie"}: ${m.content}`).join("\n\n");
-    const text=`${chatTitle}\n\n${transcript}`;
-    try{if(navigator.share)await navigator.share({title:chatTitle,text});else if(navigator.clipboard)await navigator.clipboard.writeText(text)}catch{}
+    const payload={title:chatTitle,messages:messages.map((m)=>({role:m.role,content:m.content,time:m.time||""}))};
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const shareUrl=window.location.origin+window.location.pathname+"#share="+encodeURIComponent(encoded);
+    try{
+      if(navigator.share)await navigator.share({title:chatTitle,url:shareUrl});
+      else if(navigator.clipboard)await navigator.clipboard.writeText(shareUrl);
+      else window.prompt("Copy this chat link",shareUrl);
+    }catch{}
     setChatMenuOpen(false);
   }
   function archiveChat(){setChatArchived(true);setChatMenuOpen(false)}
@@ -158,7 +193,7 @@ export default function App(){
           <button className="icon-btn sidebar-close" onClick={()=>setSidebarOpen(false)} aria-label="Close sidebar"><PanelRight size={19}/></button>
         </div>
         <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span>{keyboardHints&&<kbd>⌘ K</kbd>}</button>
-        <button className={"nav-item "+(view==="chat"?"active":"")} onClick={()=>openView("chat")}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
+        <button className={"nav-item "+(view==="chat"?"active":"")} onClick={()=>{setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setAttachMenuOpen(false);}}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
         <div className="recent-block">
           <div className="section-label">Recent</div>
           {messages.length?<button className="recent-item active" onClick={()=>openView("chat")}>{messages[0].content}</button>:<div className="recent-empty">Your conversations will appear here.</div>}
@@ -179,7 +214,7 @@ export default function App(){
 
     <section className="main">
       <header className="topbar">
-        <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={20}/></button>
+        <button className={"icon-btn menu-btn "+(sidebarOpen?"active":"")} onClick={()=>setSidebarOpen(v=>!v)} aria-label={sidebarOpen?"Close sidebar":"Open sidebar"}><Menu size={20}/></button>
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
