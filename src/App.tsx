@@ -242,7 +242,12 @@ export default function App(){
 
     <section className="main">
       <header className="topbar">
-        <button className={"icon-btn menu-btn "+(sidebarOpen?"active":"")} onClick={()=>setSidebarOpen(v=>!v)} aria-label={sidebarOpen?"Close sidebar":"Open sidebar"}><Menu size={20}/></button>
+        <button className={"icon-btn menu-btn "+(sidebarOpen?"active":"")} onClick={()=>{
+  setSidebarOpen(v=>!v);
+  setChatMenuOpen(false);
+  setAttachMenuOpen(false);
+  setMessageMenuOpen(null);
+}} aria-label={sidebarOpen?"Close sidebar":"Open sidebar"}><Menu size={20}/></button>
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
