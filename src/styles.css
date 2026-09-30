@@ -3914,3 +3914,80 @@ html[data-theme=dark] .ios-save{
   .settings-shell .ios-settings-head h2{font-size:29px}
   .settings-shell .ios-card{border-radius:27px}
 }
+
+
+/* Profile + personality controls keep the original Settings visual language. */
+.settings-form-card{padding:20px}
+.settings-form-card label{
+  display:grid;
+  gap:7px;
+  margin:0 0 17px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:650;
+}
+.settings-form-card label:last-of-type{margin-bottom:0}
+.settings-form-card input,
+.settings-form-card textarea{
+  width:100%;
+  min-height:48px;
+  padding:0 14px;
+  border:1px solid color-mix(in srgb,var(--line) 75%,transparent);
+  border-radius:13px;
+  outline:none;
+  background:var(--surface-2);
+  color:var(--text);
+  font:inherit;
+  font-size:14px;
+}
+.settings-form-card textarea{
+  min-height:110px;
+  padding-top:12px;
+  resize:vertical;
+}
+.settings-form-card input:focus,
+.settings-form-card textarea:focus{
+  border-color:var(--accent-strong);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent-strong) 14%,transparent);
+}
+.settings-primary-button{
+  min-height:42px;
+  margin-top:18px;
+  padding:0 18px;
+  border:0;
+  border-radius:14px;
+  background:var(--text);
+  color:var(--bg);
+  font-size:13px;
+  font-weight:700;
+}
+.personality-row.selected{
+  background:color-mix(in srgb,var(--accent-strong) 9%,transparent);
+}
+.personality-row.selected .settings-mobile-row-copy strong{
+  color:var(--accent-strong);
+}
+.glass-settings-back{
+  position:relative;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--text) 13%,transparent);
+  background:color-mix(in srgb,var(--surface) 58%,transparent);
+  backdrop-filter:blur(18px) saturate(160%);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);
+  box-shadow:0 7px 22px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.13);
+}
+.glass-settings-back::after{
+  content:"";
+  position:absolute;
+  width:85px;
+  height:85px;
+  left:-55px;
+  top:-55px;
+  border-radius:50%;
+  background:rgba(255,255,255,.13);
+  animation:settings-glass-pulse 3.6s ease-in-out infinite;
+}
+@keyframes settings-glass-pulse{
+  0%,100%{transform:translate(0,0);opacity:.35}
+  50%{transform:translate(42px,42px);opacity:.75}
+}
