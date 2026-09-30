@@ -406,7 +406,7 @@ export default function App(){
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
-          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search conversations"><Search size={18}/></button>
+          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation"><Search size={18}/></button>
           <div ref={chatMenuRef} className="chat-session-menu-wrap">
             <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
             {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
@@ -480,6 +480,7 @@ export default function App(){
                   </div>}
                 </div>
               </article>)}
+              {visibleMessages.length===0&&<div className="search-no-results"><Search size={20}/><strong>No matches</strong><span>Try another word or clear the search.</span></div>}
             </section>
           }
           {loading&&<div className={"activity-panel "+(activityOpen?"open":"")} role="status" aria-live="polite" aria-atomic="true">
