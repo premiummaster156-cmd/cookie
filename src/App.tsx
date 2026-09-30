@@ -1,6 +1,8 @@
 import React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import PerfectScrollbar from "perfect-scrollbar";
+import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
   ArrowUp, ChevronDown, Command, Copy, Download, FileCode2, Folder,
   HelpCircle, Image as ImageIcon, Menu, MessageSquare, MoreHorizontal,
@@ -34,10 +36,17 @@ export default function App(){
  const [query,setQuery]=useState("");
  const fileRef=useRef<HTMLInputElement>(null);
  const bottom=useRef<HTMLDivElement>(null);
+ const chatScroll=useRef<HTMLDivElement>(null);
  const active=useMemo(()=>MODELS.find(x=>x.id===model)||MODELS[0],[model]);
 
  useEffect(()=>{try{const x=JSON.parse(localStorage.getItem("cookie_workspace")||"[]");if(Array.isArray(x))setWorkspace(x)}catch{}},[]);
  useEffect(()=>localStorage.setItem("cookie_workspace",JSON.stringify(workspace)),[workspace]);
+ useEffect(()=>{
+   if(!chatScroll.current)return;
+   const ps=new PerfectScrollbar(chatScroll.current,{wheelPropagation:false,suppressScrollX:true,minScrollbarLength:28});
+   return ()=>ps.destroy();
+ },[]);
+ useEffect(()=>{if(chatScroll.current){const el=chatScroll.current;requestAnimationFrame(()=>{el.scrollTop=el.scrollHeight;});}},[messages,loading]);
  useEffect(()=>bottom.current?.scrollIntoView({behavior:reduce?"auto":"smooth"}),[messages,loading,reduce]);
 
  async function send(raw=input){
