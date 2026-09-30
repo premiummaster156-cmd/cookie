@@ -35,6 +35,8 @@ export default function App(){
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
   const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
+  const [messageMenuPos,setMessageMenuPos]=useState<{right:number;bottom:number}>({right:16,bottom:90});
+  const [copiedMessage,setCopiedMessage]=useState<string|null>(null);
   const [pinnedMessages,setPinnedMessages]=useState<string[]>([]);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
@@ -48,6 +50,24 @@ export default function App(){
   const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const chatScroll=useRef<HTMLDivElement>(null);
+  async function copyMessage(text:string,messageId:string){
+    try{
+      if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(text);
+      else{
+        const ta=document.createElement("textarea");
+        ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+        document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+      }
+      setCopiedMessage(messageId);
+      window.setTimeout(()=>setCopiedMessage(v=>v===messageId?null:v),1400);
+    }catch{}
+  }
+  function toggleMessageMenu(id:string,el:HTMLElement){
+    if(messageMenuOpen===id){setMessageMenuOpen(null);return}
+    const r=el.getBoundingClientRect();
+    setMessageMenuPos({right:Math.max(12,window.innerWidth-r.right),bottom:Math.max(12,window.innerHeight-r.top+10)});
+    setMessageMenuOpen(id);
+  }
 
   useEffect(()=>{
     try{
@@ -179,10 +199,10 @@ export default function App(){
                   {m.files && m.files.length>0&&<div className="generated-files">{m.files.map(f=><button className="generated-file" key={f.path} onClick={()=>downloadFile(f)}><FileText size={18}/><span><b>{f.name||f.path.split("/").pop()}</b><small>{f.path} · Download file</small></span><ArrowUp className="download-arrow" size={15}/></button>)}</div>}
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
-                    <button onClick={()=>navigator.clipboard?.writeText(m.content)}><Copy size={13}/> Copy</button>
+                    <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
                     <div className="message-more-wrap">
-                      <button className={messageMenuOpen===m.id?"active":""} onClick={()=>setMessageMenuOpen(v=>v===m.id?null:m.id)} aria-label="More message actions" aria-expanded={messageMenuOpen===m.id}><MoreHorizontal size={15}/></button>
-                      {messageMenuOpen===m.id&&<div className="message-action-menu">
+                      <button className={messageMenuOpen===m.id?"active":""} onClick={e=>toggleMessageMenu(m.id,e.currentTarget)} aria-label="More message actions" aria-expanded={messageMenuOpen===m.id}><MoreHorizontal size={15}/></button>
+                      {messageMenuOpen===m.id&&<div className="message-action-menu" style={{right:messageMenuPos.right,bottom:messageMenuPos.bottom}}>
                         <div className="message-action-title">Cookie · Current chat</div>
                         <button onClick={()=>shareMessage(m)}><Share2 size={20}/><span>Share</span></button>
                         <button onClick={()=>toggleMessagePin(m.id)}><Pin size={20}/><span>{pinnedMessages.includes(m.id)?"Unpin":"Pin"}</span></button>
