@@ -27,7 +27,7 @@ const PERSONALITIES = ["Balanced","Friendly","Professional","Concise","Creative"
 const uid = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + Date.now().toString(36);
 const readJSON = <T,>(key:string, fallback:T):T => { try { return JSON.parse(localStorage.getItem(key) || "") as T; } catch { return fallback; } };
 const saveJSON = (key:string, value:unknown) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
-const titleFrom = (s:string) => { const x=s.replace(/\\s+/g," ").trim(); return x ? x.slice(0,48) + (x.length>48 ? "…" : "") : "New chat"; };
+const titleFrom = (s:string) => { const x=s.replace(/\s+/g," ").trim(); return x ? x.slice(0,48) + (x.length>48 ? "…" : "") : "New chat"; };
 
 function CookieIcon({size=24}:{size?:number}) {
   return <img className="cookie-icon" src={ICON} width={size} height={size} alt="" draggable={false}/>;
@@ -52,15 +52,15 @@ function CodeBlock({code,lang}:{code:string;lang:string}){
 function Rich({text}:{text:string}){
   const tick=String.fromCharCode(96);
   const fence=tick.repeat(3);
-  return <div className="rich">{text.split(new RegExp("("+fence+"[\\\\s\\\\S]*?"+fence+")","g")).map((part,pi)=>{
+  return <div className="rich">{text.split(new RegExp("("+fence+"[\\s\\S]*?"+fence+")","g")).map((part,pi)=>{
     if(part.startsWith(fence)){
-      const nl=part.indexOf("\\n");
+      const nl=part.indexOf("\n");
       return <CodeBlock key={pi} lang={nl>3?part.slice(3,nl):"code"} code={part.slice(nl>3?nl+1:3,-3).trim()}/>;
     }
-    return <React.Fragment key={pi}>{part.split("\\n").map((line,li)=>{
+    return <React.Fragment key={pi}>{part.split("\n").map((line,li)=>{
       if(!line.trim()) return <div className="md-gap" key={li}/>;
-      if(/^#{1,3}\\s/.test(line)) return <div className="md-heading" key={li}><Inline text={line.replace(/^#+\\s/,"")}/></div>;
-      if(/^[-*]\\s/.test(line)) return <div className="md-list" key={li}><span>•</span><Inline text={line.replace(/^[-*]\\s/,"")}/></div>;
+      if(/^#{1,3}\s/.test(line)) return <div className="md-heading" key={li}><Inline text={line.replace(/^#+\s/,"")}/></div>;
+      if(/^[-*]\s/.test(line)) return <div className="md-list" key={li}><span>•</span><Inline text={line.replace(/^[-*]\s/,"")}/></div>;
       return <div className="md-line" key={li}><Inline text={line}/></div>;
     })}</React.Fragment>;
   })}</div>;
@@ -83,7 +83,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button onClick={()=>{imageRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Photos & images</span></button>
         <button onClick={()=>{cameraRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Camera</span></button>
         <button onClick={()=>{fileRef.current?.click();setOpen(false)}}><FilePlus2 size={18}/><span>Upload files</span></button>
-        <button onClick={()=>{setValue(v=>(v?v+"\\n":"")+"Search the web for ");setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>Search the web</span></button>
+        <button onClick={()=>{setValue(v=>(v?v+"\n":"")+"Search the web for ");setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>Search the web</span></button>
       </div>}</div></div>
       <textarea ref={textRef} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();onSend()}}} placeholder="Message Cookie" rows={1}/>
       <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={onSend}><ArrowUp size={19}/></button>}</div>
