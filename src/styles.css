@@ -2223,3 +2223,101 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .topbar-spacer{flex:1}
   .topbar-actions{margin-left:auto}
 }
+
+
+/* ===== Final natural chat pass =====
+   Keep the interface quiet and content-first: no oversized generated-looking cards,
+   no full-width user bubbles, and compact contextual actions. */
+@media(max-width:900px){
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+  }
+  .mobile-brand{
+    position:static!important;
+    left:auto!important;
+    transform:none!important;
+    margin:0 0 0 12px!important;
+    padding:4px 6px!important;
+    background:transparent!important;
+  }
+  .mobile-brand.scrolled{transform:none!important}
+  .topbar-spacer{
+    display:none!important;
+    flex:0 0 auto!important;
+  }
+  .topbar-actions{
+    margin-left:auto!important;
+  }
+
+  /* User messages should size to their content, not become giant cards. */
+  .message-row.user .message-body{
+    width:auto!important;
+    max-width:min(82%,680px)!important;
+    justify-self:end!important;
+    padding:10px 14px!important;
+    border-radius:18px!important;
+    background:color-mix(in srgb,var(--surface-2) 72%,transparent)!important;
+    border:1px solid color-mix(in srgb,var(--line) 58%,transparent)!important;
+    box-shadow:none!important;
+  }
+}
+
+/* Assistant messages stay open on the page; only the tiny action menu is glass. */
+.message-row.assistant .message-body{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.message-tools{
+  display:flex!important;
+  align-items:center!important;
+  gap:2px!important;
+  margin-top:8px!important;
+  opacity:.62!important;
+}
+.message-tools > button,
+.message-more{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.message-tools > button:hover,
+.message-more:hover,
+.message-more.active{
+  background:color-mix(in srgb,var(--text) 7%,transparent)!important;
+  box-shadow:none!important;
+}
+
+/* Small contextual menu anchored to the action button, never over the message body. */
+.message-action-menu{
+  left:auto!important;
+  right:0!important;
+  bottom:calc(100% + 7px)!important;
+  width:154px!important;
+  padding:4px!important;
+  border-radius:12px!important;
+  background:color-mix(in srgb,var(--surface) 70%,transparent)!important;
+  border:1px solid color-mix(in srgb,var(--line) 68%,transparent)!important;
+  box-shadow:0 14px 36px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  backdrop-filter:blur(24px) saturate(140%)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(140%)!important;
+}
+.message-action-menu button{
+  min-height:34px!important;
+  padding:0 9px!important;
+  border-radius:8px!important;
+  gap:8px!important;
+  font-size:11px!important;
+  background:transparent!important;
+}
+.message-action-menu button:hover{
+  background:color-mix(in srgb,var(--text) 8%,transparent)!important;
+  transform:none!important;
+}
+
+/* Remove the "dashboard card" feeling from the composer while retaining a clear input. */
+.composer{
+  box-shadow:0 3px 18px rgba(0,0,0,.07)!important;
+}
