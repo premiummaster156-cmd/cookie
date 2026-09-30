@@ -141,7 +141,9 @@ export default function App(){
     const onKeyDown=(e:KeyboardEvent)=>{
       if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){
         e.preventDefault();
-        newChat();
+        setSearch(v=>v===""?" ":v);
+        setView("chat");
+        setSidebarOpen(false);
         return;
       }
       if(e.key==="Escape"){
@@ -151,6 +153,8 @@ export default function App(){
         setAttachMenuOpen(false);
         setMessageMenuOpen(null);
         setMessageMenuPosition(null);
+        setSearch("");
+
       }
     };
     const onPointerDown=(e:PointerEvent)=>{
@@ -248,6 +252,10 @@ export default function App(){
     document.body.classList.toggle("keyboard-hints-off",!keyboardHints);
   },[dark,accent,textSize,compact,animations,keyboardHints]);
   useEffect(()=>{
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.setAttribute("content",dark?"#0b0b0a":"#f7f5f1");
+  },[dark]);
+  useEffect(()=>{
     if(view!=="chat"||!chatScroll.current)return;
     const el=chatScroll.current;
     const onScroll=()=>setHeaderScrolled(el.scrollTop>18);
@@ -338,6 +346,10 @@ export default function App(){
   function archiveChat(){setChatArchived(true);setChatMenuOpen(false)}
   function deleteChat(){newChat()}
   function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
+  const searchQuery=search.trim().toLowerCase();
+  const visibleMessages=searchQuery
+    ? messages.filter(m=>m.content.toLowerCase().includes(searchQuery)||Boolean(m.attachments?.some(a=>a.name.toLowerCase().includes(searchQuery))))
+    : messages;
 
 
   if(view==="account"||view==="settings"){
@@ -412,7 +424,11 @@ export default function App(){
 
       {view==="chat"&&<div ref={chatScroll} className="chat-scroll">
         <div className="chat-content">
-          {search!==""&&<div className="large-search search-inline"><Search size={18}/><input autoFocus value={search.trim()===""?"":search} onChange={e=>setSearch(e.target.value)} placeholder="Search this conversation"/></div>}
+          {search!==""&&<div className="large-search search-inline" role="search">
+  <Search size={18}/>
+  <input autoFocus value={search.trim()===""?"":search} onChange={e=>setSearch(e.target.value)} placeholder="Search this conversation" aria-label="Search this conversation"/>
+  {search.trim()&&<button className="search-clear" onClick={()=>setSearch(" ")} aria-label="Clear search"><X size={15}/></button>}
+</div>}
           {chatArchived?
             <section className="session-archived">
               <Archive size={24}/>
@@ -425,10 +441,15 @@ export default function App(){
               <CookieIcon size={92}/>
               <h1>How can I help?</h1>
               <p>Ask anything. Write, learn, plan, or just think out loud.</p>
+              <div className="welcome-prompts" aria-label="Quick prompts">
+                {["Explain something simply","Help me write","Help me code","Analyze a file"].map(prompt=>
+                  <button key={prompt} onClick={()=>setInput(prompt)}>{prompt}</button>
+                )}
+              </div>
             </section>
           :
             <section className="conversation">
-              {messages.map(m=><article key={m.id} className={"message-row "+m.role}>
+              {visibleMessages.map(m=><article key={m.id} className={"message-row "+m.role}>
                 <div className={m.role==="assistant"?"assistant-mark":"message-avatar"}>{m.role==="assistant"?<CookieIcon size={25}/>: "D"}</div>
                 <div className="message-body">
                   {m.attachments && m.attachments.length>0&&<div className="message-attachments">{m.attachments.map(a=>a.kind==="image"?<img key={a.id} className="message-image" src={a.data} alt={a.name}/>:<div key={a.id} className="message-file"><FileText size={15}/><span>{a.name}</span></div>)}</div>}
@@ -509,7 +530,7 @@ export default function App(){
                 </div>}
               </div>
             </div>
-            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
+            <textarea value={input} onChange={e=>{setInput(e.target.value);e.currentTarget.style.height="auto";e.currentTarget.style.height=Math.min(e.currentTarget.scrollHeight,180)+"px"}} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
           </div>
           <div className="composer-toolbar">
             <div className="toolbar-left">
