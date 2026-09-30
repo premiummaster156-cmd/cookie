@@ -110,7 +110,7 @@ export default function App(){
              {MODELS.map(m=><button className={"model-option "+(m.id===model?"chosen":"")} key={m.id} onClick={()=>{setModel(m.id);setModelOpen(false)}}>
                <span className="model-icon">{React.createElement(m.icon,{size:15})}</span><span><b>{m.name}</b><small>{m.desc}</small></span>{m.id===model&&<Check size={15}/>}
              </button>)}
-           </motion.div></AnimatePresence>}
+           </motion.div>}</AnimatePresence>
          </div>
        </div>
        <div className="top-actions">
