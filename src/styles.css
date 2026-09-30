@@ -5126,3 +5126,28 @@ html,body,#root{
     body.sidebar-open .app-shell>.sidebar{animation:none!important}
   }
 }
+
+
+/* Final mobile overlay stacking fix: keep the sheet crisp.
+   The dim layer is intentionally translucent, not a page-wide blur. */
+@media (max-width:900px), (hover:none) and (pointer:coarse){
+  .app-shell>.sidebar-overlay{
+    z-index:40!important;
+    background:rgba(0,0,0,.58)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    filter:none!important;
+  }
+  .app-shell>.sidebar{
+    z-index:200!important;
+    filter:none!important;
+    -webkit-filter:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    opacity:1!important;
+    isolation:isolate;
+  }
+  .app-shell>.sidebar *{
+    filter:none!important;
+  }
+}
