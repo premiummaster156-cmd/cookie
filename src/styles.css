@@ -2413,3 +2413,275 @@ html[data-text-size="small"] .message-body p{font-size:13px}
     transform-origin:top left!important;
   }
 }
+
+
+/* ===== Account settings — ChatGPT-inspired, quiet and content-first ===== */
+.account{
+  border:0;
+  font:inherit;
+  color:inherit;
+  cursor:pointer;
+}
+.account.active{
+  background:var(--surface-2);
+}
+.account .account-more{
+  display:grid;
+  place-items:center;
+}
+.account-settings-page{
+  max-width:1040px;
+  margin:0 auto;
+  padding:48px 34px 72px;
+}
+.account-settings-page .page-heading{
+  max-width:760px;
+  margin-bottom:30px;
+}
+.account-settings-page .page-heading .eyebrow{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:9px;
+  letter-spacing:.14em;
+  color:var(--faint);
+}
+.account-settings-page .page-heading h2{
+  margin:9px 0 10px;
+  font-size:31px;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:-.045em;
+}
+.account-settings-page .page-heading p{
+  max-width:620px;
+  margin:0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.7;
+}
+.account-settings-layout{
+  display:grid;
+  grid-template-columns:190px minmax(0,720px);
+  gap:18px;
+  max-width:928px;
+  border-top:1px solid var(--line);
+}
+.account-settings-nav{
+  position:sticky;
+  top:72px;
+  align-self:start;
+  padding:5px;
+  margin-top:0;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:rgba(255,255,255,.018);
+}
+.account-settings-nav-label{
+  padding:7px 8px 8px;
+  color:var(--faint);
+  font:9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.account-setting-tab{
+  width:100%;
+  min-height:42px;
+  display:grid;
+  gap:2px;
+  padding:7px 9px;
+  border-radius:5px;
+  background:transparent;
+  color:var(--muted);
+  text-align:left;
+}
+.account-setting-tab:hover{
+  background:var(--surface-2);
+  color:var(--text);
+}
+.account-setting-tab.active{
+  background:var(--surface-2);
+  color:var(--text);
+}
+.account-setting-tab span{
+  font-size:10.5px;
+  font-weight:650;
+}
+.account-setting-tab small{
+  color:var(--faint);
+  font-size:8.5px;
+  line-height:1.35;
+}
+.account-setting-tab.danger{
+  margin-top:5px;
+  color:#d9877e;
+}
+.account-setting-tab.danger:hover,
+.account-setting-tab.danger.active{
+  background:rgba(213,107,97,.08);
+}
+.account-setting-content{
+  min-width:0;
+  padding:18px 14px 4px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:rgba(255,255,255,.012);
+}
+.account-group{
+  padding:0 0 20px;
+  margin:0 0 20px;
+  border-bottom:1px solid var(--line);
+}
+.account-group:last-child{
+  border-bottom:0;
+  margin-bottom:0;
+}
+.account-group h3{
+  margin:0 0 5px;
+  font-size:15px;
+  font-weight:650;
+  letter-spacing:-.025em;
+}
+.account-group>p{
+  max-width:590px;
+  margin:0 0 15px;
+  color:var(--muted);
+  font-size:10.5px;
+  line-height:1.65;
+}
+.account-profile{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:68px;
+  padding:12px 0;
+  border-top:1px solid var(--line);
+}
+.account-profile-avatar{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#8a5a3d;
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+}
+.account-profile strong,
+.account-profile small{
+  display:block;
+}
+.account-profile strong{font-size:12px}
+.account-profile small{margin-top:2px;color:var(--faint);font-size:9.5px}
+.account-row{
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:10px 0;
+  border-top:1px solid var(--line);
+}
+.account-row>div{
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+.account-row strong{
+  font-size:11px;
+  font-weight:650;
+}
+.account-row small{
+  color:var(--faint);
+  font-size:9.5px;
+  line-height:1.4;
+}
+.account-row-action{
+  flex:0 0 auto;
+  min-height:30px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:transparent;
+  color:var(--muted);
+  font-size:9.5px;
+}
+.account-row-action:hover{
+  background:var(--surface-2);
+  color:var(--text);
+}
+.account-plan-line{
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:10px 0;
+  border-top:1px solid var(--line);
+}
+.account-plan-line strong,
+.account-plan-line small{display:block}
+.account-plan-line strong{font-size:11px}
+.account-plan-line small{margin-top:3px;color:var(--faint);font-size:9.5px}
+.account-badge{
+  padding:4px 7px;
+  border-radius:5px;
+  background:var(--accent-soft);
+  color:var(--accent-strong);
+  font-size:9px;
+  font-weight:700;
+}
+.account-danger-note{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  max-width:600px;
+  padding:12px 0;
+  border-top:1px solid rgba(213,107,97,.25);
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.6;
+}
+.account-danger-note svg{
+  flex:0 0 auto;
+  color:#d9877e;
+  margin-top:1px;
+}
+.account-delete-btn{
+  margin-top:6px;
+}
+@media(max-width:760px){
+  .account-settings-page{
+    padding:30px 16px 48px;
+  }
+  .account-settings-layout{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .account-settings-nav{
+    position:static;
+    display:flex;
+    overflow-x:auto;
+    gap:3px;
+    padding:4px;
+    scrollbar-width:none;
+  }
+  .account-settings-nav::-webkit-scrollbar{display:none}
+  .account-settings-nav-label{display:none}
+  .account-setting-tab{
+    width:145px;
+    min-width:145px;
+    flex:0 0 auto;
+  }
+  .account-setting-tab.danger{
+    margin-top:0;
+  }
+  .account-setting-content{
+    padding:16px 12px 2px;
+  }
+  .account-row{
+    align-items:flex-start;
+  }
+  .account-row-action{
+    margin-top:2px;
+  }
+}
