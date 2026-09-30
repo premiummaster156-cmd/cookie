@@ -549,17 +549,35 @@ function AccountSettingsPage(props:{
 
   if(panel==="General"){
     return <div className="page-container ios-settings-page">
-      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>General</h2></div>
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)} aria-label="Back"><ArrowLeft size={27}/></button><h2>General</h2></div>
+
       <section className="ios-card">
         <Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>setPanel("App language")}/>
         <div className="ios-control-row"><span className="ios-row-icon"><SpellCheck size={22}/></span><span className="ios-row-main"><strong>Auto-correct spelling</strong></span><Toggle value={props.autoCorrect} onChange={()=>props.setAutoCorrect(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Smartphone size={22}/></span><span className="ios-row-main"><strong>Haptic feedback</strong></span><Toggle value={props.haptics} onChange={()=>props.setHaptics(v=>!v)}/></div>
       </section>
+
+      <h3 className="ios-section-title">Intelligence</h3>
+      <section className="ios-card">
+        <Row icon={Sparkles} label="Model" value={modelInfo.name} onClick={cycleModel}/>
+        <div className="ios-control-row">
+          <span className="ios-row-icon"><Shuffle size={22}/></span>
+          <span className="ios-row-main"><strong>Auto switch</strong><small>Use higher intelligence for complex questions</small></span>
+          <Toggle value={props.autoSwitch} onChange={()=>props.setAutoSwitch(v=>!v)}/>
+        </div>
+      </section>
+
+      <h3 className="ios-section-title">Suggestions</h3>
+      <section className="ios-card">
+        <div className="ios-control-row"><span className="ios-row-icon"><Sparkles size={22}/></span><span className="ios-row-main"><strong>Autocomplete</strong></span><Toggle value={props.autocomplete} onChange={()=>props.setAutocomplete(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><TrendingUp size={22}/></span><span className="ios-row-main"><strong>Trending searches</strong></span><Toggle value={props.trendingSearches} onChange={()=>props.setTrendingSearches(v=>!v)}/></div>
+      </section>
+
       <h3 className="ios-section-title">Chat & interface</h3>
       <section className="ios-card">
         <div className="ios-control-row"><span className="ios-row-icon"><SlidersHorizontal size={21}/></span><span className="ios-row-main"><strong>Compact messages</strong></span><Toggle value={props.compact} onChange={()=>props.setCompact(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Monitor size={21}/></span><span className="ios-row-main"><strong>Interface animations</strong></span><Toggle value={props.animations} onChange={()=>props.setAnimations(v=>!v)}/></div>
-        <div className="ios-control-row"><span className="ios-row-icon"><Keyboard size={21}/><span/></span><span className="ios-row-main"><strong>Keyboard hints</strong></span><Toggle value={props.keyboardHints} onChange={()=>props.setKeyboardHints(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><Keyboard size={21}/></span><span className="ios-row-main"><strong>Keyboard hints</strong></span><Toggle value={props.keyboardHints} onChange={()=>props.setKeyboardHints(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Type size={21}/></span><span className="ios-row-main"><strong>Text size</strong></span><div className="ios-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
       </section>
     </div>;
