@@ -34,9 +34,11 @@ export default function App(){
   const [loading,setLoading]=useState(false);
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
-  const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
+  const [chatMenuOpen,setChatMenuOpen]=useState(false);
+  const [chatTitle,setChatTitle]=useState("New chat");
+  const [chatPinned,setChatPinned]=useState(false);
+  const [chatArchived,setChatArchived]=useState(false);
   const [copiedMessage,setCopiedMessage]=useState<string|null>(null);
-  const [pinnedMessages,setPinnedMessages]=useState<string[]>([]);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
   const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
@@ -61,9 +63,7 @@ export default function App(){
       window.setTimeout(()=>setCopiedMessage(v=>v===messageId?null:v),1400);
     }catch{}
   }
-  function toggleMessageMenu(id:string){
-    setMessageMenuOpen(messageMenuOpen===id?null:id);
-  }
+  function toggleChatMenu(){setChatMenuOpen(v=>!v)}
 
   useEffect(()=>{
     try{
@@ -106,7 +106,10 @@ export default function App(){
     if((!text&&!attachments.length)||loading)return;
     const now=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
     const next=[...messages,{id:id(),role:"user" as const,content:text,attachments,time:now}];
-    setMessages(next);setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);
+    setMessages(next);
+    setChatTitle(v=>v==="New chat"?(text.slice(0,42)+(text.length>42?"…":"")):v);
+    setChatArchived(false);
+    setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);
     try{
       const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
@@ -125,20 +128,19 @@ export default function App(){
   }
   function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
-  function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
-  function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setMessageMenuOpen(null)}
-  function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
-  function toggleMessagePin(messageId:string){setPinnedMessages(v=>v.includes(messageId)?v.filter(x=>x!==messageId):[...v,messageId]);setMessageMenuOpen(null)}
-  async function shareMessage(message:Msg){
-    const text=message.content||"Cookie message";
-    try{
-      if(navigator.share) await navigator.share({title:"Cookie",text});
-      else await navigator.clipboard?.writeText(text);
-    }catch{}
-    setMessageMenuOpen(null);
+  function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setChatTitle("New chat");setChatPinned(false);setChatArchived(false)}
+  function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setChatMenuOpen(false)}
+  function renameChat(){const next=window.prompt("Rename chat",chatTitle);if(next?.trim())setChatTitle(next.trim().slice(0,80));setChatMenuOpen(false)}
+  async function shareChat(){
+    const transcript=messages.map(m=>`${m.role==="user"?"You":"Cookie"}: ${m.content}`).join("\n\n");
+    const text=`${chatTitle}\n\n${transcript}`;
+    try{if(navigator.share)await navigator.share({title:chatTitle,text});else if(navigator.clipboard)await navigator.clipboard.writeText(text)}catch{}
+    setChatMenuOpen(false);
   }
-  function deleteMessage(messageId:string){setMessages(v=>v.filter(m=>m.id!==messageId));setMessageMenuOpen(null)}
-  function findInChat(text:string){setSearch(text.slice(0,80));setMessageMenuOpen(null)}
+  function archiveChat(){setChatArchived(true);setChatMenuOpen(false)}
+  function deleteChat(){newChat()}
+  function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
+
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <aside className="sidebar">
@@ -172,13 +174,34 @@ export default function App(){
         <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={20}/></button>
         <div className="mobile-brand"><CookieIcon size={27}/><strong>Cookie</strong></div>
         <div className="topbar-spacer"/>
+        {view==="chat"&&messages.length>0&&<div className="chat-session-bar">
+          <button className="chat-session-title" onClick={toggleChatMenu} aria-expanded={chatMenuOpen}>{chatTitle}{chatPinned?" · Pinned":""}</button>
+          <div className="chat-session-menu-wrap">
+            <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={19}/></button>
+            {chatMenuOpen&&<div className="chat-session-menu" role="menu">
+              <button onClick={shareChat}><Share2 size={16}/><span>Share chat</span></button>
+              <button onClick={renameChat}><FileText size={16}/><span>Rename chat</span></button>
+              <button onClick={()=>{setChatPinned(v=>!v);setChatMenuOpen(false)}}><Pin size={16}/><span>{chatPinned?"Unpin chat":"Pin chat"}</span></button>
+              <button onClick={()=>{setSearch(v=>v?"":" ");setChatMenuOpen(false)}}><Search size={16}/><span>Find in chat</span></button>
+              <button onClick={archiveChat}><Archive size={16}/><span>Archive chat</span></button>
+              <button className="danger" onClick={deleteChat}><Trash2 size={16}/><span>Delete chat</span></button>
+            </div>}
+          </div>
+        </div>}
         {view==="chat"&&<button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"": " ")} aria-label="Search conversations"><Search size={18}/></button>}
       </header>
 
       {view==="chat"&&<div ref={chatScroll} className="chat-scroll">
         <div className="chat-content">
           {search!==""&&<div className="large-search search-inline"><Search size={18}/><input autoFocus value={search.trim()===""?"":search} onChange={e=>setSearch(e.target.value)} placeholder="Search this conversation"/></div>}
-          {messages.length===0?
+          {chatArchived?
+            <section className="session-archived">
+              <Archive size={24}/>
+              <h2>Chat archived</h2>
+              <p>This chat is archived in the current Cookie session.</p>
+              <button onClick={()=>setChatArchived(false)}>Return to chat</button>
+            </section>
+          :messages.length===0?
             <section className="welcome">
               <CookieIcon size={92}/>
               <h1>How can I help?</h1>
@@ -195,19 +218,7 @@ export default function App(){
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
-                    <div className="message-more-wrap">
-                      <button className={messageMenuOpen===m.id?"active":""} onClick={()=>toggleMessageMenu(m.id)} aria-label="More message actions" aria-expanded={messageMenuOpen===m.id}><MoreHorizontal size={15}/></button>
-                    </div>
-                  </div>
-                  {messageMenuOpen===m.id&&<div className="message-action-menu" role="menu">
-                    <button onClick={()=>shareMessage(m)}><Share2 size={16}/><span>Share</span></button>
-                    <button onClick={()=>toggleMessagePin(m.id)}><Pin size={16}/><span>{pinnedMessages.includes(m.id)?"Unpin":"Pin"}</span></button>
-                    <button onClick={()=>setMessageMenuOpen(null)}><Paperclip size={16}/><span>Uploaded files</span></button>
-                    <button onClick={()=>findInChat(m.content)}><Search size={16}/><span>Find in chat</span></button>
-                    <button onClick={()=>setMessageMenuOpen(null)}><Archive size={16}/><span>Archive</span></button>
-                    <button className="danger" onClick={()=>deleteMessage(m.id)}><Trash2 size={16}/><span>Delete</span></button>
-                  </div>}}
-                </div>
+                  </div>                </div>
               </article>)}
             </section>
           }
