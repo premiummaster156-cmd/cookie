@@ -4476,3 +4476,52 @@ html[data-theme=dark] .profile-edit-save{background:#fff;color:#111}
   transform:translateY(-1px);
 }
 .settings-main-back:active{transform:scale(.96)}
+
+
+/* ===== Production chat UX polish ===== */
+.composer-model{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  height:30px;
+  padding:0 8px;
+  border:1px solid color-mix(in srgb,var(--line) 70%,transparent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--surface) 72%,transparent);
+  color:var(--muted);
+}
+.composer-model svg{color:var(--accent-strong);flex:0 0 auto}
+.composer-model select{
+  max-width:105px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  font:inherit;
+  font-size:10px;
+  font-weight:650;
+}
+.composer-model option{
+  background:var(--surface);
+  color:var(--text);
+}
+.stop-square{
+  width:10px;
+  height:10px;
+  display:block;
+  border-radius:2px;
+  background:currentColor;
+}
+.send-btn.stop{
+  color:var(--accent-strong);
+  border-color:color-mix(in srgb,var(--accent-strong) 28%,var(--line));
+  background:var(--accent-soft);
+}
+.send-btn.stop:hover{
+  background:color-mix(in srgb,var(--accent-strong) 15%,var(--surface));
+}
+@media(max-width:620px){
+  .composer-model{height:28px;padding:0 7px}
+  .composer-model select{max-width:82px;font-size:9px}
+  .shortcut-hint{font-size:9px}
+}
