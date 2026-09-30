@@ -7,7 +7,7 @@ import {
   ArrowUp, Copy, FileText, FileUp, ImagePlus,
   Camera, Images, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, CirclePlus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
-  ShieldCheck, Palette, Plus, Check
+  ShieldCheck, Palette, Plus, Check, ChevronRight, ArrowLeft, Mail, CreditCard, RotateCcw, BarChart3, UserRound, LockKeyhole, Database, Bell, Volume2, UsersRound, Monitor, HardDrive, Megaphone, Flag, Info, LogOut
 } from "lucide-react";
 
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
@@ -422,64 +422,135 @@ function Message({text}:{text:string}){
 }
 
 function AccountSettingsPage(){
-  const [tab,setTab]=useState("Profile");
-  const tabs=[
-    ["Profile","User profile and account identity"],
-    ["Plan","Current Cookie plan"],
-    ["Security","Sign-in and session controls"],
-    ["Data controls","Privacy and account data"],
-  ];
-  return <div className="page-container account-settings-page">
-    <div className="page-heading">
-      <span className="eyebrow">ACCOUNT</span>
-      <h2>Account settings</h2>
-      <p>Manage your Cookie account details and account-level controls.</p>
-    </div>
-    <div className="account-settings-layout">
-      <nav className="account-settings-nav" aria-label="Account settings sections">
-        <div className="account-settings-nav-label">Account</div>
-        {tabs.map(([name,desc])=><button key={name} className={"account-setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(name)}>
-          <span>{name}</span><small>{desc}</small>
-        </button>)}
-        <button className={"account-setting-tab danger "+(tab==="Delete account"?"active":"")} onClick={()=>setTab("Delete account")}><span>Delete account</span><small>Permanently remove the account</small></button>
-      </nav>
-      <div className="account-setting-content">
-        {tab==="Profile"&&<AccountGroup title="Profile" desc="Basic information shown for your Cookie account.">
-          <div className="account-profile">
-            <span className="account-profile-avatar">D</span>
-            <div><strong>Cookie user</strong><small>Cookie account</small></div>
-          </div>
-          <AccountRow label="Display name" value="Cookie user" action="Edit"/>
-          <AccountRow label="Email" value="Not connected" action="Manage"/>
-        </AccountGroup>}
-        {tab==="Plan"&&<AccountGroup title="Plan" desc="Account-level subscription information available to Cookie.">
-          <div className="account-plan-line"><div><strong>Cookie account</strong><small>Plan details are shown here when billing is connected.</small></div><span className="account-badge">Current</span></div>
-          <AccountRow label="Subscription" value="Not connected" action="Manage"/>
-          <AccountRow label="Billing" value="No billing account linked" action="Manage"/>
-        </AccountGroup>}
-        {tab==="Security"&&<AccountGroup title="Security" desc="Review account access and session controls.">
-          <AccountRow label="Password" value="Managed by your sign-in provider" action="Manage"/>
-          <AccountRow label="Two-step verification" value="Not configured" action="Set up"/>
-          <AccountRow label="Active sessions" value="Current browser session" action="Review"/>
-        </AccountGroup>}
-        {tab==="Data controls"&&<AccountGroup title="Data controls" desc="Controls for information associated with this Cookie account.">
-          <AccountRow label="Chat history" value="Controlled by the current Cookie session" action="Review"/>
-          <AccountRow label="Personalization" value="Local interface preferences" action="Review"/>
-          <AccountRow label="Export data" value="Request account data when connected" action="Export"/>
-        </AccountGroup>}
-        {tab==="Delete account"&&<AccountGroup title="Delete account" desc="Account deletion is permanent and should be used only when you intend to remove the account.">
-          <div className="account-danger-note"><Trash2 size={16}/><span>Deleting an account can remove account-associated data. This demo interface does not perform deletion.</span></div>
-          <button className="danger-btn account-delete-btn" onClick={()=>window.alert("Account deletion is not connected in this Cookie build.")}>Delete account</button>
-        </AccountGroup>}
+  const [panel,setPanel]=useState<string|null>(null);
+
+  const openPanel=(name:string)=>setPanel(name);
+
+  const Row=({icon:Icon,label,value,onClick,destructive=false}:{icon:any;label:string;value?:string;onClick?:()=>void;destructive?:boolean})=>
+    <button className={"account-mobile-row "+(destructive?"destructive":"")} onClick={onClick||(()=>openPanel(label))}>
+      <span className="account-mobile-row-icon"><Icon size={21}/></span>
+      <span className="account-mobile-row-copy"><strong>{label}</strong>{value&&<small>{value}</small>}</span>
+      <ChevronRight className="account-mobile-chevron" size={20}/>
+    </button>;
+
+  if(panel){
+    const detail:Record<string,{title:string;body:string}> = {
+      "Email":{title:"Email",body:"No account email is connected to this Cookie build yet."},
+      "Subscription":{title:"Subscription",body:"Cookie plan billing is not connected yet. Your current local interface remains available without changing these settings."},
+      "Usage & limits":{title:"Usage & limits",body:"Usage reporting is not connected yet. This page is ready for the live limits service when it is added."},
+      "Personalization":{title:"Personalization",body:"Personalization controls will live here. Cookie currently keeps interface preferences locally in this browser."},
+      "Memory":{title:"Memory",body:"Memory controls are not connected to a server account yet. Nothing on this page should imply persistent account memory."},
+      "Plugins":{title:"Plugins",body:"Plugin connections are not configured in this build yet."},
+      "General":{title:"General",body:"General Cookie preferences are available from Settings. Use the back button to return."},
+      "Notifications":{title:"Notifications",body:"Notifications are not connected in this web build yet."},
+      "Voice":{title:"Voice",body:"Voice controls are not connected in this web build yet."},
+      "Parental controls":{title:"Parental controls",body:"Parental controls are not connected in this Cookie build."},
+      "Trusted contact":{title:"Trusted contact",body:"Trusted contact is not connected in this Cookie build."},
+      "Safety":{title:"Safety",body:"Safety and account-protection controls will appear here when the account service is connected."},
+      "Security and login":{title:"Security and login",body:"Login and two-step verification are not connected in this web build yet."},
+      "Remote control":{title:"Remote control",body:"Remote control is not available in this Cookie build."},
+      "Storage":{title:"Storage",body:"Persistent account storage is not connected. Generated files remain response artifacts."},
+      "Data controls":{title:"Data controls",body:"Data controls are not connected to a server account yet. Local interface preferences can be reset from Settings."},
+      "Ads controls":{title:"Ads controls",body:"There are no account-level ad controls connected in this build."},
+      "Report app issue":{title:"Report app issue",body:"For now, use the repository issue tracker or describe the problem directly in Cookie."},
+      "Help Center":{title:"Help Center",body:"Open Help & shortcuts from the sidebar for Cookie's built-in product guide."},
+      "Privacy Center":{title:"Privacy Center",body:"Cookie currently documents its privacy boundaries in Help & shortcuts → Privacy & limitations."},
+      "About":{title:"About Cookie",body:"Cookie is the AI assistant for this website. This screen intentionally shows only capabilities that are actually connected."}
+    };
+    const item=detail[panel]||{title:panel,body:"This control is not connected yet."};
+    return <div className="page-container account-mobile-page">
+      <div className="account-mobile-detail-head">
+        <button className="account-back-btn" onClick={()=>setPanel(null)} aria-label="Back to account settings"><ArrowLeft size={20}/></button>
+        <div><span className="account-mobile-eyebrow">ACCOUNT</span><h2>{item.title}</h2></div>
+      </div>
+      <section className="account-detail-card">
+        <div className="account-detail-icon"><UserRound size={24}/></div>
+        <p>{item.body}</p>
+      </section>
+    </div>;
+  }
+
+  return <div className="page-container account-mobile-page">
+    <div className="account-mobile-head">
+      <div>
+        <span className="account-mobile-eyebrow">COOKIE ACCOUNT</span>
+        <h2>Account</h2>
+        <p>Manage your profile, plan, privacy, and app preferences.</p>
       </div>
     </div>
+
+    <section className="account-profile-card">
+      <div className="account-profile-main">
+        <span className="account-large-avatar">D</span>
+        <div><strong>Cookie user</strong><small>Cookie account</small></div>
+        <button className="account-edit-avatar" onClick={()=>openPanel("Profile photo")} aria-label="Edit profile"><UserRound size={17}/></button>
+      </div>
+      <div className="account-profile-upgrade">
+        <div><strong>Cookie account</strong><small>Connect a plan when billing is available.</small></div>
+        <button onClick={()=>openPanel("Subscription")}>Manage</button>
+      </div>
+    </section>
+
+    <AccountMobileSection title="Account">
+      <Row icon={Mail} label="Email" value="Not connected"/>
+      <Row icon={CreditCard} label="Subscription" value="Cookie account"/>
+      <Row icon={RotateCcw} label="Restore purchases"/>
+      <Row icon={BarChart3} label="Usage & limits"/>
+    </AccountMobileSection>
+
+    <AccountMobileSection title="Customize Cookie">
+      <Row icon={UserRound} label="Personalization"/>
+      <Row icon={Database} label="Memory"/>
+      <Row icon={Plus} label="Plugins"/>
+    </AccountMobileSection>
+
+    <AccountMobileSection title="Theme">
+      <button className="account-mobile-row" onClick={()=>setDarkSafe()}>
+        <span className="account-mobile-row-icon"><Palette size={21}/></span>
+        <span className="account-mobile-row-copy"><strong>Appearance</strong><small>{dark?"Dark":"Light"}</small></span>
+        <span className="account-mobile-value">{dark?"Dark":"Light"}</span>
+      </button>
+      <button className="account-mobile-row" onClick={()=>cycleAccent()}>
+        <span className="account-mobile-row-icon"><Palette size={21}/></span>
+        <span className="account-mobile-row-copy"><strong>Accent color</strong><small>Cookie interface highlight</small></span>
+        <span className={"account-accent-dot "+accent}/><span className="account-mobile-value">{accentLabel()}</span>
+      </button>
+    </AccountMobileSection>
+
+    <AccountMobileSection title="App settings">
+      <Row icon={Settings} label="General"/>
+      <Row icon={Bell} label="Notifications"/>
+      <Row icon={Volume2} label="Voice"/>
+      <Row icon={UsersRound} label="Parental controls"/>
+      <Row icon={ShieldCheck} label="Trusted contact"/>
+      <Row icon={ShieldCheck} label="Safety"/>
+      <Row icon={LockKeyhole} label="Security and login"/>
+      <Row icon={Monitor} label="Remote control"/>
+      <Row icon={HardDrive} label="Storage"/>
+      <Row icon={UserRound} label="Data controls"/>
+      <Row icon={Megaphone} label="Ads controls"/>
+    </AccountMobileSection>
+
+    <AccountMobileSection title="Get help">
+      <Row icon={Flag} label="Report app issue"/>
+      <Row icon={HelpCircle} label="Help Center" onClick={()=>openView("help")}/>
+      <Row icon={ShieldCheck} label="Privacy Center"/>
+      <Row icon={Info} label="About"/>
+    </AccountMobileSection>
+
+    <button className="account-logout-row" onClick={()=>openPanel("Log out")}><LogOut size={21}/><span>Log out</span></button>
+    <p className="account-mobile-footer">Cookie account controls are shown only when the related feature is actually connected.</p>
   </div>;
+
+  function setDarkSafe(){setDark(v=>!v)}
+  function cycleAccent(){
+    setAccent(v=>v==="cream"?"orange":v==="orange"?"cocoa":"cream");
+  }
+  function accentLabel(){return accent==="cream"?"Cream":accent==="orange"?"Orange":"Cocoa"}
 }
-function AccountGroup({title,desc,children}:{title:string;desc:string;children:React.ReactNode}){
-  return <section className="account-group"><h3>{title}</h3><p>{desc}</p>{children}</section>;
-}
-function AccountRow({label,value,action}:{label:string;value:string;action:string}){
-  return <div className="account-row"><div><strong>{label}</strong><small>{value}</small></div><button className="account-row-action" onClick={()=>window.alert(action+" is not connected in this Cookie build.")}>{action}</button></div>;
+
+function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
+  return <section className="account-mobile-section"><h3>{title}</h3><div className="account-mobile-card">{children}</div></section>;
 }
 
 function SettingsPage(props:{
