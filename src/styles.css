@@ -5623,3 +5623,93 @@ html,body,#root{
     padding-right:50px!important;
   }
 }
+
+
+/* Final composer geometry: controls and placeholder share ONE row. */
+@media screen and (max-width:900px){
+  .app-shell .composer{
+    height:68px!important;
+    min-height:68px!important;
+    max-height:68px!important;
+    border-radius:20px!important;
+  }
+  .app-shell .composer-main{
+    height:68px!important;
+    min-height:68px!important;
+    padding:0 54px 0 12px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:5px!important;
+    box-sizing:border-box!important;
+  }
+  .app-shell .composer-main .composer-attachment{
+    flex:0 0 auto!important;
+    width:auto!important;
+    height:36px!important;
+    min-height:36px!important;
+    margin:0!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    gap:1px!important;
+  }
+  .app-shell .composer-main .composer-menu-wrap{
+    width:36px!important;
+    height:36px!important;
+    flex:0 0 36px!important;
+  }
+  .app-shell .composer-main .attachment-trigger{
+    width:36px!important;
+    height:36px!important;
+    border-radius:50%!important;
+  }
+  .app-shell .composer-main .composer-model-inline{
+    width:32px!important;
+    min-width:32px!important;
+    max-width:32px!important;
+    height:34px!important;
+    flex:0 0 32px!important;
+    border-radius:50%!important;
+  }
+  .app-shell .composer-main textarea{
+    flex:1 1 auto!important;
+    width:auto!important;
+    height:30px!important;
+    min-height:30px!important;
+    max-height:30px!important;
+    margin:0!important;
+    padding:0!important;
+    line-height:30px!important;
+    overflow:hidden!important;
+    white-space:nowrap!important;
+    text-overflow:ellipsis!important;
+    align-self:center!important;
+  }
+  .app-shell .composer-toolbar{
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    padding:0!important;
+    pointer-events:none!important;
+  }
+  .app-shell .composer-toolbar .toolbar-left{
+    display:none!important;
+  }
+  .app-shell .composer-toolbar .toolbar-right{
+    position:absolute!important;
+    right:8px!important;
+    top:50%!important;
+    bottom:auto!important;
+    transform:translateY(-50%)!important;
+    pointer-events:auto!important;
+  }
+  .app-shell .send-btn{
+    width:34px!important;
+    height:34px!important;
+    border-radius:50%!important;
+  }
+}
