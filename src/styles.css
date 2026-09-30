@@ -714,3 +714,35 @@ body.animations-off .message-action-menu,
 body.animations-off .message-action-menu button{
   animation:none!important;
 }
+
+/* Extra-compact mobile composer */
+@media(max-width:620px){
+  .composer-wrap{
+    padding:4px 12px max(5px,env(safe-area-inset-bottom))!important;
+  }
+  .composer{
+    height:82px!important;
+    min-height:82px!important;
+    border-radius:15px!important;
+  }
+  .composer-main{
+    height:45px!important;
+    padding:6px 9px 0!important;
+  }
+  .composer-main>textarea{
+    height:26px!important;
+    min-height:26px!important;
+    max-height:26px!important;
+    line-height:26px!important;
+    padding:0 6px 0 43px!important;
+  }
+  .composer-toolbar{
+    height:30px!important;
+    min-height:30px!important;
+    padding:0 6px 3px!important;
+  }
+  .composer-attachment{left:6px!important;bottom:3px!important}
+  .composer-attachment .round-tool,
+  .send-btn{width:29px!important;height:29px!important}
+  .disclaimer{margin-top:3px!important;font-size:8.5px!important}
+}
