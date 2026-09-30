@@ -552,7 +552,7 @@ function AccountSettingsPage(props:{
 
   if(panel==="Profile"){
     const displayName=props.profileName.trim()||"Cookie user";
-    const initials=displayName.trim().split(/\\s+/).map(v=>v[0]).join("").slice(0,2).toUpperCase()||"C";
+    const initials=displayName.trim().split(/\s+/).map(v=>v[0]).join("").slice(0,2).toUpperCase()||"C";
     return <div className="profile-edit-underlay">
       <div className="profile-edit-underlay-page">
         <div className="settings-reference-head">
