@@ -88,6 +88,7 @@ export default function App(){
     setChatMenuOpen(v=>!v);
     setAttachMenuOpen(false);
     setMessageMenuOpen(null);
+    setMessageMenuPosition(null);
   }
   async function shareMessage(text:string){
     try{
@@ -117,6 +118,7 @@ export default function App(){
         setChatMenuOpen(false);
         setAttachMenuOpen(false);
         setMessageMenuOpen(null);
+        setMessageMenuPosition(null);
       }
     };
     const onPointerDown=(e:PointerEvent)=>{
@@ -321,14 +323,24 @@ export default function App(){
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
-                    <div ref={messageMenuRef} className="message-actions-wrap">
-                      <button className={"message-more "+(messageMenuOpen===m.id?"active":"")} onClick={()=>{setMessageMenuOpen(v=>v===m.id?null:m.id);setChatMenuOpen(false);setAttachMenuOpen(false)}} aria-label="Message actions" aria-expanded={messageMenuOpen===m.id}>
+                    <div className="message-actions-wrap">
+                      <button
+                        ref={messageMenuOpen===m.id?messageMenuButtonRef:null}
+                        className={"message-more "+(messageMenuOpen===m.id?"active":"")}
+                        onClick={e=>openMessageMenu(m.id,e.currentTarget)}
+                        aria-label="Message actions"
+                        aria-expanded={messageMenuOpen===m.id}
+                      >
                         <MoreHorizontal size={15}/>
                       </button>
-                      {messageMenuOpen===m.id&&<div className="message-action-menu glass-popover" role="menu">
-                        <button onClick={()=>copyMessage(m.content,m.id)}><Copy size={15}/><span>{copiedMessage===m.id?"Copied":"Copy response"}</span></button>
-                        <button onClick={()=>shareMessage(m.content)}><Share2 size={15}/><span>Share response</span></button>
-                      </div>}
+                      {messageMenuOpen===m.id&&messageMenuPosition&&createPortal(
+                        <div ref={messageMenuRef} className="message-action-menu glass-popover" role="menu"
+                          style={{top:messageMenuPosition.top,left:messageMenuPosition.left}}>
+                          <button onClick={()=>copyMessage(m.content,m.id)}><Copy size={15}/><span>{copiedMessage===m.id?"Copied":"Copy response"}</span></button>
+                          <button onClick={()=>shareMessage(m.content)}><Share2 size={15}/><span>Share response</span></button>
+                        </div>,
+                        document.body
+                      )}
                     </div>
                   </div>}
                 </div>
