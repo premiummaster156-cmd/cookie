@@ -47,6 +47,7 @@ export default function App(){
   const [animations,setAnimations]=useState(true);
   const [keyboardHints,setKeyboardHints]=useState(true);
   const [search,setSearch]=useState("");
+  const [headerScrolled,setHeaderScrolled]=useState(false);
   const imageRef=useRef<HTMLInputElement>(null);
   const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
@@ -91,8 +92,15 @@ export default function App(){
   },[dark,accent,textSize,compact,animations,keyboardHints]);
   useEffect(()=>{
     if(view!=="chat"||!chatScroll.current)return;
-    const ps=new PerfectScrollbar(chatScroll.current,{wheelPropagation:false,suppressScrollX:true,minScrollbarLength:28});
-    return ()=>ps.destroy();
+    const el=chatScroll.current;
+    const onScroll=()=>setHeaderScrolled(el.scrollTop>18);
+    onScroll();
+    el.addEventListener("scroll",onScroll,{passive:true});
+    const ps=new PerfectScrollbar(el,{wheelPropagation:false,suppressScrollX:true,minScrollbarLength:28});
+    return ()=>{
+      el.removeEventListener("scroll",onScroll);
+      ps.destroy();
+    };
   },[view]);
   useEffect(()=>{
     if(view==="chat"&&chatScroll.current){
@@ -146,7 +154,7 @@ export default function App(){
     <aside className="sidebar">
       <div className="sidebar-top">
         <div className="brand-row">
-          <button className="brand" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
+          <button className="brand glass-control" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
           <button className="icon-btn sidebar-close" onClick={()=>setSidebarOpen(false)} aria-label="Close sidebar"><PanelRight size={19}/></button>
         </div>
         <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span>{keyboardHints&&<kbd>⌘ K</kbd>}</button>
@@ -172,13 +180,14 @@ export default function App(){
     <section className="main">
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={20}/></button>
-        <div className="mobile-brand"><CookieIcon size={27}/><strong>Cookie</strong></div>
+        <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
-        {view==="chat"&&messages.length>0&&<div className="chat-session-bar" aria-label="Current chat session">
-          <button className="chat-session-title" onClick={toggleChatMenu} aria-expanded={chatMenuOpen}>{chatTitle}{chatPinned?" · Pinned":""}</button>
+        {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
+          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search conversations"><Search size={18}/></button>
           <div className="chat-session-menu-wrap">
-            <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={19}/></button>
-            {chatMenuOpen&&<div className="chat-session-menu" role="menu">
+            <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
+            {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
+              <div className="chat-menu-heading">{chatTitle}{chatPinned?" · Pinned":""}</div>
               <button onClick={shareChat}><Share2 size={16}/><span>Share chat</span></button>
               <button onClick={renameChat}><FileText size={16}/><span>Rename chat</span></button>
               <button onClick={()=>{setChatPinned(v=>!v);setChatMenuOpen(false)}}><Pin size={16}/><span>{chatPinned?"Unpin chat":"Pin chat"}</span></button>
@@ -188,7 +197,6 @@ export default function App(){
             </div>}
           </div>
         </div>}
-        {view==="chat"&&<button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"": " ")} aria-label="Search conversations"><Search size={18}/></button>}
       </header>
 
       {view==="chat"&&<div ref={chatScroll} className="chat-scroll">
