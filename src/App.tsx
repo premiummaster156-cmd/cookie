@@ -73,6 +73,8 @@ export default function App(){
   const [aiPersonality,setAiPersonality]=useState("Balanced");
   const [search,setSearch]=useState("");
   const [headerScrolled,setHeaderScrolled]=useState(false);
+  const chatHydrated=useRef(false);
+  const requestAbortRef=useRef<AbortController|null>(null);
   const imageRef=useRef<HTMLInputElement>(null);
   const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
@@ -201,12 +203,31 @@ export default function App(){
       if(p.profileEmail!==undefined)setProfileEmail(String(p.profileEmail));
       if(p.aiPersonality!==undefined)setAiPersonality(String(p.aiPersonality));
     }catch{}
+  useEffect(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem("cookie_chat")||"null");
+      if(saved&&Array.isArray(saved.messages)){
+        setMessages(saved.messages.slice(-80));
+        if(typeof saved.title==="string"&&saved.title.trim())setChatTitle(saved.title);
+        if(typeof saved.pinned==="boolean")setChatPinned(saved.pinned);
+        if(typeof saved.archived==="boolean")setChatArchived(saved.archived);
+        if(typeof saved.model==="string"&&MODELS.some(m=>m.id===saved.model))setModel(saved.model);
+      }
+    }catch{}
+    chatHydrated.current=true;
+  },[]);
+  useEffect(()=>{
+    if(!chatHydrated.current)return;
+    try{
+      localStorage.setItem("cookie_chat",JSON.stringify({messages:messages.slice(-80),title:chatTitle,pinned:chatPinned,archived:chatArchived,model}));
+    }catch{}
+  },[messages,chatTitle,chatPinned,chatArchived,model]);
   },[]);
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
     dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,
     autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,
-    profileName,profileUsername,profileEmail,aiPersonality
-  })),[dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,profileUsername,profileEmail,aiPersonality]);
+    profileName,profileName,profileUsername,profileEmail,aiPersonality
+  })),[dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,profileName,profileUsername,profileEmail,aiPersonality]);
   useEffect(()=>{
     document.body.classList.toggle("sidebar-open",sidebarOpen);
     return ()=>document.body.classList.remove("sidebar-open");
@@ -234,7 +255,8 @@ export default function App(){
   useEffect(()=>{
     if(view==="chat"&&chatScroll.current){
       const el=chatScroll.current;
-      requestAnimationFrame(()=>{el.scrollTop=el.scrollHeight;});
+      const distanceFromBottom=el.scrollHeight-el.scrollTop-el.clientHeight;
+      if(distanceFromBottom<180)requestAnimationFrame(()=>{el.scrollTop=el.scrollHeight;});
     }
   },[messages,loading,view]);
 
@@ -247,6 +269,12 @@ export default function App(){
     return ()=>window.clearInterval(timer);
   },[loading]);
 
+  function stopGeneration(){
+    requestAbortRef.current?.abort();
+    requestAbortRef.current=null;
+    setLoading(false);
+    setActivityOpen(false);
+  }
   async function send(raw=input){
     const text=raw.trim();
     if((!text&&!attachments.length)||loading)return;
@@ -257,7 +285,9 @@ export default function App(){
     setChatArchived(false);
     setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);setMessageMenuOpen(null);
     try{
-      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{
+      const controller=new AbortController();
+      requestAbortRef.current=controller;
+      const r=await fetch("/api/chat",{method:"POST",signal:controller.signal,headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{
         responseMode:model,language:(APP_LANGUAGES.find(x=>x[0]===appLanguage)?.[1]||"en"),
         answerLength:"auto",creativity:.7,autoSwitch,autocomplete,trendingSearches,
         memory:memoryEnabled?{name:memoryName,occupation:memoryOccupation,about:memoryAbout}:null,
@@ -266,8 +296,13 @@ export default function App(){
       const d=await r.json();
       if(!r.ok)throw Error(d.error||"Cookie could not answer.");
       setMessages(v=>[...v,{id:id(),role:"assistant",content:d.message||"Done.",files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}]);
-    }catch(e){setMessages(v=>[...v,{id:id(),role:"assistant",content:"Error: "+(e instanceof Error?e.message:"Something went wrong.")}] );}
-    finally{setLoading(false)}
+    }catch(e){
+      if(e instanceof DOMException && e.name==="AbortError")return;
+      setMessages(v=>[...v,{id:id(),role:"assistant",content:"Error: "+(e instanceof Error?e.message:"Something went wrong.")}] );
+    }finally{
+      requestAbortRef.current=null;
+      setLoading(false);
+    }
   }
   async function attach(e:React.ChangeEvent<HTMLInputElement>,kind:"image"|"file"){
     const selected=Array.from(e.target.files||[]);
@@ -279,7 +314,7 @@ export default function App(){
   }
   function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
-  function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setChatTitle("New chat");setChatPinned(false);setChatArchived(false)}
+  function newChat(){localStorage.removeItem("cookie_chat");setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setChatTitle("New chat");setChatPinned(false);setChatArchived(false)}
   function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setChatMenuOpen(false)}
   function renameChat(){const next=window.prompt("Rename chat",chatTitle);if(next?.trim())setChatTitle(next.trim().slice(0,80));setChatMenuOpen(false)}
   async function shareChat(){
@@ -470,8 +505,20 @@ export default function App(){
             <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
           </div>
           <div className="composer-toolbar">
-            <div className="toolbar-left">{keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}</div>
-            <div className="toolbar-right"><button className="send-btn" disabled={(!input.trim()&&!attachments.length)||loading} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button></div>
+            <div className="toolbar-left">
+              <label className="composer-model" aria-label="Cookie model profile">
+                <Sparkles size={13}/>
+                <select value={model} onChange={e=>setModel(e.target.value)}>
+                  {MODELS.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </label>
+              {keyboardHints&&<span className="shortcut-hint">Shift + Enter</span>}
+            </div>
+            <div className="toolbar-right">
+              {loading
+                ? <button className="send-btn stop" onClick={stopGeneration} aria-label="Stop generating"><span className="stop-square"/></button>
+                : <button className="send-btn" disabled={!input.trim()&&!attachments.length} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button>}
+            </div>
           </div>
         </div>
         <input ref={imageRef} hidden type="file" accept="image/*" multiple onChange={e=>attach(e,"image")}/>
