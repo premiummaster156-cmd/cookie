@@ -3555,3 +3555,246 @@ html[data-theme=dark] .settings-logout-row{
   .activity-step{min-height:29px;font-size:10.5px}
   .activity-note{font-size:9px}
 }
+
+
+/* ===== iOS-style practical settings ===== */
+.ios-settings-page{
+  width:min(760px,100%);
+  min-height:100%;
+  margin:0 auto;
+  padding:34px 28px 70px;
+}
+.ios-settings-head{
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  margin-bottom:28px;
+}
+.ios-settings-head h2{
+  margin:0;
+  font-size:30px;
+  line-height:1.1;
+  font-weight:720;
+  letter-spacing:-.04em;
+}
+.ios-back{
+  position:absolute;
+  left:0;
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  border:0;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  color:var(--text);
+  box-shadow:0 5px 18px rgba(0,0,0,.06);
+}
+.ios-save{
+  position:absolute;
+  right:0;
+  min-width:84px;
+  height:48px;
+  padding:0 18px;
+  border:0;
+  border-radius:25px;
+  background:color-mix(in srgb,var(--surface-2) 90%,transparent);
+  color:var(--faint);
+  font-size:16px;
+  font-weight:650;
+}
+.ios-save.ready{color:var(--accent-strong);background:var(--accent-soft)}
+.ios-card{
+  overflow:hidden;
+  margin:0 0 28px;
+  border:1px solid color-mix(in srgb,var(--line) 55%,transparent);
+  border-radius:28px;
+  background:color-mix(in srgb,var(--surface) 97%,transparent);
+  box-shadow:0 8px 30px rgba(0,0,0,.045);
+}
+.ios-settings-page>.ios-card+.ios-card{margin-top:-8px}
+.ios-section-title{
+  margin:0 0 10px;
+  padding:0 8px;
+  color:var(--muted);
+  font-size:18px;
+  line-height:1.2;
+  font-weight:720;
+  letter-spacing:-.025em;
+}
+.ios-card+.ios-section-title{margin-top:6px}
+.ios-settings-row,
+.ios-control-row{
+  width:100%;
+  min-height:76px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 22px;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  text-align:left;
+}
+.ios-settings-row+.ios-settings-row,
+.ios-control-row+.ios-control-row,
+.ios-settings-row+.ios-control-row,
+.ios-control-row+.ios-settings-row{
+  border-top:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+}
+.ios-settings-row:hover,.ios-control-row:hover{background:color-mix(in srgb,var(--surface-2) 45%,transparent)}
+.ios-row-icon{
+  width:30px;
+  min-width:30px;
+  display:grid;
+  place-items:center;
+  color:var(--text);
+}
+.ios-row-main{
+  min-width:0;
+  flex:1;
+  display:grid;
+  gap:5px;
+}
+.ios-row-main strong{
+  font-size:17px;
+  line-height:1.2;
+  font-weight:500;
+  letter-spacing:-.02em;
+}
+.ios-row-main small{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.35;
+  font-weight:400;
+}
+.ios-row-value{
+  flex:0 0 auto;
+  max-width:180px;
+  overflow:hidden;
+  color:var(--muted);
+  font-size:16px;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.ios-row-chevron{flex:0 0 auto;color:var(--faint)}
+.ios-settings-row.disabled{opacity:.45}
+.ios-toggle{
+  position:relative;
+  width:58px;
+  height:34px;
+  flex:0 0 58px;
+  padding:3px;
+  border:0;
+  border-radius:18px;
+  background:var(--surface-3);
+  transition:background .18s ease;
+}
+.ios-toggle span{
+  display:block;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 2px 5px rgba(0,0,0,.16);
+  transition:transform .18s ease;
+}
+.ios-toggle.on{background:#62c46a}
+.ios-toggle.on span{transform:translateX(24px)}
+.ios-segmented{
+  display:flex;
+  gap:4px;
+  flex:0 0 auto;
+  padding:3px;
+  border-radius:12px;
+  background:var(--surface-2);
+}
+.ios-segmented button{
+  min-height:32px;
+  padding:0 9px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:650;
+}
+.ios-segmented button.selected{background:var(--surface);color:var(--text);box-shadow:0 1px 5px rgba(0,0,0,.08)}
+.ios-explainer{
+  margin: -12px 28px 28px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.42;
+}
+.ios-link-card{
+  min-height:76px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 26px;
+  border:0;
+  color:var(--text);
+  font-size:17px;
+  text-align:left;
+}
+.ios-input{
+  width:100%;
+  min-height:72px;
+  margin:0 0 27px;
+  padding:0 26px;
+  border:1px solid color-mix(in srgb,var(--line) 45%,transparent);
+  border-radius:28px;
+  outline:0;
+  background:color-mix(in srgb,var(--surface) 97%,transparent);
+  color:var(--text);
+  font:inherit;
+  font-size:17px;
+  box-shadow:0 8px 30px rgba(0,0,0,.035);
+}
+.ios-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ios-textarea{min-height:130px;padding-top:20px;padding-bottom:20px;resize:vertical}
+.ios-summary-card{padding:25px 27px}
+.ios-summary-card p{margin:0 0 13px;color:var(--muted);font-size:15px;line-height:1.45}
+.ios-summary-card p:last-child{margin-bottom:0}
+.ios-summary-card b{color:var(--text)}
+.ios-usage-card{padding:24px 26px}
+.ios-usage-card>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:17px}
+.ios-usage-card>div:first-child span{color:var(--muted)}
+.ios-progress{height:12px;margin-top:22px;overflow:hidden;border-radius:8px;background:var(--surface-3)}
+.ios-progress span{display:block;height:100%;border-radius:8px;background:#4d92ee}
+.ios-footer{
+  max-width:620px;
+  margin:0 auto;
+  padding:0 24px;
+  color:var(--faint);
+  font-size:11px;
+  line-height:1.55;
+  text-align:center;
+}
+html[data-theme=dark] .ios-card,
+html[data-theme=dark] .ios-input,
+html[data-theme=dark] .ios-back,
+html[data-theme=dark] .ios-save{
+  background:color-mix(in srgb,var(--surface) 92%,var(--bg));
+}
+@media(max-width:620px){
+  .ios-settings-page{
+    min-height:calc(100dvh - 54px);
+    padding:22px 14px max(46px,env(safe-area-inset-bottom));
+  }
+  .ios-settings-head{margin-bottom:25px}
+  .ios-settings-head h2{font-size:29px}
+  .ios-back{left:0;width:48px;height:48px}
+  .ios-save{right:0;height:48px}
+  .ios-card{border-radius:28px;margin-bottom:27px}
+  .ios-settings-row,.ios-control-row{min-height:72px;padding:0 20px;gap:14px}
+  .ios-row-main strong{font-size:16px}
+  .ios-row-main small{font-size:13px}
+  .ios-row-value{font-size:15px;max-width:130px}
+  .ios-section-title{font-size:18px;margin-bottom:10px;padding-left:8px}
+  .ios-explainer{margin-left:22px;margin-right:22px}
+  .ios-input{min-height:70px;padding-left:22px;padding-right:22px;border-radius:27px}
+}
