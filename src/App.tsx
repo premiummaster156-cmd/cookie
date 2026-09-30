@@ -148,6 +148,11 @@ export default function App(){
   const [aiPersonality,setAiPersonality]=useState("Balanced");
   const [search,setSearch]=useState("");
   const [headerScrolled,setHeaderScrolled]=useState(false);
+  useEffect(()=>{
+    const isTouchPhone=(navigator.maxTouchPoints>0 && Math.min(window.screen.width,window.screen.height)<=900);
+    document.documentElement.classList.toggle("touch-phone",isTouchPhone);
+    document.body.classList.toggle("touch-phone",isTouchPhone);
+  },[]);
   const chatHydrated=useRef(false);
   const requestAbortRef=useRef<AbortController|null>(null);
   const imageRef=useRef<HTMLInputElement>(null);
