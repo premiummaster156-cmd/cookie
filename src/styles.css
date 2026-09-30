@@ -2204,3 +2204,22 @@ html[data-text-size="small"] .message-body p{font-size:13px}
 @media(prefers-reduced-motion:reduce){
   .mobile-brand,.chat-session-more,.composer,.round-tool{transition:none!important}
 }
+
+
+/* Final header alignment: preserve the original left-side Cookie branding on mobile. */
+@media(max-width:900px){
+  .topbar{
+    display:flex;
+    align-items:center;
+  }
+  .mobile-brand{
+    position:static;
+    left:auto;
+    transform:none!important;
+    margin-left:12px;
+    padding:4px 6px;
+  }
+  .mobile-brand.scrolled{transform:none!important}
+  .topbar-spacer{flex:1}
+  .topbar-actions{margin-left:auto}
+}
