@@ -612,6 +612,43 @@ function SettingsPage(props:{
     </div>;
   }
 
+  if(detail){
+    const detailCopy:Record<string,string>={
+      Profile:"Profile editing will be connected here when Cookie account identity is available.",
+      Subscription:"Subscription and billing are not connected to this Cookie build yet.",
+      Personalization:"Personalization controls will be connected here. Interface preferences currently stay local to this browser.",
+      Memory:"Memory controls are not connected to a server account in this build.",
+      Plugins:"Plugin connections are not configured in this Cookie build yet.",
+      Notifications:"Notifications are not connected in this web build yet.",
+      Voice:"Voice controls are not connected in this web build yet.",
+      "Parental controls":"Parental controls are not connected in this Cookie build.",
+      "Trusted contact":"Trusted contact is not connected in this Cookie build.",
+      Safety:"Safety and account-protection controls will appear here when the account service is connected.",
+      "Security and login":"Login and two-step verification are not connected in this web build yet.",
+      "Remote control":"Remote control is not available in this Cookie build.",
+      Storage:"Persistent account storage is not connected. Generated files remain response artifacts.",
+      "Data controls":"Data controls are not connected to a server account yet. Local interface preferences can be reset from Settings.",
+      "Ads controls":"There are no account-level ad controls connected in this build.",
+      "Restore purchases":"Purchase restoration is not connected in this Cookie build yet.",
+      "Usage and limits":"Usage reporting is not connected yet. This page is ready for a live limits service when one is added.",
+      "Report app issue":"For now, describe the problem directly in Cookie or use the repository issue tracker.",
+      "Help Center":"Open Help & shortcuts from the sidebar for Cookie's built-in product guide.",
+      "Privacy Center":"Cookie documents its privacy boundaries in Help & shortcuts → Privacy & limitations.",
+      About:"Cookie is the AI assistant for this website. This screen only exposes capabilities that are actually connected.",
+      "Log out":"Authentication is not connected in this Cookie build yet."
+    };
+    return <div className="page-container settings-reference-page">
+      <div className="settings-detail-head">
+        <button className="settings-back-btn" onClick={()=>setDetail(null)} aria-label="Back to settings"><ArrowLeft size={21}/></button>
+        <div><span className="settings-reference-eyebrow">COOKIE SETTINGS</span><h2>{detail}</h2></div>
+      </div>
+      <section className="settings-detail-card">
+        <div className="settings-detail-icon"><Settings size={23}/></div>
+        <p>{detailCopy[detail]||"This setting is ready for its connected service."}</p>
+      </section>
+    </div>;
+  }
+
   return <div className="page-container settings-reference-page">
     <div className="settings-reference-head">
       <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
