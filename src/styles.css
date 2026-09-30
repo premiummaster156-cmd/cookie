@@ -637,3 +637,60 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   .send-btn{width:32px;height:32px}
   .disclaimer{margin-top:5px;font-size:9px}
 }
+
+/* Mobile composer: deliberately compact */
+@media(max-width:620px){
+  .composer-wrap{
+    padding:6px 14px max(7px,env(safe-area-inset-bottom));
+  }
+  .composer{
+    height:104px!important;
+    min-height:104px!important;
+    border-radius:16px!important;
+  }
+  .composer-main{
+    height:63px!important;
+    min-height:0!important;
+    padding:8px 10px 0!important;
+    overflow:hidden!important;
+  }
+  .composer-main>textarea{
+    height:30px!important;
+    min-height:30px!important;
+    max-height:30px!important;
+    padding:0 8px 0 48px!important;
+    line-height:30px!important;
+    overflow:hidden!important;
+  }
+  .composer-toolbar{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 7px 5px!important;
+  }
+  .composer-attachment{
+    left:7px!important;
+    bottom:5px!important;
+  }
+  .composer-attachment .round-tool{
+    width:32px!important;
+    height:32px!important;
+  }
+  .send-btn{
+    width:32px!important;
+    height:32px!important;
+    border-radius:9px!important;
+  }
+  .disclaimer{
+    margin-top:4px!important;
+    font-size:9px!important;
+  }
+}
+/* Message menu is a viewport overlay, never clipped by chat scrolling */
+.message-action-menu{
+  position:fixed!important;
+  top:auto!important;
+  max-height:min(420px,calc(100vh - 24px));
+  overflow:auto;
+  overscroll-behavior:contain;
+  transform-origin:bottom right;
+}
