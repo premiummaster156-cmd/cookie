@@ -4765,3 +4765,41 @@ body.animations-off .cookie-three-motion{
 @media(prefers-reduced-motion:reduce){
   .cookie-three-motion{display:none}
 }
+
+
+/* ===== Mobile horizontal overflow guard ===== */
+html,body,#root{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+.app-shell{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+.main{
+  min-width:0;
+  max-width:100%;
+}
+.chat-scroll{
+  min-width:0;
+  max-width:100%;
+  overflow-x:hidden;
+}
+.chat-content{
+  min-width:0;
+  max-width:100%;
+}
+.message-row,
+.message-body{
+  min-width:0;
+  max-width:100%;
+}
+@media(max-width:900px){
+  .main{
+    width:100%;
+    min-width:0;
+    margin-left:0;
+  }
+}
