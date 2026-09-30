@@ -5890,3 +5890,51 @@ html,body,#root{
     font-size:16px!important;
   }
 }
+
+
+/* ===== Animate.css integration =====
+   Use the library for intentional UI state transitions; Cookie keeps its
+   own visual language and timing rather than using attention-seeking effects. */
+:root{
+  --animate-duration:420ms;
+  --animate-delay:0ms;
+}
+.animate__animated{
+  --animate-duration:420ms;
+  animation-timing-function:cubic-bezier(.16,1,.3,1);
+}
+.animate__fadeIn,
+.animate__fadeInDown,
+.animate__slideInLeft,
+.animate__zoomIn{
+  will-change:transform,opacity;
+}
+
+/* Cookie's "Animations" setting is stronger than the library defaults. */
+.motion-disabled .animate__animated,
+.motion-disabled .animate__animated::before,
+.motion-disabled .animate__animated::after{
+  animation:none!important;
+  transition:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .animate__animated,
+  .animate__animated::before,
+  .animate__animated::after{
+    animation:none!important;
+    transition:none!important;
+  }
+}
+
+/* Keep the library from changing the layout geometry of the glass sidebar. */
+@media(max-width:900px){
+  .sidebar.animate__slideInLeft{
+    animation-duration:460ms!important;
+  }
+  .sidebar-overlay.animate__fadeIn{
+    animation-duration:260ms!important;
+  }
+  .composer-menu.animate__zoomIn{
+    --animate-duration:240ms;
+  }
+}
