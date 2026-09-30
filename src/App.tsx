@@ -35,7 +35,7 @@ export default function App(){
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
   const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
-  const [messageMenuPos,setMessageMenuPos]=useState<{right:number;bottom:number}>({right:16,bottom:90});
+  const [messageMenuPos,setMessageMenuPos]=useState<{left:number;top:number}>({left:12,top:80});
   const [copiedMessage,setCopiedMessage]=useState<string|null>(null);
   const [pinnedMessages,setPinnedMessages]=useState<string[]>([]);
   const [view,setView]=useState<View>("chat");
@@ -65,7 +65,14 @@ export default function App(){
   function toggleMessageMenu(id:string,el:HTMLElement){
     if(messageMenuOpen===id){setMessageMenuOpen(null);return}
     const r=el.getBoundingClientRect();
-    setMessageMenuPos({right:Math.max(12,window.innerWidth-r.right),bottom:Math.max(12,window.innerHeight-r.top+10)});
+    const menuWidth=Math.min(260,window.innerWidth-24);
+    const menuHeight=Math.min(360,window.innerHeight-24);
+    const left=Math.min(Math.max(12,r.right-menuWidth),window.innerWidth-menuWidth-12);
+    const below=window.innerHeight-r.bottom;
+    const top=below>=menuHeight+8
+      ? r.bottom+8
+      : Math.max(12,r.top-menuHeight-8);
+    setMessageMenuPos({left,top});
     setMessageMenuOpen(id);
   }
 
@@ -251,7 +258,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {menuMessage&&<div className="message-action-menu" style={{right:messageMenuPos.right,bottom:messageMenuPos.bottom}}>
+      {menuMessage&&<div className="message-action-menu" style={{left:messageMenuPos.left,top:messageMenuPos.top}}>
         <div className="message-action-title">Cookie · Current chat</div>
         <button onClick={()=>shareMessage(menuMessage)}><Share2 size={20}/><span>Share</span></button>
         <button onClick={()=>toggleMessagePin(menuMessage.id)}><Pin size={20}/><span>{pinnedMessages.includes(menuMessage.id)?"Unpin":"Pin"}</span></button>
