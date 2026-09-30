@@ -446,8 +446,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}\n
-      
+      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={animations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints} appLanguage={appLanguage} setAppLanguage={setAppLanguage} autoCorrect={autoCorrect} setAutoCorrect={setAutoCorrect} haptics={haptics} setHaptics={setHaptics} autoSwitch={autoSwitch} setAutoSwitch={setAutoSwitch} autocomplete={autocomplete} setAutocomplete={setAutocomplete} trendingSearches={trendingSearches} setTrendingSearches={setTrendingSearches} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} memoryName={memoryName} setMemoryName={setMemoryName} memoryOccupation={memoryOccupation} setMemoryOccupation={setMemoryOccupation} memoryAbout={memoryAbout} setMemoryAbout={setMemoryAbout} model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length}/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
