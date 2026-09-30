@@ -325,6 +325,7 @@ export default function App(){
           <span className="account-copy"><strong>Settings</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
         </button>
+      </div>
     </aside>
 
     {sidebarOpen&&<div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)}/>}
