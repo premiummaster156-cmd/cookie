@@ -694,3 +694,23 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   overscroll-behavior:contain;
   transform-origin:bottom right;
 }
+
+/* Final mobile message-menu geometry */
+@media(max-width:620px){
+  .message-action-menu{
+    width:min(260px,calc(100vw - 24px))!important;
+    box-sizing:border-box!important;
+    border-radius:16px!important;
+    padding:6px!important;
+    z-index:100000!important;
+  }
+  .message-action-menu button{
+    min-height:40px!important;
+    font-size:13px!important;
+  }
+}
+/* Keep product motion active unless the user explicitly disables it. */
+body.animations-off .message-action-menu,
+body.animations-off .message-action-menu button{
+  animation:none!important;
+}
