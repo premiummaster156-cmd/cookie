@@ -51,7 +51,7 @@ export default function App(){
   const [compact,setCompact]=useState(false);
   const [animations,setAnimations]=useState(true);
   const [keyboardHints,setKeyboardHints]=useState(true);
-  const [appLanguage,setAppLanguage]=useState<"English"|"Uzbek"|"Russian">("English");
+  const [appLanguage,setAppLanguage]=useState<"English"|"Uzbek"|"Russian"|"Turkish"|"Kazakh"|"Kyrgyz"|"Tajik"|"Arabic"|"Persian"|"Hindi"|"Urdu"|"Chinese"|"Japanese"|"Korean"|"Spanish"|"French"|"German"|"Italian"|"Portuguese"|"Indonesian">("English");
   const [autoCorrect,setAutoCorrect]=useState(true);
   const [haptics,setHaptics]=useState(true);
   const [autoSwitch,setAutoSwitch]=useState(true);
@@ -61,6 +61,12 @@ export default function App(){
   const [memoryName,setMemoryName]=useState("");
   const [memoryOccupation,setMemoryOccupation]=useState("");
   const [memoryAbout,setMemoryAbout]=useState("");
+  const APP_LANGUAGES=[
+    ["English","en"],["Uzbek","uz"],["Russian","ru"],["Turkish","tr"],["Kazakh","kk"],
+    ["Kyrgyz","ky"],["Tajik","tg"],["Arabic","ar"],["Persian","fa"],["Hindi","hi"],
+    ["Urdu","ur"],["Chinese","zh"],["Japanese","ja"],["Korean","ko"],["Spanish","es"],
+    ["French","fr"],["German","de"],["Italian","it"],["Portuguese","pt"],["Indonesian","id"]
+  ] as const;
   const [search,setSearch]=useState("");
   const [headerScrolled,setHeaderScrolled]=useState(false);
   const imageRef=useRef<HTMLInputElement>(null);
@@ -243,7 +249,7 @@ export default function App(){
     setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);setMessageMenuOpen(null);
     try{
       const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{
-        responseMode:model,language:appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru",
+        responseMode:model,language:(APP_LANGUAGES.find(x=>x[0]===appLanguage)?.[1]||"en"),
         answerLength:"auto",creativity:.7,autoSwitch,autocomplete,trendingSearches,
         memory:memoryEnabled?{name:memoryName,occupation:memoryOccupation,about:memoryAbout}:null
       },attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
@@ -479,7 +485,7 @@ function AccountSettingsPage(props:{
   compact:boolean;setCompact:React.Dispatch<React.SetStateAction<boolean>>;
   animations:boolean;setAnimations:React.Dispatch<React.SetStateAction<boolean>>;
   keyboardHints:boolean;setKeyboardHints:React.Dispatch<React.SetStateAction<boolean>>;
-  appLanguage:"English"|"Uzbek"|"Russian";setAppLanguage:React.Dispatch<React.SetStateAction<"English"|"Uzbek"|"Russian">>;
+  appLanguage:"English"|"Uzbek"|"Russian"|"Turkish"|"Kazakh"|"Kyrgyz"|"Tajik"|"Arabic"|"Persian"|"Hindi"|"Urdu"|"Chinese"|"Japanese"|"Korean"|"Spanish"|"French"|"German"|"Italian"|"Portuguese"|"Indonesian";setAppLanguage:React.Dispatch<React.SetStateAction<"English"|"Uzbek"|"Russian"|"Turkish"|"Kazakh"|"Kyrgyz"|"Tajik"|"Arabic"|"Persian"|"Hindi"|"Urdu"|"Chinese"|"Japanese"|"Korean"|"Spanish"|"French"|"German"|"Italian"|"Portuguese"|"Indonesian">>;
   autoCorrect:boolean;setAutoCorrect:React.Dispatch<React.SetStateAction<boolean>>;
   haptics:boolean;setHaptics:React.Dispatch<React.SetStateAction<boolean>>;
   autoSwitch:boolean;setAutoSwitch:React.Dispatch<React.SetStateAction<boolean>>;
@@ -510,11 +516,25 @@ function AccountSettingsPage(props:{
       {!value&&<ChevronRight className="ios-row-chevron" size={20}/>}
     </button>;
 
+  if(panel==="App language"){
+    return <div className="page-container ios-settings-page">
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel("General")}><ArrowLeft size={27}/></button><h2>App language</h2></div>
+      <section className="ios-card language-list">
+        {APP_LANGUAGES.map(([name,code])=>
+          <button key={code} type="button" className={"ios-language-row "+(props.appLanguage===name?"selected":"")} onClick={()=>{props.setAppLanguage(name);setPanel("General");}}>
+            <span>{name}</span>
+            {props.appLanguage===name&&<Check size={20}/>}
+          </button>
+        )}
+      </section>
+    </div>;
+  }
+
   if(panel==="General"){
     return <div className="page-container ios-settings-page">
       <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>General</h2></div>
       <section className="ios-card">
-        <Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>props.setAppLanguage(props.appLanguage==="English"?"Uzbek":props.appLanguage==="Uzbek"?"Russian":"English")}/>
+        <Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>setPanel("App language")}/>
         <div className="ios-control-row"><span className="ios-row-icon"><SpellCheck size={22}/></span><span className="ios-row-main"><strong>Auto-correct spelling</strong></span><Toggle value={props.autoCorrect} onChange={()=>props.setAutoCorrect(v=>!v)}/></div>
         <div className="ios-control-row"><span className="ios-row-icon"><Smartphone size={22}/></span><span className="ios-row-main"><strong>Haptic feedback</strong></span><Toggle value={props.haptics} onChange={()=>props.setHaptics(v=>!v)}/></div>
       </section>
