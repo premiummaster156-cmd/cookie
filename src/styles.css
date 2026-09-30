@@ -2378,3 +2378,38 @@ html[data-text-size="small"] .message-body p{font-size:13px}
   from{opacity:0;transform:translateY(5px) scale(.97)}
   to{opacity:1;transform:translateY(0) scale(1)}
 }
+
+
+/* Final mobile message treatment */
+@media(max-width:900px){
+  .message-row.user{
+    display:flex!important;
+    justify-content:flex-end!important;
+    gap:0!important;
+    margin-left:auto!important;
+  }
+  .message-row.user .message-avatar{display:none!important}
+  .message-row.user .message-body{
+    width:auto!important;
+    max-width:82%!important;
+    padding:0!important;
+    margin:0!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+  .message-row.user .message-time{
+    display:block!important;
+    margin-top:4px!important;
+    text-align:right!important;
+  }
+  .message-action-menu{
+    width:154px!important;
+    min-width:154px!important;
+    max-width:calc(100vw - 16px)!important;
+    padding:4px!important;
+    border-radius:12px!important;
+    transform-origin:top left!important;
+  }
+}
