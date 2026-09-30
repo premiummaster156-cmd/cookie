@@ -376,7 +376,7 @@ export default function App(){
           <button className="brand glass-control" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
           <button className="icon-btn sidebar-close" onClick={()=>setSidebarOpen(false)} aria-label="Close sidebar"><PanelRight size={19}/></button>
         </div>
-        <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span>{keyboardHints&&<kbd>⌘ K</kbd>}</button>
+        <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span></button>
         <button className={"nav-item "+(view==="chat"?"active":"")} onClick={()=>{setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setAttachMenuOpen(false);}}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
         <div className="recent-block">
           <div className="section-label">Recent</div>
@@ -406,7 +406,7 @@ export default function App(){
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
-          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation"><Search size={18}/></button>
+          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation" title="Search this conversation · ⌘K"><Search size={18}/></button>
           <div ref={chatMenuRef} className="chat-session-menu-wrap">
             <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
             {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
