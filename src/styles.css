@@ -2685,3 +2685,447 @@ html[data-text-size="small"] .message-body p{font-size:13px}
     margin-top:2px;
   }
 }
+
+
+/* ===== Mobile account / settings reference pass =====
+   Inspired by the supplied mobile reference: large section labels, quiet rows,
+   soft grouped surfaces, and useful controls without turning Cookie into a dashboard. */
+.account-mobile-page{
+  width:min(900px,100%);
+  padding:44px 28px 90px;
+}
+.account-mobile-head{
+  margin-bottom:28px;
+}
+.account-mobile-eyebrow{
+  display:block;
+  color:var(--faint);
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.account-mobile-head h2{
+  margin:5px 0 6px;
+  font-size:32px;
+  line-height:1.08;
+  letter-spacing:-.045em;
+}
+.account-mobile-head p{
+  margin:0;
+  max-width:600px;
+  color:var(--muted);
+  font-size:13px;
+}
+.account-profile-card{
+  overflow:hidden;
+  margin-bottom:28px;
+  border:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+  border-radius:22px;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+.account-profile-main{
+  min-height:100px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:22px;
+}
+.account-large-avatar{
+  width:64px;
+  height:64px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:50%;
+  background:#6d8fb1;
+  color:#fff;
+  font-size:23px;
+  font-weight:650;
+}
+.account-profile-main>div{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.account-profile-main strong{font-size:17px;letter-spacing:-.02em}
+.account-profile-main small{color:var(--muted);font-size:12px}
+.account-edit-avatar{
+  width:34px;
+  height:34px;
+  margin-left:auto;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--line);
+  border-radius:50%;
+  background:var(--surface-2);
+  color:var(--muted);
+}
+.account-edit-avatar:hover{color:var(--text);background:var(--surface-3)}
+.account-profile-upgrade{
+  min-height:76px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:16px 22px;
+  border-top:1px solid var(--line);
+  background:color-mix(in srgb,var(--surface-2) 55%,transparent);
+}
+.account-profile-upgrade strong,.account-profile-upgrade small{display:block}
+.account-profile-upgrade strong{font-size:12px}
+.account-profile-upgrade small{margin-top:3px;color:var(--muted);font-size:10.5px}
+.account-profile-upgrade button{
+  min-height:36px;
+  padding:0 15px;
+  border-radius:18px;
+  background:var(--text);
+  color:var(--bg);
+  font-size:11px;
+  font-weight:700;
+}
+.account-profile-upgrade button:hover{opacity:.9}
+.account-mobile-section{
+  margin:0 0 28px;
+}
+.account-mobile-section>h3{
+  margin:0 0 10px;
+  padding:0 4px;
+  color:var(--muted);
+  font-size:17px;
+  line-height:1.2;
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.account-mobile-card{
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--line) 64%,transparent);
+  border-radius:22px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 8px 26px rgba(0,0,0,.045);
+}
+.account-mobile-row{
+  width:100%;
+  min-height:70px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 18px;
+  text-align:left;
+  background:transparent;
+  color:var(--text);
+}
+.account-mobile-row + .account-mobile-row{
+  border-top:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+}
+.account-mobile-row:hover{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.account-mobile-row:active{background:color-mix(in srgb,var(--surface-2) 80%,transparent)}
+.account-mobile-row-icon{
+  width:28px;
+  flex:0 0 28px;
+  display:grid;
+  place-items:center;
+  color:var(--text);
+}
+.account-mobile-row-copy{
+  min-width:0;
+  flex:1;
+  display:grid;
+  gap:2px;
+}
+.account-mobile-row-copy strong{
+  font-size:15px;
+  font-weight:500;
+  letter-spacing:-.015em;
+}
+.account-mobile-row-copy small{
+  overflow:hidden;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.35;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.account-mobile-chevron{
+  flex:0 0 auto;
+  color:var(--faint);
+}
+.account-mobile-value{
+  flex:0 0 auto;
+  color:var(--muted);
+  font-size:14px;
+}
+.account-accent-dot{
+  width:12px;
+  height:12px;
+  margin-left:auto;
+  border-radius:50%;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 80%,transparent);
+}
+.account-accent-dot.cream{background:#c6a57e}
+.account-accent-dot.orange{background:#d98245}
+.account-accent-dot.cocoa{background:#a36f4e}
+.account-logout-row{
+  width:100%;
+  min-height:68px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 22px;
+  border:1px solid color-mix(in srgb,var(--danger) 22%,transparent);
+  border-radius:22px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  color:#d9685e;
+  font-size:16px;
+  text-align:left;
+}
+.account-logout-row:hover{background:rgba(213,107,97,.06)}
+.account-mobile-footer{
+  margin:16px 6px 0;
+  color:var(--faint);
+  font-size:10px;
+  line-height:1.55;
+  text-align:center;
+}
+.account-mobile-detail-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:24px;
+}
+.account-back-btn{
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:transparent;
+  color:var(--muted);
+}
+.account-back-btn:hover{background:var(--surface-2);color:var(--text)}
+.account-mobile-detail-head h2{
+  margin:2px 0 0;
+  font-size:27px;
+  line-height:1.1;
+  letter-spacing:-.04em;
+}
+.account-detail-card{
+  max-width:680px;
+  padding:26px;
+  border:1px solid color-mix(in srgb,var(--line) 65%,transparent);
+  border-radius:22px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+}
+.account-detail-icon{
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  margin-bottom:18px;
+  border-radius:14px;
+  background:var(--surface-2);
+  color:var(--muted);
+}
+.account-detail-card p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.65;
+}
+
+/* Make the profile itself unmistakably tappable on phones. */
+@media(max-width:620px){
+  .account{
+    min-height:56px;
+    margin-top:4px;
+    padding:8px 10px;
+  }
+  .account-copy strong{font-size:13px}
+  .account-copy small{
+    color:var(--accent-strong);
+    font-size:11px;
+  }
+  .account.active{
+    background:var(--accent-soft);
+  }
+
+  .account-mobile-page{
+    min-height:calc(100dvh - 54px);
+    padding:26px 14px max(46px,env(safe-area-inset-bottom));
+    background:var(--bg);
+  }
+  .account-mobile-head{padding:0 4px;margin-bottom:24px}
+  .account-mobile-head h2{font-size:30px}
+  .account-mobile-head p{font-size:12px;line-height:1.5}
+  .account-profile-card{
+    margin-bottom:27px;
+    border-radius:24px;
+  }
+  .account-profile-main{
+    min-height:108px;
+    padding:20px;
+  }
+  .account-large-avatar{width:62px;height:62px}
+  .account-profile-upgrade{
+    padding:15px 20px;
+  }
+  .account-profile-upgrade small{max-width:210px}
+  .account-mobile-section{margin-bottom:27px}
+  .account-mobile-section>h3{
+    padding:0 6px;
+    margin-bottom:10px;
+    font-size:18px;
+  }
+  .account-mobile-card{border-radius:24px}
+  .account-mobile-row{
+    min-height:67px;
+    padding:0 17px;
+  }
+  .account-mobile-row-copy strong{font-size:15px}
+  .account-mobile-row-icon{width:30px;flex-basis:30px}
+  .account-mobile-chevron{width:20px;height:20px}
+  .account-logout-row{
+    min-height:68px;
+    border-radius:24px;
+    padding:0 21px;
+  }
+  .account-mobile-footer{padding:0 16px}
+}
+
+/* The supplied reference uses light surfaces even when the rest of the app is dark.
+   Keep the same hierarchy in dark mode without creating a separate visual system. */
+html[data-theme=dark] .account-mobile-card,
+html[data-theme=dark] .account-profile-card,
+html[data-theme=dark] .account-detail-card,
+html[data-theme=dark] .account-logout-row{
+  background:color-mix(in srgb,var(--surface) 92%,var(--bg));
+}
+
+/* Mobile Settings gets the same grouped, native-settings rhythm. */
+@media(max-width:620px){
+  .settings-page{
+    padding:26px 14px 70px;
+  }
+  .settings-page .page-heading{
+    padding:0 4px;
+    margin-bottom:24px;
+  }
+  .settings-page .page-heading h2{font-size:30px}
+  .settings-page .page-heading p{font-size:12px;line-height:1.5}
+  .settings-page .settings-layout{display:block}
+  .settings-page .settings-nav{
+    display:flex;
+    gap:5px;
+    overflow-x:auto;
+    margin:0 0 24px;
+    padding:3px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:var(--surface-2);
+    scrollbar-width:none;
+  }
+  .settings-page .settings-nav::-webkit-scrollbar{display:none}
+  .settings-page .setting-tab{
+    min-height:38px;
+    flex:0 0 auto;
+    padding:0 13px;
+    border-radius:14px;
+    font-size:11px;
+  }
+  .settings-page .setting-tab svg{display:none}
+  .settings-page .setting-tab.active{
+    background:var(--surface);
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  .settings-page .setting-content{
+    min-width:0;
+  }
+  .settings-page .setting-group{
+    padding:0;
+    margin:0 0 27px;
+    border:0;
+  }
+  .settings-page .setting-group h3{
+    margin:0 0 10px;
+    padding:0 6px;
+    color:var(--muted);
+    font-size:18px;
+  }
+  .settings-page .setting-group>p{
+    display:none;
+  }
+  .settings-page .settings-row-grid,
+  .settings-page .toggle-row,
+  .settings-page .settings-note{
+    min-height:66px;
+    margin:0;
+    padding:0 17px;
+    border:0;
+    border-top:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+    background:var(--surface);
+  }
+  .settings-page .settings-row-grid:first-child,
+  .settings-page .toggle-row:first-child,
+  .settings-page .settings-note:first-child{
+    border-top:0;
+  }
+  .settings-page .settings-row-grid:first-child,
+  .settings-page .toggle-row:first-child{
+    border-radius:24px 24px 0 0;
+  }
+  .settings-page .settings-row-grid:last-child,
+  .settings-page .toggle-row:last-child,
+  .settings-page .settings-note:last-child{
+    border-radius:0 0 24px 24px;
+  }
+  .settings-page .settings-row-grid{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .settings-page .settings-row-grid>div:first-child{
+    min-width:0;
+    flex:1;
+  }
+  .settings-page .settings-row-grid strong{
+    font-size:14px;
+    font-weight:500;
+  }
+  .settings-page .settings-row-grid small{
+    display:none;
+  }
+  .settings-page .inline-choices{
+    display:flex;
+    gap:4px;
+    flex:0 0 auto;
+  }
+  .settings-page .text-choice{
+    min-height:32px;
+    padding:0 8px;
+    border-radius:10px;
+    font-size:10px;
+  }
+  .settings-page .accent-row{
+    gap:8px;
+  }
+  .settings-page .accent-swatch{
+    width:27px;
+    height:27px;
+  }
+  .settings-page .toggle-row{
+    align-items:center;
+  }
+  .settings-page .toggle-row span{
+    min-width:0;
+  }
+  .settings-page .toggle-row strong{font-size:14px;font-weight:500}
+  .settings-page .toggle-row small{display:none}
+  .settings-page .settings-note{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--muted);
+    font-size:12px;
+  }
+}
