@@ -299,7 +299,7 @@ export default function App(){
         autocomplete={autocomplete} setAutocomplete={setAutocomplete} trendingSearches={trendingSearches} setTrendingSearches={setTrendingSearches}
         memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} memoryName={memoryName} setMemoryName={setMemoryName}
         memoryOccupation={memoryOccupation} setMemoryOccupation={setMemoryOccupation} memoryAbout={memoryAbout} setMemoryAbout={setMemoryAbout}
-        model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length}
+        model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length} goBack={()=>setView("chat")}
       />
     </main>;
   }
@@ -513,6 +513,7 @@ function AccountSettingsPage(props:{
   memoryAbout:string;setMemoryAbout:React.Dispatch<React.SetStateAction<string>>;
   model:string;setModel:React.Dispatch<React.SetStateAction<string>>;
   sessionMessages:number;
+  goBack:()=>void;
 }){
   const [panel,setPanel]=useState<string|null>(null);
   const [memorySaved,setMemorySaved]=useState(true);
