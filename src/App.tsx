@@ -4,21 +4,22 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
-  ArrowUp, ChevronDown, Command, Copy, Download, FileCode2, Folder,
-  HelpCircle, Image as ImageIcon, Menu, MessageSquare, MoreHorizontal,
-  Paperclip, Plus, Search, Settings, Sparkles, SquarePen, Trash2, X,
-  PanelRight, Sun, Moon, Check, ExternalLink, Zap, Code2, BrainCircuit
+  ArrowUp, ChevronDown, Copy, Download, FileCode2, Folder,
+  HelpCircle, Menu, MessageSquare, MoreHorizontal,
+  Paperclip, Plus, Search, Settings, SquarePen, Trash2, X,
+  PanelRight, Sun, Moon, Check, ExternalLink
 } from "lucide-react";
 
 type Msg={id:string;role:"user"|"assistant";content:string;images?:string[]};
 type FileItem={path:string;content:string;kind?:string};
 const MODELS=[
- {id:"standard",name:"CPT-1",desc:"Fast everyday assistant",icon:Zap},
- {id:"max",name:"CPT-2 MAX",desc:"Deep reasoning & coding",icon:BrainCircuit},
+ {id:"standard",name:"CPT-1",desc:"Fast everyday assistant",icon:CookieIcon},
+ {id:"max",name:"CPT-2 MAX",desc:"Deep reasoning & coding",icon:CookieIcon},
  {id:"ultra",name:"CPT-3 ULTRA",desc:"Maximum agentic capability",icon:CookieIcon}
 ];
 const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
-function CookieIcon({size=22}:{size?:number}){return <img className="cookie-ai-icon" src="/cookie-ai-icon.png" width={size} height={size} alt="Cookie AI"/>}
+const COOKIE_ICON_URL="https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
+function CookieIcon({size=22}:{size?:number}){return <img className="cookie-ai-icon" src={COOKIE_ICON_URL} width={size} height={size} alt="Cookie AI" draggable={false}/>}
 
 export default function App(){
  const reduce=useReducedMotion();
