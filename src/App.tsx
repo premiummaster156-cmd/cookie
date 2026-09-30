@@ -34,6 +34,19 @@ function CookieIcon({size=22}:{size?:number}){
   return <img className="cookie-ai-icon" src={COOKIE_ICON_URL} width={size} height={size} alt="Cookie AI" draggable={false}/>;
 }
 
+
+function LiquidGlassDefs(){
+  return <svg className="cookie-liquid-glass-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="cookie-liquid-frosted" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.028" numOctaves="2" seed="17" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+        <feGaussianBlur in="displaced" stdDeviation="0.35"/>
+      </filter>
+    </defs>
+  </svg>;
+}
+
 function CookieMotionScene({enabled=true}:{enabled?:boolean}){
   const hostRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{
@@ -487,7 +500,7 @@ export default function App(){
 
 
   if(view==="account"||view==="settings"){
-    return <main className={"settings-shell "+(dark?"theme-dark":"theme-light")}>
+    return <main className={"settings-shell "+(dark?"theme-dark":"theme-light")}><LiquidGlassDefs/>
       <AccountSettingsPage
         dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}
         textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact}
@@ -503,25 +516,25 @@ export default function App(){
     </main>;
   }
 
-  return <main className={"app-shell "+(dark?"theme-dark":"theme-light")+" "+(!animations?"motion-disabled":"")}>
+  return <main className={"app-shell "+(dark?"theme-dark":"theme-light")+" "+(!animations?"motion-disabled":"")}><LiquidGlassDefs/>
     <CookieMotionScene enabled={animations}/>
     {sidebarOpen&&<div className="sidebar-overlay animate__animated animate__fadeIn" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={"sidebar "+(sidebarOpen?"animate__animated animate__slideInLeft":"")}>
       <div className="sidebar-top">
         <div className="brand-row">
-          <button className="brand glass-control" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
-          <button className="icon-btn sidebar-close" onClick={()=>setSidebarOpen(false)} aria-label="Close sidebar"><PanelRight size={19}/></button>
+          <button className="brand glass-control liquid-glass-button" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
+          <button className="icon-btn sidebar-close liquid-glass-button" onClick={()=>setSidebarOpen(false)} aria-label="Close sidebar"><PanelRight size={19}/></button>
         </div>
-        <button className="new-chat" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span></button>
-        <button className={"nav-item "+(view==="chat"?"active":"")} onClick={()=>{setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setAttachMenuOpen(false);}}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
+        <button className="new-chat liquid-glass-button" onClick={newChat}><span className="plus"><Plus size={18}/></span><span>New chat</span></button>
+        <button className={"nav-item liquid-glass-button "+(view==="chat"?"active":"")} onClick={()=>{setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setAttachMenuOpen(false);}}><span className="nav-icon"><MessageSquare size={17}/></span><span>Chat</span></button>
         <div className="recent-block">
           <div className="section-label">Recent</div>
           {messages.length?<button className="recent-item active" onClick={()=>openView("chat")}>{messages[0].content}</button>:<div className="recent-empty">Your conversations will appear here.</div>}
         </div>
       </div>
       <div className="sidebar-bottom">
-        <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
-        <button className="account" onClick={()=>openView("account")} aria-label="Open account settings">
+        <button className={"nav-item liquid-glass-button "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
+        <button className="account liquid-glass-button" onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Settings</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
@@ -540,9 +553,9 @@ export default function App(){
         <button className={"mobile-brand "+(headerScrolled?"scrolled":"")} onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={29}/><strong>Cookie</strong></button>
         <div className="topbar-spacer"/>
         {view==="chat"&&<div className={"topbar-actions "+(headerScrolled?"scrolled":"")}>
-          <button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation" title="Search this conversation · ⌘K" aria-keyshortcuts="Meta+K Control+K"><Search size={18}/></button>
+          <button className="icon-btn top-search liquid-glass-button" onClick={()=>setSearch(v=>v?"":" ")} aria-label="Search this conversation" title="Search this conversation · ⌘K" aria-keyshortcuts="Meta+K Control+K"><Search size={18}/></button>
           <div ref={chatMenuRef} className="chat-session-menu-wrap">
-            <button className={"icon-btn chat-session-more "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
+            <button className={"icon-btn chat-session-more liquid-glass-button "+(chatMenuOpen?"active":"")} onClick={toggleChatMenu} aria-label="Chat options" aria-expanded={chatMenuOpen}><MoreHorizontal size={21}/></button>
             {chatMenuOpen&&<div className="chat-session-menu glass-panel" role="menu">
               <div className="chat-menu-heading">{chatTitle}{chatPinned?" · Pinned":""}</div>
               <button onClick={shareChat}><Share2 size={16}/><span>Share chat</span></button>
@@ -561,14 +574,14 @@ export default function App(){
           {search!==""&&<div className="large-search search-inline animate__animated animate__fadeInDown" role="search">
   <Search size={18}/>
   <input autoFocus value={search.trim()===""?"":search} onChange={e=>setSearch(e.target.value)} placeholder="Search this conversation" aria-label="Search this conversation"/>
-  {search.trim()&&<button className="search-clear" onClick={()=>setSearch(" ")} aria-label="Clear search"><X size={15}/></button>}
+  {search.trim()&&<button className="search-clear liquid-glass-button" onClick={()=>setSearch(" ")} aria-label="Clear search"><X size={15}/></button>}
 </div>}
           {chatArchived?
             <section className="session-archived">
               <Archive size={24}/>
               <h2>Chat archived</h2>
               <p>This chat is archived in the current Cookie session.</p>
-              <button onClick={()=>setChatArchived(false)}>Return to chat</button>
+              <button className="liquid-glass-button" onClick={()=>setChatArchived(false)}>Return to chat</button>
             </section>
           :messages.length===0?
             <section className="welcome">
@@ -577,7 +590,7 @@ export default function App(){
               <p>Ask anything. Write, learn, plan, or just think out loud.</p>
               <div className="welcome-prompts" aria-label="Quick prompts">
                 {["Explain something simply","Help me write","Help me code","Analyze a file"].map(prompt=>
-                  <button key={prompt} onClick={()=>setInput(prompt)}>{prompt}</button>
+                  <button className="liquid-glass-button" key={prompt} onClick={()=>setInput(prompt)}>{prompt}</button>
                 )}
               </div>
             </section>
@@ -588,7 +601,7 @@ export default function App(){
                 <div className="message-body">
                   {m.attachments && m.attachments.length>0&&<div className="message-attachments">{m.attachments.map(a=>a.kind==="image"?<img key={a.id} className="message-image" src={a.data} alt={a.name}/>:<div key={a.id} className="message-file"><FileText size={15}/><span>{a.name}</span></div>)}</div>}
                   <Message text={m.content}/>
-                  {m.files && m.files.length>0&&<div className="generated-files">{m.files.map(f=><button className="generated-file" key={f.path} onClick={()=>downloadFile(f)}><FileText size={18}/><span><b>{f.name||f.path.split("/").pop()}</b><small>{f.path} · Download file</small></span><ArrowUp className="download-arrow" size={15}/></button>)}</div>}
+                  {m.files && m.files.length>0&&<div className="generated-files">{m.files.map(f=><button className="generated-file liquid-glass-button" key={f.path} onClick={()=>downloadFile(f)}><FileText size={18}/><span><b>{f.name||f.path.split("/").pop()}</b><small>{f.path} · Download file</small></span><ArrowUp className="download-arrow" size={15}/></button>)}</div>}
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
@@ -642,7 +655,7 @@ export default function App(){
           <div className="composer-main">
             <div className="composer-attachment">
               <div ref={attachMenuRef} className="composer-menu-wrap">
-                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>{
+                <button className={"round-tool attachment-trigger liquid-glass-button "+(attachMenuOpen?"selected":"")} onClick={()=>{
   setAttachMenuOpen(v=>!v);
   setChatMenuOpen(false);
   setMessageMenuOpen(null);
@@ -650,15 +663,15 @@ export default function App(){
                   <CirclePlus size={22}/>
                 </button>
                 {attachMenuOpen&&<div className="composer-menu attachment-menu animate__animated animate__zoomIn">
-                  <button className="attachment-menu-item" onClick={()=>openPicker("camera")}>
+                  <button className="attachment-menu-item liquid-glass-button" onClick={()=>openPicker("camera")}>
                     <span className="attachment-menu-icon"><Camera size={22}/></span>
                     <span><b>Camera</b><small>Take a photo · up to {10-attachments.length}</small></span>
                   </button>
-                  <button className="attachment-menu-item" onClick={()=>openPicker("image")}>
+                  <button className="attachment-menu-item liquid-glass-button" onClick={()=>openPicker("image")}>
                     <span className="attachment-menu-icon"><Images size={22}/></span>
                     <span><b>Photos</b><small>Images only · up to {10-attachments.length}</small></span>
                   </button>
-                  <button className="attachment-menu-item" onClick={()=>openPicker("file")}>
+                  <button className="attachment-menu-item liquid-glass-button" onClick={()=>openPicker("file")}>
                     <span className="attachment-menu-icon"><FileUp size={22}/></span>
                     <span><b>Files</b><small>Files only · up to {10-attachments.length}</small></span>
                   </button>
@@ -679,8 +692,8 @@ export default function App(){
             </div>
             <div className="toolbar-right">
               {loading
-                ? <button className="send-btn stop" onClick={stopGeneration} aria-label="Stop generating"><span className="stop-square"/></button>
-                : <button className="send-btn" disabled={!input.trim()&&!attachments.length} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button>}
+                ? <button className="send-btn stop liquid-glass-button" onClick={stopGeneration} aria-label="Stop generating"><span className="stop-square"/></button>
+                : <button className="send-btn liquid-glass-button" disabled={!input.trim()&&!attachments.length} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button>}
             </div>
           </div>
         </div>
