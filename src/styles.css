@@ -4637,3 +4637,95 @@ button,input,textarea,select{touch-action:manipulation}
     transition-duration:.001ms!important;
   }
 }
+
+
+/* ===== Unified interaction motion ===== */
+/* Every interactive surface gets a consistent tactile press and opening motion. */
+button:not(:disabled){
+  -webkit-tap-highlight-color:transparent;
+}
+button:not(:disabled):active{
+  transform:scale(.985);
+}
+.search-inline{
+  transform-origin:top center;
+  animation:search-open 280ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes search-open{
+  from{opacity:0;transform:translateY(-7px) scale(.985);filter:blur(2px)}
+  to{opacity:1;transform:none;filter:none}
+}
+.model-menu{
+  animation:popover-drop 280ms cubic-bezier(.16,1,.3,1) both!important;
+}
+@keyframes popover-drop{
+  from{opacity:0;transform:translateY(-8px) scale(.94);filter:blur(2px)}
+  65%{opacity:1;transform:translateY(1px) scale(1.005);filter:blur(0)}
+  to{opacity:1;transform:none}
+}
+.chat-session-menu{
+  animation:popover-drop 280ms cubic-bezier(.16,1,.3,1) both!important;
+}
+.activity-panel.open .activity-details{
+  animation:activity-details-in 300ms cubic-bezier(.16,1,.3,1) both;
+  transform-origin:top center;
+}
+@keyframes activity-details-in{
+  from{opacity:0;transform:translateY(-7px);clip-path:inset(0 0 100% 0)}
+  to{opacity:1;transform:none;clip-path:inset(0 0 0 0)}
+}
+.activity-summary{
+  transition:background 180ms ease,transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+.activity-summary:active{transform:scale(.99)}
+.settings-panel-page{
+  animation:settings-panel-in 360ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes settings-panel-in{
+  from{opacity:0;transform:translateX(14px);filter:blur(2px)}
+  to{opacity:1;transform:none;filter:none}
+}
+.profile-edit-modal{
+  animation:profile-modal-in 380ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes profile-modal-in{
+  from{opacity:0;transform:translate(-50%,-47%) scale(.94);filter:blur(6px)}
+  65%{opacity:1;transform:translate(-50%,-50%) scale(1.012);filter:blur(0)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+.profile-edit-close{
+  transition:background 180ms ease,transform 220ms cubic-bezier(.16,1,.3,1);
+}
+.profile-edit-close:active{transform:scale(.9)}
+.settings-panel-back{
+  transition:background 180ms ease,color 180ms ease,transform 220ms cubic-bezier(.16,1,.3,1);
+}
+.settings-panel-back:active{transform:scale(.9)}
+.help-content-enter{
+  animation:help-content-in 360ms cubic-bezier(.16,1,.3,1) both;
+}
+.help-topic{
+  transition:background 180ms ease,color 180ms ease,transform 220ms cubic-bezier(.16,1,.3,1),box-shadow 180ms ease;
+}
+.help-topic:active{transform:translateX(2px) scale(.985)}
+.generated-file{
+  transition:background 160ms ease,border-color 160ms ease,transform 220ms cubic-bezier(.16,1,.3,1),box-shadow 180ms ease;
+}
+.generated-file:active{transform:scale(.985)}
+.attachment-chip{
+  animation:attachment-chip-in 280ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes attachment-chip-in{
+  from{opacity:0;transform:translateY(6px) scale(.96)}
+  to{opacity:1;transform:none}
+}
+.message-more{
+  transition:background 160ms ease,color 160ms ease,transform 220ms cubic-bezier(.16,1,.3,1)!important;
+}
+.message-more:active{transform:scale(.88)!important}
+@media(prefers-reduced-motion:reduce){
+  .search-inline,.model-menu,.chat-session-menu,.activity-panel.open .activity-details,
+  .settings-panel-page,.profile-edit-modal,.attachment-chip{
+    animation:none!important;
+  }
+}
