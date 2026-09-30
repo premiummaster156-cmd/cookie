@@ -3465,3 +3465,93 @@ html[data-theme=dark] .settings-detail-card,
 html[data-theme=dark] .settings-logout-row{
   background:color-mix(in srgb,var(--surface) 92%,var(--bg));
 }
+
+
+/* ===== Live activity panel ===== */
+.activity-panel{
+  width:min(760px,100%);
+  margin:4px auto 4px;
+  border:1px solid color-mix(in srgb,var(--line) 70%,transparent);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 7px 24px rgba(0,0,0,.05);
+  overflow:hidden;
+  animation:view-in 220ms var(--ease);
+}
+.activity-summary{
+  width:100%;
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 14px;
+  text-align:left;
+  color:var(--text);
+}
+.activity-summary:hover{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.activity-summary-icon{
+  width:28px;height:28px;display:grid;place-items:center;
+  border-radius:8px;background:var(--accent-soft);color:var(--accent-strong);
+}
+.activity-summary-title{
+  min-width:0;flex:1;font-size:13px;font-weight:600;
+}
+.activity-chevron{
+  color:var(--faint);
+  transition:transform 180ms var(--ease);
+}
+.activity-panel.open .activity-chevron{transform:rotate(90deg)}
+.activity-details{
+  padding:4px 14px 13px 52px;
+  border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);
+}
+.activity-step{
+  min-height:31px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--faint);
+  font-size:11px;
+}
+.activity-step.current{color:var(--text);font-weight:600}
+.activity-step.done{color:var(--muted)}
+.activity-step-dot{
+  width:18px;height:18px;flex:0 0 18px;
+  display:grid;place-items:center;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:var(--surface);
+}
+.activity-step.current .activity-step-dot{
+  border-color:var(--accent);
+  color:var(--accent-strong);
+}
+.activity-step.done .activity-step-dot{
+  background:var(--accent-soft);
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  color:var(--accent-strong);
+}
+.activity-pulse{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent-strong);
+  animation:activity-pulse 900ms ease-in-out infinite;
+}
+@keyframes activity-pulse{0%,100%{opacity:.35;transform:scale(.75)}50%{opacity:1;transform:scale(1)}}
+.activity-note{
+  margin-top:7px;
+  color:var(--faint);
+  font-size:9.5px;
+  line-height:1.45;
+}
+@media(max-width:620px){
+  .activity-panel{
+    width:calc(100% - 2px);
+    margin:2px auto 4px;
+    border-radius:15px;
+  }
+  .activity-summary{min-height:50px;padding:0 12px}
+  .activity-summary-title{font-size:12px}
+  .activity-details{padding:4px 12px 11px 48px}
+  .activity-step{min-height:29px;font-size:10.5px}
+  .activity-note{font-size:9px}
+}
