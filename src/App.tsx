@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
-  ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
-  Camera, Images, Brain, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
+  ArrowUp, Copy, FileText, FileUp, ImagePlus,
+  Camera, Images, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, CirclePlus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
   ShieldCheck, Palette
 } from "lucide-react";
@@ -30,7 +30,6 @@ export default function App(){
   const [messages,setMessages]=useState<Msg[]>([]);
   const [input,setInput]=useState("");
   const [model,setModel]=useState("standard");
-  const [modelOpen,setModelOpen]=useState(false);
   const [sidebarOpen,setSidebarOpen]=useState(false);
   const [loading,setLoading]=useState(false);
   const [attachments,setAttachments]=useState<Attachment[]>([]);
@@ -49,7 +48,6 @@ export default function App(){
   const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const chatScroll=useRef<HTMLDivElement>(null);
-  const active=useMemo(()=>MODELS.find(x=>x.id===model)||MODELS[0],[model]);
 
   useEffect(()=>{
     try{
@@ -112,7 +110,7 @@ export default function App(){
   function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
   function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
-  function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setMessageMenuOpen(null)}
+  function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setMessageMenuOpen(null)}
   function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
   function toggleMessagePin(messageId:string){setPinnedMessages(v=>v.includes(messageId)?v.filter(x=>x!==messageId):[...v,messageId]);setMessageMenuOpen(null)}
   async function shareMessage(message:Msg){
@@ -158,16 +156,6 @@ export default function App(){
       <header className="topbar">
         <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={20}/></button>
         <div className="mobile-brand"><CookieIcon size={27}/><strong>Cookie</strong></div>
-        {view==="chat"&&<div className="model-control">
-          <button className="model-picker" onClick={()=>setModelOpen(v=>!v)} aria-expanded={modelOpen}>
-            <span className="status-dot"/><span>{active.name}</span><ChevronDown className="chevron" size={15}/>
-          </button>
-          {modelOpen&&<div className="model-menu open">
-            {MODELS.map(m=><button key={m.id} className={"model-option "+(m.id===model?"active":"")} onClick={()=>{setModel(m.id);setModelOpen(false)}}>
-              <span><strong>{m.name}</strong><small>{m.desc}</small></span>{m.id===model&&<Check className="check-icon" size={16}/>}
-            </button>)}
-          </div>}
-        </div>}
         <div className="topbar-spacer"/>
         {view==="chat"&&<button className="icon-btn top-search" onClick={()=>setSearch(v=>v?"": " ")} aria-label="Search conversations"><Search size={18}/></button>}
       </header>
@@ -216,12 +204,11 @@ export default function App(){
       {view==="chat"&&<div className="composer-wrap">
         {attachments.length>0&&<div className="attachment-tray">{attachments.map(a=><div className={"attachment-chip "+a.kind} key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileText size={16}/>}<span>{a.name}</span><button className="attachment-remove" onClick={()=>removeAttachment(a.id)} aria-label={"Remove "+a.name}><X size={14}/></button></div>)}</div>}
         <div className="composer">
-          <div className="composer-main"><textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie"/></div>
-          <div className="composer-toolbar">
-            <div className="toolbar-left">
+          <div className="composer-main">
+            <div className="composer-attachment">
               <div className="composer-menu-wrap">
                 <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>setAttachMenuOpen(v=>!v)} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
-                  <Plus size={21}/>
+                  <CirclePlus size={22}/>
                 </button>
                 {attachMenuOpen&&<div className="composer-menu attachment-menu">
                   <button className="attachment-menu-item" onClick={()=>openPicker("camera")}>
@@ -236,16 +223,14 @@ export default function App(){
                     <span className="attachment-menu-icon"><FileUp size={22}/></span>
                     <span><b>Files</b><small>Files only · up to {10-attachments.length}</small></span>
                   </button>
-                  <button className="attachment-menu-item" onClick={()=>{setModel("max");setAttachMenuOpen(false)}}>
-                    <span className="attachment-menu-icon"><Brain size={22}/></span>
-                    <span><b>Think harder</b><small>Use CPT-2 MAX for deeper reasoning</small></span>
-                    {model==="max"&&<Check className="attachment-check" size={18}/>}
-                  </button>
                   <div className="menu-limit">{attachments.length}/10 attachments · folders are not supported</div>
                 </div>}
               </div>
-              {keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}
             </div>
+            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie"/>
+          </div>
+          <div className="composer-toolbar">
+            <div className="toolbar-left">{keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}</div>
             <div className="toolbar-right"><button className="send-btn" disabled={(!input.trim()&&!attachments.length)||loading} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button></div>
           </div>
         </div>
