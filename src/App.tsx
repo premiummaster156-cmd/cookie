@@ -6,8 +6,7 @@ import {
   ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
   Camera, Images, Plug, Brain, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
-  Keyboard, ShieldCheck, Palette, MessageCircleQuestion, Wrench,
-  Code2, Globe2, ScanSearch
+  ShieldCheck, Palette
 } from "lucide-react";
 
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
@@ -113,9 +112,8 @@ export default function App(){
   function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
   function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
-  function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setToolsOpen(false)}
+  function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setMessageMenuOpen(null)}
   function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
-  function useTool(prompt:string){setInput((v)=>v?v+" "+prompt:prompt);setToolsOpen(false)}
   function toggleMessagePin(messageId:string){setPinnedMessages(v=>v.includes(messageId)?v.filter(x=>x!==messageId):[...v,messageId]);setMessageMenuOpen(null)}
   async function shareMessage(message:Msg){
     const text=message.content||"Cookie message";
