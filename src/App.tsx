@@ -33,6 +33,8 @@ export default function App(){
   const [model,setModel]=useState("standard");
   const [sidebarOpen,setSidebarOpen]=useState(false);
   const [loading,setLoading]=useState(false);
+  const [activityOpen,setActivityOpen]=useState(true);
+  const [activityStep,setActivityStep]=useState(0);
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
   const [chatMenuOpen,setChatMenuOpen]=useState(false);
@@ -198,6 +200,15 @@ export default function App(){
     }
   },[messages,loading,view]);
 
+  useEffect(()=>{
+    if(!loading){setActivityStep(0);return;}
+    setActivityOpen(true);
+    const steps=[0,1,2,3];
+    let i=0;
+    const timer=window.setInterval(()=>{i=Math.min(i+1,steps.length-1);setActivityStep(i)},1100);
+    return ()=>window.clearInterval(timer);
+  },[loading]);
+
   async function send(raw=input){
     const text=raw.trim();
     if((!text&&!attachments.length)||loading)return;
@@ -348,7 +359,22 @@ export default function App(){
               </article>)}
             </section>
           }
-          {loading&&<div className="typing-row"><CookieIcon size={25}/><span>Cookie is working</span><i/><i/><i/></div>}
+          {loading&&<div className={"activity-panel "+(activityOpen?"open":"")}>
+  <button className="activity-summary" onClick={()=>setActivityOpen(v=>!v)} aria-expanded={activityOpen}>
+    <span className="activity-summary-icon"><SlidersHorizontal size={16}/></span>
+    <span className="activity-summary-title">{["Preparing request","Processing request","Working on your request","Preparing response"][activityStep]}</span>
+    <ChevronRight size={18} className="activity-chevron"/>
+  </button>
+  {activityOpen&&<div className="activity-details">
+    {["Preparing request","Processing request","Working on your request","Preparing response"].map((label,i)=>
+      <div className={"activity-step "+(i===activityStep?"current":"")+(i<activityStep?" done":"")} key={label}>
+        <span className="activity-step-dot">{i<activityStep?<Check size={11}/>:i===activityStep?<span className="activity-pulse"/>:<span/>}</span>
+        <span>{label}</span>
+      </div>
+    )}
+    <div className="activity-note">Live tool events such as searches or file operations can appear here when the connected service reports them.</div>
+  </div>}
+</div>}
         </div>
       </div>}
 
