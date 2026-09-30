@@ -36,7 +36,6 @@ export default function App(){
   const [loading,setLoading]=useState(false);
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
-  const [toolsOpen,setToolsOpen]=useState(false);
   const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
   const [pinnedMessages,setPinnedMessages]=useState<string[]>([]);
   const [view,setView]=useState<View>("chat");
@@ -94,7 +93,7 @@ export default function App(){
     if((!text&&!attachments.length)||loading)return;
     const now=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
     const next=[...messages,{id:id(),role:"user" as const,content:text,attachments,time:now}];
-    setMessages(next);setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setToolsOpen(false);
+    setMessages(next);setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);
     try{
       const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
@@ -251,15 +250,6 @@ export default function App(){
                   <div className="menu-limit">{attachments.length}/10 attachments · folders are not supported</div>
                 </div>}
               </div>
-              <div className="composer-menu-wrap">
-                <button className={"tool-label "+(toolsOpen?"selected":"")} onClick={()=>{setToolsOpen(v=>!v);setAttachMenuOpen(false)}}><Wrench size={15}/><span>Tools</span><ChevronDown className="tiny-chevron" size={13}/></button>
-                {toolsOpen&&<div className="composer-menu tools-menu">
-                  <button onClick={()=>useTool("Create a downloadable file for me.")}><Code2 size={17}/><span><b>Create files</b><small>Generate code and downloadable files</small></span></button>
-                  <button onClick={()=>useTool("Analyze the files or images I attached.")}><ScanSearch size={17}/><span><b>Analyze uploads</b><small>Inspect attached content</small></span></button>
-                  <button onClick={()=>useTool("Help me debug or improve this code.")}><Wrench size={17}/><span><b>Code tools</b><small>Debug, review, refactor</small></span></button>
-                  <button onClick={()=>useTool("Help me explain, summarize, or compare this clearly.")}><Globe2 size={17}/><span><b>Web research</b><small>Research current information</small></span></button>
-                </div>}
-              </div>
               {keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}
             </div>
             <div className="toolbar-right"><button className="send-btn" disabled={(!input.trim()&&!attachments.length)||loading} onClick={()=>send()} aria-label="Send message"><ArrowUp size={19}/></button></div>
@@ -330,22 +320,70 @@ function Toggle({label,desc,value,setValue}:{label:string;desc:string;value:bool
 }
 
 function HelpPage(){
-  const faqs=[
-    ["How do I send a message?","Type in the composer and press Enter. Use Shift + Enter when you want a new line."],
-    ["What can Cookie work with?","Cookie can answer questions, reason through coding tasks, inspect images and files, and create downloadable files directly in chat."],
-    ["How do downloadable files work?","Ask Cookie to create files when you need them. Generated files appear directly in the chat and can be downloaded with one tap."],
-    ["How do I switch models?","Use the model selector in the chat header. Each Cookie model is shown with its capability description."],
-    ["Can I change the interface?","Yes. Settings includes appearance, chat density, keyboard hints, motion, text size, accent, and local-data controls."]
+  const topics=[
+    ["Getting started","Learn the basics of using Cookie and sending your first message."],
+    ["Chat & conversations","Messages, new chats, search, model selection, and conversation controls."],
+    ["Files & images","How the 10-item upload limit works and what Cookie can inspect."],
+    ["Generated files","How Cookie creates downloadable files directly inside the conversation."],
+    ["Models","What CPT-1, CPT-2 MAX, and CPT-3 ULTRA mean inside Cookie."],
+    ["Message actions","Share, pin, find, archive, and delete actions available on assistant messages."],
+    ["Settings & interface","Appearance, chat behavior, accessibility, motion, and privacy preferences."],
+    ["Privacy & limitations","What Cookie can and cannot know, and why important information should be verified."]
   ];
+  const [topic,setTopic]=useState("Getting started");
+  const content:Record<string,{title:string;body:string[]}>={
+    "Getting started":{title:"Getting started",body:[
+      "Cookie is the AI assistant built into this website. Type a request in the composer and press Enter to send it.",
+      "Use Shift + Enter for a new line. Use New chat from the sidebar to start a fresh conversation.",
+      "Cookie can explain, write, translate, plan, reason, analyze images and files, help with code, and create downloadable files when requested."
+    ]},
+    "Chat & conversations":{title:"Chat & conversations",body:[
+      "The sidebar contains your main navigation, recent conversation access, Settings, and Help.",
+      "The model selector in the chat header switches between Cookie's model profiles. Search lets you search the current conversation.",
+      "Assistant messages include Copy and a More menu with actions such as Share, Pin, Uploaded files, Find in chat, Archive, and Delete."
+    ]},
+    "Files & images":{title:"Files & images",body:[
+      "Press the + button beside the composer to open the attachment picker.",
+      "Camera and Photos accept images. Files accepts non-image files. Cookie allows up to 10 uploaded images/files per message and does not accept folders.",
+      "Uploaded content is provided to Cookie as context for the current request. Cookie should not claim to have inspected a file unless it actually received usable content."
+    ]},
+    "Generated files":{title:"Generated files",body:[
+      "Ask Cookie to create a file, code project, document, configuration, or other downloadable artifact.",
+      "Cookie can create, read, update, and delete temporary generated files during the same response. Generated files appear directly in the conversation with a download action.",
+      "Generated files are temporary response artifacts; the website does not expose a persistent project/workspace file manager."
+    ]},
+    "Models":{title:"Models",body:[
+      "CPT-1 is Cookie's standard everyday profile. CPT-2 MAX is intended for deeper reasoning and coding. CPT-3 ULTRA is Cookie's highest-capability profile for difficult multimodal and agentic tasks.",
+      "These names are Cookie profile names and do not identify the underlying model provider.",
+      "The selected profile is sent with the request so Cookie can adapt its response behavior."
+    ]},
+    "Message actions":{title:"Message actions",body:[
+      "Copy copies an assistant response. The More menu provides Share, Pin, Uploaded files, Find in chat, Archive, and Delete.",
+      "Pin is currently a conversation-session feature. Archive and Delete affect the current in-memory conversation shown by the website."
+    ]},
+    "Settings & interface":{title:"Settings & interface",body:[
+      "Settings controls Cookie's appearance and interface preferences, including theme, accent, text size, chat density, motion, and keyboard hints.",
+      "Cookie is responsive and includes a mobile sidebar. Reduced-motion preferences are respected by the interface animations."
+    ]},
+    "Privacy & limitations":{title:"Privacy & limitations",body:[
+      "Cookie is currently a public preview/demo. Do not treat the assistant as an authoritative source for high-stakes decisions.",
+      "Cookie can make mistakes. It should be honest about what it has actually seen, done, or verified and should never invent tool results, files, tests, or external actions.",
+      "The website's interface and capabilities can change as Cookie is developed."
+    ]}
+  };
+  const selected=content[topic]||content["Getting started"];
   return <div className="page-container help-page">
-    <div className="page-heading"><span className="eyebrow">SUPPORT</span><h2>Help & shortcuts</h2><p>Everything you need to move around Cookie quickly.</p></div>
-    <div className="help-shortcuts">
-      <div className="shortcut-card"><Keyboard size={18}/><div><strong>Enter</strong><span>Send message</span></div></div>
-      <div className="shortcut-card"><Keyboard size={18}/><div><strong>Shift + Enter</strong><span>New line</span></div></div>
-      <div className="shortcut-card"><Keyboard size={18}/><div><strong>⌘ K</strong><span>Start a new chat</span></div></div>
-      <div className="shortcut-card"><MessageCircleQuestion size={18}/><div><strong>Model menu</strong><span>Switch Cookie model</span></div></div>
+    <div className="page-heading"><span className="eyebrow">SUPPORT</span><h2>Help & shortcuts</h2><p>Choose a topic from the sidebar to learn how Cookie works.</p></div>
+    <div className="help-layout">
+      <nav className="help-nav" aria-label="Help topics">
+        <div className="help-nav-label">Topics</div>
+        {topics.map(([name,desc])=><button key={name} className={"help-topic "+(topic===name?"active":"")} onClick={()=>setTopic(name)}><span>{name}</span><small>{desc}</small></button>)}
+      </nav>
+      <article className="help-content">
+        <div className="help-content-head"><span className="eyebrow">COOKIE HELP</span><h3>{selected.title}</h3></div>
+        {selected.body.map((p,i)=><p key={i}>{p}</p>)}
+        <div className="help-footer"><ShieldCheck size={17}/><span>Important information should still be verified. Cookie can make mistakes.</span></div>
+      </article>
     </div>
-    <section className="faq-list">{faqs.map(([q,a])=><details key={q}><summary>{q}</summary><p>{a}</p></details>)}</section>
-    <div className="help-footer"><ShieldCheck size={17}/><span>Important information should still be verified. Cookie can make mistakes.</span></div>
   </div>;
 }
