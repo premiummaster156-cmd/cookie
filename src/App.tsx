@@ -139,7 +139,13 @@ export default function App(){
 
   useEffect(()=>{
     const onKeyDown=(e:KeyboardEvent)=>{
+      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){
+        e.preventDefault();
+        newChat();
+        return;
+      }
       if(e.key==="Escape"){
+        if(loading){stopGeneration();return;}
         setSidebarOpen(false);
         setChatMenuOpen(false);
         setAttachMenuOpen(false);
@@ -220,7 +226,8 @@ export default function App(){
   useEffect(()=>{
     if(!chatHydrated.current)return;
     try{
-      localStorage.setItem("cookie_chat",JSON.stringify({messages:messages.slice(-80),title:chatTitle,pinned:chatPinned,archived:chatArchived,model}));
+      const persistedMessages=messages.slice(-40).map(({attachments,files,...message})=>message);
+      localStorage.setItem("cookie_chat",JSON.stringify({messages:persistedMessages,title:chatTitle,pinned:chatPinned,archived:chatArchived,model}));
     }catch{}
   },[messages,chatTitle,chatPinned,chatArchived,model]);
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
@@ -314,7 +321,7 @@ export default function App(){
   }
   function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
-  function newChat(){localStorage.removeItem("cookie_chat");setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setChatTitle("New chat");setChatPinned(false);setChatArchived(false)}
+  function newChat(){requestAbortRef.current?.abort();requestAbortRef.current=null;setLoading(false);localStorage.removeItem("cookie_chat");setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false);setChatMenuOpen(false);setChatTitle("New chat");setChatPinned(false);setChatArchived(false)}
   function openView(next:View){setView(next);setSidebarOpen(false);setAttachMenuOpen(false);setChatMenuOpen(false)}
   function renameChat(){const next=window.prompt("Rename chat",chatTitle);if(next?.trim())setChatTitle(next.trim().slice(0,80));setChatMenuOpen(false)}
   async function shareChat(){
@@ -454,7 +461,7 @@ export default function App(){
               </article>)}
             </section>
           }
-          {loading&&<div className={"activity-panel "+(activityOpen?"open":"")}>
+          {loading&&<div className={"activity-panel "+(activityOpen?"open":"")} role="status" aria-live="polite" aria-atomic="true">
   <button className="activity-summary" onClick={()=>setActivityOpen(v=>!v)} aria-expanded={activityOpen}>
     <span className="activity-summary-icon"><SlidersHorizontal size={16}/></span>
     <span className="activity-summary-title">{["Preparing request","Processing request","Working on your request","Preparing response"][activityStep]}</span>
