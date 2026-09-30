@@ -87,3 +87,15 @@
 .thinking-mark .cookie-ai-icon{width:18px;height:18px}
 .starter-icon{overflow:hidden}
 .starter-icon .cookie-ai-icon{width:22px;height:22px}
+
+/* Perfect Scrollbar — subtle Cookie treatment */
+.chat-scroll{position:relative;overflow:hidden}
+.ps__rail-y{width:6px!important;right:3px!important;background:transparent!important;opacity:0;transition:opacity .18s ease}
+.chat-scroll:hover>.ps__rail-y,.chat-scroll.ps--scrolling-y>.ps__rail-y{opacity:1}
+.ps__thumb-y{right:0;width:4px!important;border-radius:999px;background:rgba(201,160,106,.48)!important}
+.ps__rail-y:hover>.ps__thumb-y{width:5px!important;background:rgba(223,180,119,.72)!important}
+.ps__rail-x{display:none!important}
+@media(pointer:coarse){
+ .ps__rail-y{opacity:.45}
+ .ps__thumb-y{width:3px!important}
+}
