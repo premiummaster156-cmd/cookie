@@ -4881,3 +4881,55 @@ html,body,#root{
   .main{width:100%!important;max-width:100%!important;margin-left:0!important;min-width:0!important}
   .composer-wrap{left:0!important}
 }
+
+
+/* Mobile is a single-column layout. The sidebar is an overlay, never a flex
+   column participant. This deliberately overrides the desktop geometry. */
+@media (max-width:900px), (hover:none) and (pointer:coarse){
+  .app-shell{
+    display:block!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    min-width:0!important;
+    position:relative;
+    overflow-x:hidden!important;
+  }
+  .app-shell>.sidebar{
+    position:fixed!important;
+    left:0!important;
+    top:0!important;
+    bottom:0!important;
+    width:min(260px,86vw)!important;
+    margin:0!important;
+  }
+  .app-shell>.main{
+    display:block!important;
+    position:relative!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    min-width:0!important;
+    margin:0!important;
+    left:0!important;
+    right:0!important;
+  }
+  .app-shell>.main .topbar,
+  .app-shell>.main .chat-scroll{
+    width:100%!important;
+    max-width:100vw!important;
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+  .app-shell>.main .composer-wrap{
+    left:0!important;
+    right:0!important;
+    width:100vw!important;
+    max-width:100vw!important;
+  }
+  .app-shell>.sidebar-overlay{
+    position:fixed!important;
+    left:0!important;
+    top:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+  }
+}
