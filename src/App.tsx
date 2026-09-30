@@ -1076,5 +1076,5 @@ function HelpPage(){
 
     <button className="settings-logout-row" onClick={()=>setPanel("Log out")}><LogOut size={22}/><span>Log out</span></button>
     <p className="settings-reference-footer">Cookie settings are kept together so account, chat, and interface controls are in one place.</p>
-
+  </div>;
 }
