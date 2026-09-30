@@ -82,6 +82,7 @@ export default function App(){
         setSidebarOpen(false);
         setChatMenuOpen(false);
         setAttachMenuOpen(false);
+        setMessageMenuOpen(null);
       }
     };
     window.addEventListener("keydown",onKeyDown);
