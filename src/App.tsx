@@ -226,7 +226,7 @@ export default function App(){
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
     dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,
     autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,
-    profileName,profileName,profileUsername,profileEmail,aiPersonality
+    profileName,profileUsername,profileEmail,aiPersonality
   })),[dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,profileName,profileUsername,profileEmail,aiPersonality]);
   useEffect(()=>{
     document.body.classList.toggle("sidebar-open",sidebarOpen);
