@@ -16,7 +16,8 @@
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "perfect-scrollbar": "latest"
+    "perfect-scrollbar": "latest",
+    "three": "latest"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
