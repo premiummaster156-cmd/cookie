@@ -536,7 +536,7 @@ export default function App(){
           <div className="composer-toolbar">
             <div className="toolbar-left">
               <label className="composer-model" aria-label="Cookie model profile">
-                <Sparkles size={13}/>
+                <SlidersHorizontal size={13} strokeWidth={1.7}/>
                 <select value={model} onChange={e=>setModel(e.target.value)}>
                   {MODELS.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
