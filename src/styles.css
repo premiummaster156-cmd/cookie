@@ -5506,3 +5506,40 @@ html,body,#root{
     display:none!important;
   }
 }
+
+
+/* Model control should read as a native icon control, not a nested AI pill. */
+@media screen and (max-width:900px){
+  .app-shell .composer-main .composer-model-inline{
+    flex:0 0 34px!important;
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:34px!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    border-radius:50%!important;
+    color:var(--muted)!important;
+  }
+  .app-shell .composer-main .composer-model-inline:hover,
+  .app-shell .composer-main .composer-model-inline:focus-within{
+    background:rgba(255,255,255,.055)!important;
+    border:0!important;
+    box-shadow:none!important;
+    color:var(--text)!important;
+  }
+  .app-shell .composer-main .composer-model-inline:active{
+    transform:scale(.92)!important;
+  }
+  .app-shell .composer-main .composer-model-inline svg{
+    width:18px!important;
+    height:18px!important;
+  }
+  .app-shell .composer-main .composer-model-inline select{
+    border:0!important;
+    background:transparent!important;
+  }
+}
