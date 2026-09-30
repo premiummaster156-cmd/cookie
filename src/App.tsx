@@ -614,7 +614,7 @@ function AccountSettingsPage(props:{
   }
 
   return <div className="page-container ios-settings-page">
-    <div className="ios-settings-head"><h2>Settings</h2></div>
+    <div className="ios-settings-head settings-root-head"><button className="ios-back" onClick={props.goBack} aria-label="Back to Cookie"><ArrowLeft size={27}/></button><h2>Settings</h2></div>
     <h3 className="ios-section-title">General</h3>
     <section className="ios-card">
       <Row icon={Settings} label="General" value={props.appLanguage} onClick={()=>setPanel("General")}/>
