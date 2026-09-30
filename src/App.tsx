@@ -124,7 +124,7 @@ export default function App(){
        </div>
      </header>
 
-     <div className="chat-scroll">
+     <div ref={chatScroll} className="chat-scroll">
        {messages.length===0?
          <motion.div className="welcome" initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} transition={{duration:.35}}>
            <div className="welcome-mark"><CookieIcon size={38}/></div>
