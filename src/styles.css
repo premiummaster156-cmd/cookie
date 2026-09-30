@@ -4458,3 +4458,26 @@ html[data-theme=dark] .profile-edit-save{background:#fff;color:#111}
   .settings-compact-value{font-size:10.5px;max-width:120px}
   .settings-compact-language{min-height:49px;padding:0 15px;font-size:12.5px}
 }
+
+
+.settings-main-back{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:36px;
+  margin:0 0 18px 2px;
+  padding:0 12px 0 9px;
+  border:1px solid color-mix(in srgb,var(--line) 78%,transparent);
+  border-radius:999px;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:0 3px 12px rgba(0,0,0,.06);
+  font-size:12px;
+  font-weight:600;
+}
+.settings-main-back:hover{
+  background:var(--accent-soft);
+  color:var(--accent-strong);
+  transform:translateX(-1px);
+}
+.settings-main-back:active{transform:scale(.98)}
