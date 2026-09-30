@@ -51,6 +51,16 @@ export default function App(){
   const [compact,setCompact]=useState(false);
   const [animations,setAnimations]=useState(true);
   const [keyboardHints,setKeyboardHints]=useState(true);
+  const [appLanguage,setAppLanguage]=useState<"English"|"Uzbek"|"Russian">("English");
+  const [autoCorrect,setAutoCorrect]=useState(true);
+  const [haptics,setHaptics]=useState(true);
+  const [autoSwitch,setAutoSwitch]=useState(true);
+  const [autocomplete,setAutocomplete]=useState(true);
+  const [trendingSearches,setTrendingSearches]=useState(true);
+  const [memoryEnabled,setMemoryEnabled]=useState(true);
+  const [memoryName,setMemoryName]=useState("");
+  const [memoryOccupation,setMemoryOccupation]=useState("");
+  const [memoryAbout,setMemoryAbout]=useState("");
   const [search,setSearch]=useState("");
   const [headerScrolled,setHeaderScrolled]=useState(false);
   const imageRef=useRef<HTMLInputElement>(null);
@@ -166,9 +176,22 @@ export default function App(){
       if(p.compact!==undefined)setCompact(Boolean(p.compact));
       if(p.animations!==undefined)setAnimations(Boolean(p.animations));
       if(p.keyboardHints!==undefined)setKeyboardHints(Boolean(p.keyboardHints));
+      if(p.appLanguage)setAppLanguage(p.appLanguage);
+      if(p.autoCorrect!==undefined)setAutoCorrect(Boolean(p.autoCorrect));
+      if(p.haptics!==undefined)setHaptics(Boolean(p.haptics));
+      if(p.autoSwitch!==undefined)setAutoSwitch(Boolean(p.autoSwitch));
+      if(p.autocomplete!==undefined)setAutocomplete(Boolean(p.autocomplete));
+      if(p.trendingSearches!==undefined)setTrendingSearches(Boolean(p.trendingSearches));
+      if(p.memoryEnabled!==undefined)setMemoryEnabled(Boolean(p.memoryEnabled));
+      if(p.memoryName!==undefined)setMemoryName(String(p.memoryName));
+      if(p.memoryOccupation!==undefined)setMemoryOccupation(String(p.memoryOccupation));
+      if(p.memoryAbout!==undefined)setMemoryAbout(String(p.memoryAbout));
     }catch{}
   },[]);
-  useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({dark,accent,textSize,compact,animations,keyboardHints})),[dark,accent,textSize,compact,animations,keyboardHints]);
+  useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
+    dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,
+    autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout
+  })),[dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout]);
   useEffect(()=>{
     document.body.classList.toggle("sidebar-open",sidebarOpen);
     return ()=>document.body.classList.remove("sidebar-open");
@@ -219,7 +242,11 @@ export default function App(){
     setChatArchived(false);
     setInput("");setAttachments([]);setLoading(true);setView("chat");setAttachMenuOpen(false);setChatMenuOpen(false);setMessageMenuOpen(null);
     try{
-      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{responseMode:model,language:"auto",answerLength:"auto",creativity:.7},attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
+      const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:next.map(m=>({role:m.role,content:m.content})),preferences:{
+        responseMode:model,language:appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru",
+        answerLength:"auto",creativity:.7,autoSwitch,autocomplete,trendingSearches,
+        memory:memoryEnabled?{name:memoryName,occupation:memoryOccupation,about:memoryAbout}:null
+      },attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
       if(!r.ok)throw Error(d.error||"Cookie could not answer.");
       setMessages(v=>[...v,{id:id(),role:"assistant",content:d.message||"Done.",files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}]);
@@ -407,7 +434,7 @@ export default function App(){
                 </div>}
               </div>
             </div>
-            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie"/>
+            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} placeholder="Message Cookie..." aria-label="Message Cookie" spellCheck={autoCorrect} lang={appLanguage==="English"?"en":appLanguage==="Uzbek"?"uz":"ru"}/>
           </div>
           <div className="composer-toolbar">
             <div className="toolbar-left">{keyboardHints&&<span className="shortcut-hint">Shift + Enter for new line</span>}</div>
@@ -446,74 +473,144 @@ function Message({text}:{text:string}){
   })}</div>;
 }
 
-function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa"|"blue";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa"|"blue">>;textSize:"small"|"medium"|"large";setTextSize:React.Dispatch<React.SetStateAction<"small"|"medium"|"large">>;compact:boolean;setCompact:React.Dispatch<React.SetStateAction<boolean>>;animations:boolean;setAnimations:React.Dispatch<React.SetStateAction<boolean>>;keyboardHints:boolean;setKeyboardHints:React.Dispatch<React.SetStateAction<boolean>>}){
+function AccountSettingsPage(props:{
+  dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;
+  accent:"orange"|"cream"|"cocoa"|"blue";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa"|"blue">>;
+  textSize:"small"|"medium"|"large";setTextSize:React.Dispatch<React.SetStateAction<"small"|"medium"|"large">>;
+  compact:boolean;setCompact:React.Dispatch<React.SetStateAction<boolean>>;
+  animations:boolean;setAnimations:React.Dispatch<React.SetStateAction<boolean>>;
+  keyboardHints:boolean;setKeyboardHints:React.Dispatch<React.SetStateAction<boolean>>;
+  appLanguage:"English"|"Uzbek"|"Russian";setAppLanguage:React.Dispatch<React.SetStateAction<"English"|"Uzbek"|"Russian">>;
+  autoCorrect:boolean;setAutoCorrect:React.Dispatch<React.SetStateAction<boolean>>;
+  haptics:boolean;setHaptics:React.Dispatch<React.SetStateAction<boolean>>;
+  autoSwitch:boolean;setAutoSwitch:React.Dispatch<React.SetStateAction<boolean>>;
+  autocomplete:boolean;setAutocomplete:React.Dispatch<React.SetStateAction<boolean>>;
+  trendingSearches:boolean;setTrendingSearches:React.Dispatch<React.SetStateAction<boolean>>;
+  memoryEnabled:boolean;setMemoryEnabled:React.Dispatch<React.SetStateAction<boolean>>;
+  memoryName:string;setMemoryName:React.Dispatch<React.SetStateAction<string>>;
+  memoryOccupation:string;setMemoryOccupation:React.Dispatch<React.SetStateAction<string>>;
+  memoryAbout:string;setMemoryAbout:React.Dispatch<React.SetStateAction<string>>;
+  model:string;setModel:React.Dispatch<React.SetStateAction<string>>;
+  sessionMessages:number;
+}){
   const [panel,setPanel]=useState<string|null>(null);
-  const Row=({icon:Icon,label,value,onClick}:{icon:any;label:string;value?:string;onClick?:()=>void})=>
-    <button className="settings-mobile-row" onClick={onClick||(()=>setPanel(label))}>
-      <span className="settings-mobile-row-icon"><Icon size={21}/></span>
-      <span className="settings-mobile-row-copy"><strong>{label}</strong>{value&&<small>{value}</small>}</span>
-      {value?<span className="settings-mobile-value">{value}</span>:<ChevronRight className="settings-mobile-chevron" size={20}/>}
+  const [memorySaved,setMemorySaved]=useState(true);
+
+  const modelInfo=MODELS.find(m=>m.id===props.model)||MODELS[0];
+  const cycleModel=()=>props.setModel(MODELS[(MODELS.findIndex(m=>m.id===props.model)+1)%MODELS.length].id);
+  const haptic=()=>{if(props.haptics&&"vibrate" in navigator)try{navigator.vibrate(8)}catch{}};
+
+  const Toggle=({value,onChange}:{value:boolean;onChange:()=>void})=>
+    <button type="button" aria-pressed={value} className={"ios-toggle "+(value?"on":"")} onClick={()=>{haptic();onChange()}}><span/></button>;
+
+  const Row=({icon:Icon,label,value,onClick,disabled=false}:{icon:any;label:string;value?:string;onClick?:()=>void;disabled?:boolean})=>
+    <button type="button" className={"ios-settings-row "+(disabled?"disabled":"")} disabled={disabled} onClick={onClick||(()=>setPanel(label))}>
+      <span className="ios-row-icon"><Icon size={21}/></span>
+      <span className="ios-row-main"><strong>{label}</strong></span>
+      {value&&<span className="ios-row-value">{value}</span>}
+      {!value&&<ChevronRight className="ios-row-chevron" size={20}/>}
     </button>;
 
   if(panel==="General"){
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head">
-        <button className="settings-back-btn" onClick={()=>setPanel(null)} aria-label="Back to settings"><ArrowLeft size={21}/></button>
-        <div><span className="settings-reference-eyebrow">APP SETTINGS</span><h2>General</h2></div>
-      </div>
-      <section className="settings-reference-section">
-        <h3>Chat & interface</h3>
-        <div className="settings-reference-card">
-          <div className="settings-control-row"><div><strong>Compact messages</strong><small>Reduce spacing between messages.</small></div><button className={"settings-inline-toggle "+(props.compact?"on":"")} onClick={()=>props.setCompact(v=>!v)}><span/></button></div>
-          <div className="settings-control-row"><div><strong>Keyboard hints</strong><small>Show useful keyboard shortcuts.</small></div><button className={"settings-inline-toggle "+(props.keyboardHints?"on":"")} onClick={()=>props.setKeyboardHints(v=>!v)}><span/></button></div>
-          <div className="settings-control-row"><div><strong>Interface animations</strong><small>Use short page and menu transitions.</small></div><button className={"settings-inline-toggle "+(props.animations?"on":"")} onClick={()=>props.setAnimations(v=>!v)}><span/></button></div>
-          <div className="settings-control-row"><div><strong>Text size</strong><small>Adjust reading size.</small></div><div className="settings-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
-        </div>
+    return <div className="page-container ios-settings-page">
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>General</h2></div>
+      <section className="ios-card">
+        <Row icon={Globe2} label="App language" value={props.appLanguage} onClick={()=>props.setAppLanguage(props.appLanguage==="English"?"Uzbek":props.appLanguage==="Uzbek"?"Russian":"English")}/>
+        <div className="ios-control-row"><span className="ios-row-icon"><SpellCheck size={22}/></span><span className="ios-row-main"><strong>Auto-correct spelling</strong></span><Toggle value={props.autoCorrect} onChange={()=>props.setAutoCorrect(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><Smartphone size={22}/></span><span className="ios-row-main"><strong>Haptic feedback</strong></span><Toggle value={props.haptics} onChange={()=>props.setHaptics(v=>!v)}/></div>
+      </section>
+      <h3 className="ios-section-title">Chat & interface</h3>
+      <section className="ios-card">
+        <div className="ios-control-row"><span className="ios-row-icon"><SlidersHorizontal size={21}/></span><span className="ios-row-main"><strong>Compact messages</strong></span><Toggle value={props.compact} onChange={()=>props.setCompact(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><Monitor size={21}/></span><span className="ios-row-main"><strong>Interface animations</strong></span><Toggle value={props.animations} onChange={()=>props.setAnimations(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><Keyboard size={21}/><span/></span><span className="ios-row-main"><strong>Keyboard hints</strong></span><Toggle value={props.keyboardHints} onChange={()=>props.setKeyboardHints(v=>!v)}/></div>
+        <div className="ios-control-row"><span className="ios-row-icon"><TypeIcon size={21}/></span><span className="ios-row-main"><strong>Text size</strong></span><div className="ios-segmented">{(["small","medium","large"] as const).map(x=><button key={x} className={props.textSize===x?"selected":""} onClick={()=>props.setTextSize(x)}>{x[0].toUpperCase()+x.slice(1)}</button>)}</div></div>
       </section>
     </div>;
   }
 
-  if(panel==="Help Center") return <HelpPage/>;
-
-  const simplePages:Record<string,{title:string;icon:any;body:string}>={
-    "Report app issue":{title:"Report app issue",icon:Flag,body:"Describe the problem in Cookie with the error message and the steps that caused it. A separate support-ticket service is not connected yet."},
-    "Privacy Center":{title:"Privacy Center",icon:ShieldCheck,body:"Cookie only receives information that the website actually sends with your request. See Help & shortcuts → Privacy & limitations for the full boundary."},
-    "About":{title:"About Cookie",icon:Info,body:"Cookie is the AI assistant for this website. Account billing, memory, plugins, voice, and authentication are not connected in this build."}
-  };
-  if(panel&&simplePages[panel]){
-    const p=simplePages[panel];
-    return <div className="page-container settings-reference-page">
-      <div className="settings-detail-head"><button className="settings-back-btn" onClick={()=>setPanel(null)} aria-label="Back"><ArrowLeft size={21}/></button><div><span className="settings-reference-eyebrow">COOKIE SETTINGS</span><h2>{p.title}</h2></div></div>
-      <section className="settings-detail-card"><div className="settings-detail-icon"><p.icon size={23}/></div><p>{p.body}</p></section>
+  if(panel==="Memory"){
+    const save=()=>{setMemorySaved(true);};
+    return <div className="page-container ios-settings-page">
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>Memory</h2><button className={"ios-save "+(memorySaved?"":"ready")} onClick={save}>Save</button></div>
+      <section className="ios-card">
+        <div className="ios-control-row"><span className="ios-row-main"><strong>Enable memory</strong></span><Toggle value={props.memoryEnabled} onChange={()=>{props.setMemoryEnabled(v=>!v);setMemorySaved(false)}}/></div>
+      </section>
+      <p className="ios-explainer">Memory lets Cookie use the profile details you choose to provide in future requests. This build stores these fields locally in your browser.</p>
+      <button className="ios-card ios-link-card" onClick={()=>setPanel("Memory summary")}><span>Memory summary</span><ChevronRight size={21}/></button>
+      <p className="ios-explainer">Review the information currently saved for Cookie.</p>
+      <h3 className="ios-section-title">Your nickname</h3>
+      <input className="ios-input" placeholder="Name" value={props.memoryName} onChange={e=>{props.setMemoryName(e.target.value);setMemorySaved(false)}}/>
+      <h3 className="ios-section-title">Your occupation</h3>
+      <input className="ios-input" placeholder="Engineer, student, etc." value={props.memoryOccupation} onChange={e=>{props.setMemoryOccupation(e.target.value);setMemorySaved(false)}}/>
+      <h3 className="ios-section-title">More about you</h3>
+      <textarea className="ios-input ios-textarea" placeholder="Interests, values, or preferences to keep in mind..." value={props.memoryAbout} onChange={e=>{props.setMemoryAbout(e.target.value);setMemorySaved(false)}}/>
     </div>;
   }
 
-  return <div className="page-container account-mobile-page">
-    <div className="account-mobile-head"><div><span className="account-mobile-eyebrow">COOKIE SETTINGS</span><h2>Settings</h2><p>Only settings that are practical in the current build are shown here.</p></div></div>
-    <section className="settings-reference-section settings-profile-section">
-      <div className="settings-profile"><span className="settings-profile-avatar">D</span><div className="settings-profile-copy"><strong>Cookie user</strong><small>Local account</small></div></div>
+  if(panel==="Memory summary"){
+    return <div className="page-container ios-settings-page">
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel("Memory")}><ArrowLeft size={27}/></button><h2>Memory summary</h2></div>
+      <section className="ios-card ios-summary-card">
+        <p><b>Memory is {props.memoryEnabled?"enabled":"disabled"}.</b></p>
+        <p>{props.memoryName||"No nickname saved."}</p>
+        <p>{props.memoryOccupation||"No occupation saved."}</p>
+        <p>{props.memoryAbout||"No additional preferences saved."}</p>
+      </section>
+    </div>;
+  }
+
+  if(panel==="Usage and limits"){
+    return <div className="page-container ios-settings-page">
+      <div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>Usage and limits</h2></div>
+      <h3 className="ios-section-title">Current session usage ⓘ</h3>
+      <section className="ios-card ios-usage-card">
+        <div><strong>Assistant responses</strong><span>{props.sessionMessages}</span></div>
+        <div className="ios-progress"><span style={{width:"100%"}}/></div>
+      </section>
+      <h3 className="ios-section-title">Credits</h3>
+      <p className="ios-explainer">No account-level credit system is connected to this build yet. Server-side plan limits should be added only when the backend supports them.</p>
+    </div>;
+  }
+
+  if(panel==="About"){
+    return <div className="page-container ios-settings-page"><div className="ios-settings-head"><button className="ios-back" onClick={()=>setPanel(null)}><ArrowLeft size={27}/></button><h2>About</h2></div><section className="ios-card ios-summary-card"><p><b>Cookie</b></p><p>AI assistant website. Settings are stored locally unless a connected backend feature says otherwise.</p></section></div>;
+  }
+
+  return <div className="page-container ios-settings-page">
+    <div className="ios-settings-head"><h2>Settings</h2></div>
+    <h3 className="ios-section-title">General</h3>
+    <section className="ios-card">
+      <Row icon={Settings} label="General" value="English" onClick={()=>setPanel("General")}/>
     </section>
-    <section className="settings-reference-section">
-      <h3>Theme</h3>
-      <div className="settings-reference-card">
-        <button className="settings-mobile-row" onClick={()=>props.setDark(v=>!v)}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Appearance</strong></span><span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
-        <button className="settings-mobile-row" onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}><span className="settings-mobile-row-icon"><Palette size={22}/></span><span className="settings-mobile-row-copy"><strong>Accent color</strong></span><span className={"settings-accent-dot "+props.accent}/><span className="settings-mobile-value">{props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span><ChevronRight className="settings-mobile-chevron" size={21}/></button>
-      </div>
+
+    <h3 className="ios-section-title">Intelligence</h3>
+    <section className="ios-card">
+      <Row icon={Sparkles} label="Model" value={modelInfo.name} onClick={cycleModel}/>
+      <div className="ios-control-row"><span className="ios-row-icon"><Shuffle size={22}/></span><span className="ios-row-main"><strong>Auto switch</strong><small>Use higher intelligence for complex questions</small></span><Toggle value={props.autoSwitch} onChange={()=>props.setAutoSwitch(v=>!v)}/></div>
     </section>
-    <section className="settings-reference-section">
-      <h3>App settings</h3>
-      <div className="settings-reference-card"><Row icon={Settings} label="General" value="Chat & interface"/></div>
+
+    <h3 className="ios-section-title">Suggestions</h3>
+    <section className="ios-card">
+      <div className="ios-control-row"><span className="ios-row-icon"><Sparkles size={22}/></span><span className="ios-row-main"><strong>Autocomplete</strong></span><Toggle value={props.autocomplete} onChange={()=>props.setAutocomplete(v=>!v)}/></div>
+      <div className="ios-control-row"><span className="ios-row-icon"><TrendingUp size={22}/></span><span className="ios-row-main"><strong>Trending searches</strong></span><Toggle value={props.trendingSearches} onChange={()=>props.setTrendingSearches(v=>!v)}/></div>
     </section>
-    <section className="settings-reference-section">
-      <h3>Get help</h3>
-      <div className="settings-reference-card">
-        <Row icon={Flag} label="Report app issue"/>
-        <Row icon={HelpCircle} label="Help Center" onClick={()=>setPanel("Help Center")}/>
-        <Row icon={ShieldCheck} label="Privacy Center" onClick={()=>setPanel("Privacy Center")}/>
-        <Row icon={Info} label="About" onClick={()=>setPanel("About")}/>
-      </div>
+
+    <h3 className="ios-section-title">Personalization</h3>
+    <section className="ios-card">
+      <Row icon={Brain} label="Memory" value={props.memoryEnabled?"On":"Off"} onClick={()=>setPanel("Memory")}/>
+      <Row icon={Gauge} label="Usage and limits" value={props.sessionMessages+" responses"} onClick={()=>setPanel("Usage and limits")}/>
+      <Row icon={Palette} label="Appearance" value={props.dark?"Dark":"Light"} onClick={()=>props.setDark(v=>!v)}/>
+      <Row icon={Palette} label="Accent color" value={props.accent} onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}/>
     </section>
-    <p className="settings-reference-footer">Billing, memory, plugins, voice, notifications, remote control, parental controls, storage, and authentication are intentionally omitted until their backend services exist.</p>
+
+    <h3 className="ios-section-title">Get help</h3>
+    <section className="ios-card">
+      <Row icon={HelpCircle} label="Help Center" onClick={()=>setPanel("Help Center")}/>
+      <Row icon={ShieldCheck} label="Privacy Center" onClick={()=>setPanel("About")}/>
+      <Row icon={Info} label="About" onClick={()=>setPanel("About")}/>
+    </section>
+    <p className="ios-footer">Advanced account, billing, remote-control, plugins, voice, and server-side usage features are omitted until their required backend services exist.</p>
   </div>;
 }
 
