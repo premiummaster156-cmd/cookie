@@ -138,13 +138,16 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "A user message is required." }, 400);
     }
 
-    const language = ["auto", "english", "uzbek", "russian"].includes(preferences.language)
-      ? preferences.language
-      : "auto";
+    const supportedLanguages = ["auto","en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
+    const language = supportedLanguages.includes(preferences.language) ? preferences.language : "auto";
     const length = ["auto", "short", "detailed"].includes(preferences.answerLength)
       ? preferences.answerLength
       : "auto";
     const creativity = Math.min(1, Math.max(0, Number(preferences.creativity) || 0.7));
+    const personalityNames = ["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
+    const personality = personalityNames.includes(preferences.personality) ? preferences.personality : "Balanced";
+    const profileUsername = typeof preferences.profile?.username === "string" ? preferences.profile.username.slice(0,80) : "";
+    const profileEmail = typeof preferences.profile?.email === "string" ? preferences.profile.email.slice(0,160) : "";
 
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
@@ -161,6 +164,9 @@ export async function onRequestPost({ request, env }) {
       "COOKIE PRODUCT BEHAVIOR: When the user asks for a downloadable artifact, create it directly and return it in the chat. When the user uploads files/images, use the provided content as context and be explicit if the content could not be read. When discussing Cookie's capabilities, describe only capabilities actually available in this website.",
       "COOKIE PRODUCT BEHAVIOR: Do not invent Cookie features, buttons, pages, integrations, subscriptions, workspaces, browsing abilities, external actions, or persistent storage. If a capability is not in the current product knowledge or available internal tools, say so instead of pretending it exists.",
       "COOKIE PRODUCT BEHAVIOR: You do not need to expose internal tool names or implementation details to ordinary users. Use internal file capabilities when appropriate and describe the user-facing result instead.",
+      `USER PREFERENCES: Respond with the selected Cookie personality: ${personality}. Balanced = natural and adaptable; Friendly = warm and conversational; Professional = clear and formal; Concise = short and direct; Creative = imaginative and expressive; Teacher = step-by-step and educational.`,
+      profileUsername ? `USER PROFILE: The user's Cookie username is "${profileUsername}". Use it naturally when useful; do not reveal private profile data unless relevant.` : "",
+      profileEmail ? "USER PROFILE: An email address is saved for the Cookie account interface. Do not expose or repeat it unless the user explicitly asks." : "",
       "You are Cookie, a polished general-purpose AI assistant.",
       "Be genuinely useful rather than overly enthusiastic or repetitive.",
       "Follow the user's instructions precisely and preserve important constraints.",
