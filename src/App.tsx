@@ -13,7 +13,7 @@ import {
 type Attachment={id:string;kind:"image"|"file";name:string;mime:string;data:string};
 type GeneratedFile={name:string;path:string;content:string;kind?:string};
 type Msg={id:string;role:"user"|"assistant";content:string;attachments?:Attachment[];files?:GeneratedFile[];time?:string};
-type View="chat"|"settings"|"help";
+type View="chat"|"settings"|"account"|"help";
 
 const COOKIE_ICON_URL="https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
 const MODELS=[
@@ -261,11 +261,11 @@ export default function App(){
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="settings"?"active":"")} onClick={()=>openView("settings")}><span className="nav-icon"><Settings size={17}/></span><span>Settings</span></button>
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
-        <div className="account">
+        <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
-          <span className="account-more">•••</span>
-        </div>
+          <span className="account-more"><MoreHorizontal size={15}/></span>
+        </button>
       </div>
     </aside>
 
@@ -395,6 +395,7 @@ export default function App(){
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
       {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
+      {view==="account"&&<AccountSettingsPage/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
@@ -418,6 +419,67 @@ function Message({text}:{text:string}){
     if(numbered)return <p className="rich-list-item" key={i}><strong>{numbered[1]}.</strong> {inline(numbered[2])}</p>;
     return <p key={i}>{line?inline(line):" "}</p>;
   })}</div>;
+}
+
+function AccountSettingsPage(){
+  const [tab,setTab]=useState("Profile");
+  const tabs=[
+    ["Profile","User profile and account identity"],
+    ["Plan","Current Cookie plan"],
+    ["Security","Sign-in and session controls"],
+    ["Data controls","Privacy and account data"],
+  ];
+  return <div className="page-container account-settings-page">
+    <div className="page-heading">
+      <span className="eyebrow">ACCOUNT</span>
+      <h2>Account settings</h2>
+      <p>Manage your Cookie account details and account-level controls.</p>
+    </div>
+    <div className="account-settings-layout">
+      <nav className="account-settings-nav" aria-label="Account settings sections">
+        <div className="account-settings-nav-label">Account</div>
+        {tabs.map(([name,desc])=><button key={name} className={"account-setting-tab "+(tab===name?"active":"")} onClick={()=>setTab(name)}>
+          <span>{name}</span><small>{desc}</small>
+        </button>)}
+        <button className={"account-setting-tab danger "+(tab==="Delete account"?"active":"")} onClick={()=>setTab("Delete account")}><span>Delete account</span><small>Permanently remove the account</small></button>
+      </nav>
+      <div className="account-setting-content">
+        {tab==="Profile"&&<AccountGroup title="Profile" desc="Basic information shown for your Cookie account.">
+          <div className="account-profile">
+            <span className="account-profile-avatar">D</span>
+            <div><strong>Cookie user</strong><small>Cookie account</small></div>
+          </div>
+          <AccountRow label="Display name" value="Cookie user" action="Edit"/>
+          <AccountRow label="Email" value="Not connected" action="Manage"/>
+        </AccountGroup>}
+        {tab==="Plan"&&<AccountGroup title="Plan" desc="Account-level subscription information available to Cookie.">
+          <div className="account-plan-line"><div><strong>Cookie account</strong><small>Plan details are shown here when billing is connected.</small></div><span className="account-badge">Current</span></div>
+          <AccountRow label="Subscription" value="Not connected" action="Manage"/>
+          <AccountRow label="Billing" value="No billing account linked" action="Manage"/>
+        </AccountGroup>}
+        {tab==="Security"&&<AccountGroup title="Security" desc="Review account access and session controls.">
+          <AccountRow label="Password" value="Managed by your sign-in provider" action="Manage"/>
+          <AccountRow label="Two-step verification" value="Not configured" action="Set up"/>
+          <AccountRow label="Active sessions" value="Current browser session" action="Review"/>
+        </AccountGroup>}
+        {tab==="Data controls"&&<AccountGroup title="Data controls" desc="Controls for information associated with this Cookie account.">
+          <AccountRow label="Chat history" value="Controlled by the current Cookie session" action="Review"/>
+          <AccountRow label="Personalization" value="Local interface preferences" action="Review"/>
+          <AccountRow label="Export data" value="Request account data when connected" action="Export"/>
+        </AccountGroup>}
+        {tab==="Delete account"&&<AccountGroup title="Delete account" desc="Account deletion is permanent and should be used only when you intend to remove the account.">
+          <div className="account-danger-note"><Trash2 size={16}/><span>Deleting an account can remove account-associated data. This demo interface does not perform deletion.</span></div>
+          <button className="danger-btn account-delete-btn" onClick={()=>window.alert("Account deletion is not connected in this Cookie build.")}>Delete account</button>
+        </AccountGroup>}
+      </div>
+    </div>
+  </div>;
+}
+function AccountGroup({title,desc,children}:{title:string;desc:string;children:React.ReactNode}){
+  return <section className="account-group"><h3>{title}</h3><p>{desc}</p>{children}</section>;
+}
+function AccountRow({label,value,action}:{label:string;value:string;action:string}){
+  return <div className="account-row"><div><strong>{label}</strong><small>{value}</small></div><button className="account-row-action" onClick={()=>window.alert(action+" is not connected in this Cookie build.")}>{action}</button></div>;
 }
 
 function SettingsPage(props:{
