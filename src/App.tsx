@@ -4,7 +4,7 @@ import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
   ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
-  Camera, Images, Plug, Brain, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
+  Camera, Images, Plug, Brain, Share2, Pin, Archive, Trash2, Paperclip, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
   Keyboard, ShieldCheck, Palette, MessageCircleQuestion, Wrench,
   Code2, Globe2, ScanSearch
@@ -37,6 +37,8 @@ export default function App(){
   const [attachments,setAttachments]=useState<Attachment[]>([]);
   const [attachMenuOpen,setAttachMenuOpen]=useState(false);
   const [toolsOpen,setToolsOpen]=useState(false);
+  const [messageMenuOpen,setMessageMenuOpen]=useState<string|null>(null);
+  const [pinnedMessages,setPinnedMessages]=useState<string[]>([]);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
   const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
@@ -114,7 +116,19 @@ export default function App(){
   function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
   function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setToolsOpen(false)}
   function downloadFile(file:GeneratedFile){const blob=new Blob([file.content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name||file.path.split("/").pop()||"cookie-file.txt";a.click();URL.revokeObjectURL(a.href)}
-  function useTool(prompt:string){setInput(v=>v?`${v} ${prompt}`:prompt);setToolsOpen(false)}
+  function useTool(prompt:string){setInput((v)=>v?v+" "+prompt:prompt);setToolsOpen(false)}
+  function toggleMessagePin(messageId:string){setPinnedMessages(v=>v.includes(messageId)?v.filter(x=>x!==messageId):[...v,messageId]);setMessageMenuOpen(null)}
+  async function shareMessage(message:Msg){
+    const text=message.content||"Cookie message";
+    try{
+      if(navigator.share) await navigator.share({title:"Cookie",text});
+      else await navigator.clipboard?.writeText(text);
+    }catch{}
+    setMessageMenuOpen(null);
+  }
+  function deleteMessage(messageId:string){setMessages(v=>v.filter(m=>m.id!==messageId));setMessageMenuOpen(null)}
+  function findInChat(text:string){setSearch(text.slice(0,80));setMessageMenuOpen(null)}
+
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <aside className="sidebar">
@@ -179,7 +193,21 @@ export default function App(){
                   <Message text={m.content}/>
                   {m.files && m.files.length>0&&<div className="generated-files">{m.files.map(f=><button className="generated-file" key={f.path} onClick={()=>downloadFile(f)}><FileText size={18}/><span><b>{f.name||f.path.split("/").pop()}</b><small>{f.path} · Download file</small></span><ArrowUp className="download-arrow" size={15}/></button>)}</div>}
                   <span className="message-time">{m.time||""}</span>
-                  {m.role==="assistant"&&<div className="message-tools"><button onClick={()=>navigator.clipboard?.writeText(m.content)}><Copy size={13}/> Copy</button><button><MoreHorizontal size={13}/> More</button></div>}
+                  {m.role==="assistant"&&<div className="message-tools">
+                    <button onClick={()=>navigator.clipboard?.writeText(m.content)}><Copy size={13}/> Copy</button>
+                    <div className="message-more-wrap">
+                      <button className={messageMenuOpen===m.id?"active":""} onClick={()=>setMessageMenuOpen(v=>v===m.id?null:m.id)} aria-label="More message actions" aria-expanded={messageMenuOpen===m.id}><MoreHorizontal size={15}/></button>
+                      {messageMenuOpen===m.id&&<div className="message-action-menu">
+                        <div className="message-action-title">Cookie · Current chat</div>
+                        <button onClick={()=>shareMessage(m)}><Share2 size={20}/><span>Share</span></button>
+                        <button onClick={()=>toggleMessagePin(m.id)}><Pin size={20}/><span>{pinnedMessages.includes(m.id)?"Unpin":"Pin"}</span></button>
+                        <button onClick={()=>setMessageMenuOpen(null)}><Paperclip size={20}/><span>Uploaded files</span></button>
+                        <button onClick={()=>findInChat(m.content)}><Search size={20}/><span>Find in chat</span></button>
+                        <button onClick={()=>setMessageMenuOpen(null)}><Archive size={20}/><span>Archive</span></button>
+                        <button className="danger" onClick={()=>deleteMessage(m.id)}><Trash2 size={20}/><span>Delete</span></button>
+                      </div>}
+                    </div>
+                  </div>}
                 </div>
               </article>)}
             </section>
