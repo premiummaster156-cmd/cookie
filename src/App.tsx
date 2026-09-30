@@ -243,7 +243,6 @@ export default function App(){
                     <span className="attachment-menu-icon"><FileUp size={22}/></span>
                     <span><b>Files</b><small>Files only · up to {10-attachments.length}</small></span>
                   </button>
-                  <div className="menu-limit">{attachments.length}/10 attachments · folders are not supported</div>
                 </div>}
               </div>
             </div>
