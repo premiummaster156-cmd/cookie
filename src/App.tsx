@@ -421,7 +421,7 @@ function Message({text}:{text:string}){
   })}</div>;
 }
 
-function AccountSettingsPage(props:{dark:boolean;setDark:(v:boolean|((v:boolean)=>boolean))=>void;accent:"orange"|"cream"|"cocoa";setAccent:(v:"orange"|"cream"|"cocoa"|((v:"orange"|"cream"|"cocoa")=>"orange"|"cream"|"cocoa"))=>void}){
+function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa">>}){
   const [panel,setPanel]=useState<string|null>(null);
 
   const openPanel=(name:string)=>setPanel(name);
@@ -507,8 +507,8 @@ function AccountSettingsPage(props:{dark:boolean;setDark:(v:boolean|((v:boolean)
     <AccountMobileSection title="Theme">
       <button className="account-mobile-row" onClick={()=>setDarkSafe()}>
         <span className="account-mobile-row-icon"><Palette size={21}/></span>
-        <span className="account-mobile-row-copy"><strong>Appearance</strong><small>{dark?"Dark":"Light"}</small></span>
-        <span className="account-mobile-value">{dark?"Dark":"Light"}</span>
+        <span className="account-mobile-row-copy"><strong>Appearance</strong><small>{props.dark?"Dark":"Light"}</small></span>
+        <span className="account-mobile-value">{props.dark?"Dark":"Light"}</span>
       </button>
       <button className="account-mobile-row" onClick={()=>cycleAccent()}>
         <span className="account-mobile-row-icon"><Palette size={21}/></span>
@@ -533,7 +533,7 @@ function AccountSettingsPage(props:{dark:boolean;setDark:(v:boolean|((v:boolean)
 
     <AccountMobileSection title="Get help">
       <Row icon={Flag} label="Report app issue"/>
-      <Row icon={HelpCircle} label="Help Center" onClick={()=>openView("help")}/>
+      <Row icon={HelpCircle} label="Help Center" onClick={()=>openPanel("Help Center")}/>
       <Row icon={ShieldCheck} label="Privacy Center"/>
       <Row icon={Info} label="About"/>
     </AccountMobileSection>
