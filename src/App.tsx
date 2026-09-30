@@ -505,8 +505,8 @@ export default function App(){
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <CookieMotionScene enabled={animations}/>
-    {sidebarOpen&&<div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)}/>}
-    <aside className="sidebar">
+    {sidebarOpen&&<div className="sidebar-overlay animate__animated animate__fadeIn" onClick={()=>setSidebarOpen(false)}/>}
+    <aside className={"sidebar "+(sidebarOpen?"animate__animated animate__slideInLeft":"")}>
       <div className="sidebar-top">
         <div className="brand-row">
           <button className="brand glass-control" onClick={()=>openView("chat")} aria-label="Cookie home"><CookieIcon size={34}/><span>Cookie</span></button>
@@ -558,7 +558,7 @@ export default function App(){
 
       {view==="chat"&&<div ref={chatScroll} className="chat-scroll">
         <div className="chat-content">
-          {search!==""&&<div className="large-search search-inline" role="search">
+          {search!==""&&<div className="large-search search-inline animate__animated animate__fadeInDown" role="search">
   <Search size={18}/>
   <input autoFocus value={search.trim()===""?"":search} onChange={e=>setSearch(e.target.value)} placeholder="Search this conversation" aria-label="Search this conversation"/>
   {search.trim()&&<button className="search-clear" onClick={()=>setSearch(" ")} aria-label="Clear search"><X size={15}/></button>}
@@ -649,7 +649,7 @@ export default function App(){
 }} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
                   <CirclePlus size={22}/>
                 </button>
-                {attachMenuOpen&&<div className="composer-menu attachment-menu">
+                {attachMenuOpen&&<div className="composer-menu attachment-menu animate__animated animate__zoomIn">
                   <button className="attachment-menu-item" onClick={()=>openPicker("camera")}>
                     <span className="attachment-menu-icon"><Camera size={22}/></span>
                     <span><b>Camera</b><small>Take a photo · up to {10-attachments.length}</small></span>
