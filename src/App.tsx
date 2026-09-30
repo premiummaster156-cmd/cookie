@@ -44,7 +44,7 @@ export default function App(){
   const [messageMenuPosition,setMessageMenuPosition]=useState<{top:number;left:number}|null>(null);
   const [view,setView]=useState<View>("chat");
   const [dark,setDark]=useState(true);
-  const [accent,setAccent]=useState<"orange"|"cream"|"cocoa">("cream");
+  const [accent,setAccent]=useState<"orange"|"cream"|"cocoa"|"blue">("blue");
   const [textSize,setTextSize]=useState<"small"|"medium"|"large">("medium");
   const [compact,setCompact]=useState(false);
   const [animations,setAnimations]=useState(true);
@@ -259,11 +259,10 @@ export default function App(){
         </div>
       </div>
       <div className="sidebar-bottom">
-        <button className={"nav-item "+(view==="settings"?"active":"")} onClick={()=>openView("settings")}><span className="nav-icon"><Settings size={17}/></span><span>Settings</span></button>
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
         <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
-          <span className="account-copy"><strong>Cookie user</strong><small>Cookie account</small></span>
+          <span className="account-copy"><strong>Settings</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
         </button>
       </div>
@@ -394,7 +393,7 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {view==="account"&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}\n      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
+      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent}/>}\n      {view==="settings"&&<SettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={setAnimations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints}/>}
       
       {view==="help"&&<HelpPage/>}
     </section>
@@ -421,7 +420,7 @@ function Message({text}:{text:string}){
   })}</div>;
 }
 
-function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa">>}){
+function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.SetStateAction<boolean>>;accent:"orange"|"cream"|"cocoa"|"blue";setAccent:React.Dispatch<React.SetStateAction<"orange"|"cream"|"cocoa"|"blue">>}){
   const [panel,setPanel]=useState<string|null>(null);
 
   const openPanel=(name:string)=>setPanel(name);
@@ -473,9 +472,9 @@ function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.Se
   return <div className="page-container account-mobile-page">
     <div className="account-mobile-head">
       <div>
-        <span className="account-mobile-eyebrow">COOKIE ACCOUNT</span>
-        <h2>Account</h2>
-        <p>Manage your profile, plan, privacy, and app preferences.</p>
+        <span className="account-mobile-eyebrow">COOKIE SETTINGS</span>
+        <h2>Settings</h2>
+        <p>Manage your account, appearance, app preferences, privacy, and help.</p>
       </div>
     </div>
 
@@ -544,9 +543,9 @@ function AccountSettingsPage(props:{dark:boolean;setDark:React.Dispatch<React.Se
 
   function setDarkSafe(){props.setDark(v=>!v)}
   function cycleAccent(){
-    props.setAccent(v=>v==="cream"?"orange":v==="orange"?"cocoa":"cream");
+    props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue");
   }
-  function accentLabel(){return props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}
+  function accentLabel(){return props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}
 }
 
 function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
