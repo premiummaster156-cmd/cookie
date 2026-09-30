@@ -322,16 +322,31 @@ function Toggle({label,desc,value,setValue}:{label:string;desc:string;value:bool
   return <div className="toggle-row"><span><strong>{label}</strong><small>{desc}</small></span><button className={"toggle "+(value?"on":"")} onClick={()=>setValue(!value)} aria-pressed={value}><span/></button></div>;
 }
 
+function HelpCodeBlock({label,code}:{label:string;code:string}){
+  const [copied,setCopied]=useState(false);
+  async function copy(){
+    try{
+      if(navigator.clipboard)await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(()=>setCopied(false),1200);
+    }catch{}
+  }
+  return <div className="help-code-block">
+    <div className="help-code-head"><span>{label}</span><button onClick={copy}><Copy size={14}/>{copied?"Copied":"Copy"}</button></div>
+    <pre><code>{code}</code></pre>
+  </div>;
+}
+
 function HelpPage(){
   const topics=[
-    ["Getting started","Learn the basics of Cookie, the composer, and your first conversation."],
-    ["Chat & conversations","Understand chats, navigation, search, models, and conversation behavior."],
-    ["Files & images","Learn uploads, the 10-item limit, supported types, and file analysis."],
-    ["Generated files","Learn how Cookie creates, returns, and downloads generated artifacts."],
-    ["Models","Understand Cookie's model profiles and when their behavior differs."],
-    ["Message actions","Learn what Copy, Share, Pin, Find, Archive, Delete, and file actions do."],
-    ["Settings & interface","Understand appearance, accessibility, motion, density, and interface controls."],
-    ["Privacy & limitations","Understand what Cookie knows, what it can do, and where its limits are."]
+    ["Getting started","The essentials"],
+    ["Chat & conversations","Chats, search, models"],
+    ["Files & images","Uploads and attachments"],
+    ["Generated files","Artifacts and downloads"],
+    ["Models","Cookie model profiles"],
+    ["Message actions","Copying and chat actions"],
+    ["Settings & interface","Preferences and UI"],
+    ["Privacy & limitations","What Cookie can and cannot do"]
   ];
   const [topic,setTopic]=useState("Getting started");
   const content:Record<string,{title:string;body:string[]}>={
@@ -401,8 +416,19 @@ function HelpPage(){
     ]}
   };
   const selected=content[topic]||content["Getting started"];
+  const examples:Record<string,string>={
+    "Getting started":"# Start here\nType a request → Enter\nShift + Enter → new line\n+ → attachments",
+    "Chat & conversations":"# Chat session\n••• → Share chat\n••• → Rename chat\n••• → Find in chat",
+    "Files & images":"# Attachments\n+ → Camera\n+ → Photos\n+ → Files\nLimit → 10 items per message",
+    "Generated files":"# Generated files\nCookie creates the artifact → Download file",
+    "Models":"# Profiles\nCPT-1 → everyday\nCPT-2 MAX → deeper reasoning + coding\nCPT-3 ULTRA → maximum Cookie profile",
+    "Message actions":"# Chat actions\n••• → Share · Rename · Pin · Find · Archive · Delete\nCopy → individual assistant response",
+    "Settings & interface":"# Preferences\nAppearance → theme, accent, text size\nChat → density, motion, keyboard hints",
+    "Privacy & limitations":"# Boundary\nCookie only receives information supplied to the current request."
+  };
+  const sectionNames=["Overview","How it works","Useful to know","Tips","Current behavior","Important"];
   return <div className="page-container help-page">
-    <div className="page-heading"><span className="eyebrow">SUPPORT</span><h2>Help & shortcuts</h2><p>Choose a topic from the sidebar to learn how Cookie works.</p></div>
+    <div className="page-heading"><span className="eyebrow">SUPPORT</span><h2>Help & shortcuts</h2><p>A practical guide to Cookie. Pick a topic and jump straight to what you need.</p></div>
     <div className="help-layout">
       <nav className="help-nav" aria-label="Help topics">
         <div className="help-nav-label">Topics</div>
@@ -410,9 +436,14 @@ function HelpPage(){
       </nav>
       <article key={topic} className="help-content help-content-enter">
         <div className="help-content-head"><span className="eyebrow">COOKIE HELP</span><h3>{selected.title}</h3></div>
-        {selected.body.map((p,i)=><p key={i}>{p}</p>)}
+        <div className="help-article">
+          {selected.body.map((p,i)=><section className="help-section" key={i}>
+            <h4>{sectionNames[Math.min(i,sectionNames.length-1)]}</h4>
+            <p>{p}</p>
+          </section>)}
+          <HelpCodeBlock label="Quick reference" code={examples[topic]||examples["Getting started"]}/>
+        </div>
         <div className="help-footer"><ShieldCheck size={17}/><span>Important information should still be verified. Cookie can make mistakes.</span></div>
       </article>
     </div>
   </div>;
-}
