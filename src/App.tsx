@@ -218,7 +218,8 @@ export default function App(){
                   <span className="message-time">{m.time||""}</span>
                   {m.role==="assistant"&&<div className="message-tools">
                     <button onClick={()=>copyMessage(m.content,m.id)} className={copiedMessage===m.id?"copied":""}><Copy size={13}/> {copiedMessage===m.id?"Copied":"Copy"}</button>
-                  </div>                </div>
+                  </div>}
+                </div>
               </article>)}
             </section>
           }
@@ -447,3 +448,4 @@ function HelpPage(){
       </article>
     </div>
   </div>;
+}
