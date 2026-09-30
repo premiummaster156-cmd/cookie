@@ -451,6 +451,7 @@ export default function App(){
 
   return <main className={"app-shell "+(dark?"theme-dark":"theme-light")}>
     <CookieMotionScene enabled={animations}/>
+    {sidebarOpen&&<div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)}/>}
     <aside className="sidebar">
       <div className="sidebar-top">
         <div className="brand-row">
@@ -473,8 +474,6 @@ export default function App(){
         </button>
       </div>
     </aside>
-
-    {sidebarOpen&&<div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)}/>}
 
     <section className="main">
       <header className="topbar">
