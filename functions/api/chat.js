@@ -37,78 +37,52 @@ function limitResponse(text) {
 }
 
 
-const WORKSPACE_LIMITS = { maxFiles: 120, maxFileChars: 500000, maxPathChars: 240 };
+const FILE_LIMITS = { maxFiles: 30, maxFileChars: 500000, maxPathChars: 240 };
 
 const agentTools = [
-  { type:"function", function:{ name:"workspace_list", description:"List files in Cookie's project workspace.", parameters:{type:"object",properties:{}} } },
-  { type:"function", function:{ name:"workspace_read", description:"Read one complete file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
-  { type:"function", function:{ name:"workspace_write", description:"Create a new file or replace an existing file in Cookie's project workspace.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
-  { type:"function", function:{ name:"workspace_delete", description:"Delete one file from Cookie's project workspace.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
-  { type:"function", function:{ name:"workspace_mkdir", description:"Create a folder in Cookie's project workspace. Folder entries are kept so empty folders can also be included in ZIP exports.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
-  { type:"function", function:{ name:"workspace_rename", description:"Rename a file inside Cookie's project workspace.", parameters:{type:"object",required:["from","to"],properties:{from:{type:"string"},to:{type:"string"}}} } }
+  { type:"function", function:{ name:"file_create", description:"Create a downloadable file for the user. Use this whenever the user asks for code, a document, configuration, or any file they can download.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
+  { type:"function", function:{ name:"file_read", description:"Read a file you created earlier in this same response before revising it.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
+  { type:"function", function:{ name:"file_update", description:"Update a file you created earlier in this same response.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
+  { type:"function", function:{ name:"file_delete", description:"Delete a generated file from this response when the user asks you to remove it.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } }
 ];
 
-function normalizeWorkspace(input) {
+function normalizeFiles(input) {
   if (!Array.isArray(input)) return [];
   return input.filter(f => f && typeof f.path === "string" && typeof f.content === "string")
-    .slice(0, WORKSPACE_LIMITS.maxFiles)
-    .map(f => ({path:f.path.replace(/^\/+/,"").slice(0,WORKSPACE_LIMITS.maxPathChars),content:f.content.slice(0,WORKSPACE_LIMITS.maxFileChars)}))
+    .slice(0, FILE_LIMITS.maxFiles)
+    .map(f => ({path:f.path.replace(/^\\/+/, "").slice(0, FILE_LIMITS.maxPathChars), content:f.content.slice(0, FILE_LIMITS.maxFileChars), kind:"file"}))
     .filter(f => f.path && !f.path.includes(".."));
 }
 
-function executeWorkspaceTool(workspace, name, args) {
+function executeFileTool(files, name, args) {
   const a = args && typeof args === "object" ? args : {};
-  if (name === "workspace_list") {
-    return {workspace, result:JSON.stringify({ok:true,files:workspace.map(f=>({path:f.path,size:f.content.length,kind:f.kind||"file"}))})};
-  }
-  if (name === "workspace_read") {
-    const path=String(a.path||"").replace(/^\/+/,"");
-    const file=workspace.find(f=>f.path===path);
-    return file ? {workspace,result:JSON.stringify({ok:true,path,content:file.content})} : {workspace,result:JSON.stringify({ok:false,error:"File not found: "+path})};
-  }
-  if (name === "workspace_write") {
-    const path=String(a.path||"").replace(/^\/+/,"");
-    const content=String(a.content ?? "");
-    if (!path || path.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid workspace path."})};
-    if (path.length>WORKSPACE_LIMITS.maxPathChars) return {workspace,result:JSON.stringify({ok:false,error:"Path is too long."})};
-    if (content.length>WORKSPACE_LIMITS.maxFileChars) return {workspace,result:JSON.stringify({ok:false,error:"File is too large for the preview workspace."})};
-    const i=workspace.findIndex(f=>f.path===path);
-    const action=i>=0 ? "updated" : "created";
-    if(i>=0 && workspace[i].kind === "folder") return {workspace,result:JSON.stringify({ok:false,error:"That path is a folder."})};
-    if(i>=0) workspace[i]={path,content,kind:"file"}; else {
-      if(workspace.length>=WORKSPACE_LIMITS.maxFiles) return {workspace,result:JSON.stringify({ok:false,error:"Workspace file limit reached."})};
-      workspace.push({path,content});
+  const path = String(a.path || "").replace(/^\\/+/, "");
+  if (name === "file_create" || name === "file_update") {
+    if (!path || path.includes("..")) return {files, result:JSON.stringify({ok:false,error:"Invalid file path."})};
+    if (path.length > FILE_LIMITS.maxPathChars) return {files,result:JSON.stringify({ok:false,error:"File path is too long."})};
+    const content = String(a.content ?? "");
+    if (content.length > FILE_LIMITS.maxFileChars) return {files,result:JSON.stringify({ok:false,error:"File is too large."})};
+    const i = files.findIndex(f => f.path === path);
+    if (name === "file_create" && i >= 0) return {files,result:JSON.stringify({ok:false,error:"A generated file with that path already exists. Use file_update to replace it."})};
+    if (name === "file_update" && i < 0) return {files,result:JSON.stringify({ok:false,error:"File not found in this response. Use file_create first."})};
+    if (i >= 0) files[i] = {path,content,kind:"file"}; else {
+      if (files.length >= FILE_LIMITS.maxFiles) return {files,result:JSON.stringify({ok:false,error:"Generated file limit reached."})};
+      files.push({path,content,kind:"file"});
     }
-    return {workspace,result:JSON.stringify({ok:true,action,path,size:content.length})};
+    return {files,result:JSON.stringify({ok:true,action:i>=0?"updated":"created",path,size:content.length})};
   }
-  if (name === "workspace_mkdir") {
-    const path=String(a.path||"").replace(/^\/+|\/+$/g,"");
-    if(!path || path.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid folder path."})};
-    const folderPath=path+"/";
-    if(workspace.some(f=>f.path===folderPath || f.path.startsWith(folderPath))) return {workspace,result:JSON.stringify({ok:true,action:"exists",path:folderPath})};
-    if(workspace.length>=WORKSPACE_LIMITS.maxFiles) return {workspace,result:JSON.stringify({ok:false,error:"Workspace entry limit reached."})};
-    workspace.push({path:folderPath,content:"",kind:"folder"});
-    return {workspace,result:JSON.stringify({ok:true,action:"created",path:folderPath,folder:true})};
+  if (name === "file_read") {
+    const file = files.find(f => f.path === path);
+    return file ? {files,result:JSON.stringify({ok:true,path,content:file.content})} : {files,result:JSON.stringify({ok:false,error:"Generated file not found: "+path})};
   }
-  if (name === "workspace_delete") {
-    const path=String(a.path||"").replace(/^\/+/,"");
-    const i=workspace.findIndex(f=>f.path===path);
-    if(i<0) return {workspace,result:JSON.stringify({ok:false,error:"File not found: "+path})};
-    workspace.splice(i,1);
-    return {workspace,result:JSON.stringify({ok:true,action:"deleted",path})};
+  if (name === "file_delete") {
+    const i = files.findIndex(f => f.path === path);
+    if (i < 0) return {files,result:JSON.stringify({ok:false,error:"Generated file not found: "+path})};
+    files.splice(i,1);
+    return {files,result:JSON.stringify({ok:true,action:"deleted",path})};
   }
-  if (name === "workspace_rename") {
-    const from=String(a.from||"").replace(/^\/+/,""), to=String(a.to||"").replace(/^\/+/,"");
-    if(!from||!to||from.includes("..")||to.includes("..")) return {workspace,result:JSON.stringify({ok:false,error:"Invalid workspace path."})};
-    const source=workspace.find(f=>f.path===from || f.path===from+"/");
-    if(!source) return {workspace,result:JSON.stringify({ok:false,error:"File not found: "+from})};
-    if(workspace.some(f=>f.path===to)) return {workspace,result:JSON.stringify({ok:false,error:"Destination already exists: "+to})};
-    source.path=source.kind === "folder" ? to.replace(/\/+$/,"")+"/" : to;
-    return {workspace,result:JSON.stringify({ok:true,action:"renamed",from,to})};
-  }
-  return {workspace,result:JSON.stringify({ok:false,error:"Unknown workspace tool: "+name})};
+  return {files,result:JSON.stringify({ok:false,error:"Unknown file tool: "+name})};
 }
-
 const profiles = {
   standard: {
     name: "CPT-1",
@@ -147,9 +121,9 @@ export async function onRequestPost({ request, env }) {
       : "standard";
     const profile = profiles[mode];
     model = profile.model;
-    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
-    let workspace = normalizeWorkspace(body?.workspace);
-    const workspaceActions = [];
+    const attachments = Array.isArray(body?.attachments) ? body.attachments.slice(0,10) : [];
+    let generatedFiles = [];
+    const fileAttachments = attachments.filter(a => a && a.kind === "file" && typeof a.data === "string");
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
 
 
@@ -175,7 +149,7 @@ export async function onRequestPost({ request, env }) {
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
       "During the preview, all Cookie model profiles are free to use. Do not tell users to buy credits or upgrade to access a Cookie profile.",
-      "You have real project workspace tools. When the user asks you to build a project, create the folders and files needed for the complete project, using workspace_mkdir and workspace_write. Use workspace_list/workspace_read before editing when useful. You can create nested paths such as src/commands/ping.js. When the project is complete, tell the user it is ready to download as a ZIP. Never claim a file or folder was changed unless the workspace tool succeeded.",
+      "You have temporary file-generation tools. When the user asks you to build code, documents, configurations, or other files, create the actual files with file_create. You can use nested paths such as src/commands/ping.js; folders are implicit in file paths and are never uploaded by users. Use file_read/file_update to refine files during the same response. At the end, the created files are returned directly in the chat for one-tap download. Never claim a file was created or changed unless the file tool succeeded.",
       "You are Cookie, a polished general-purpose AI assistant.",
       "Be genuinely useful rather than overly enthusiastic or repetitive.",
       "Follow the user's instructions precisely and preserve important constraints.",
@@ -199,7 +173,23 @@ export async function onRequestPost({ request, env }) {
       return match ? match[1] : a.data;
     });
 
+    const readableFiles = fileAttachments.map(a => {
+      const match = a.data.match(/^data:[^;]+;base64,(.+)$/);
+      if (!match) return {name:a.name,content:"[Binary attachment]"};
+      try {
+        const text = atob(match[1]);
+        const decoded = decodeURIComponent(Array.from(text).map(ch => "%" + ch.charCodeAt(0).toString(16).padStart(2,"0")).join(""));
+        return {name:a.name,content:decoded.slice(0,50000)};
+      } catch { return {name:a.name,content:"[Binary or non-text attachment]"}; }
+    });
+    const attachmentContext = readableFiles.length
+      ? "\\n\\nUSER ATTACHED FILES:\\n" + readableFiles.map(f => "\\n--- " + f.name + " ---\\n" + f.content).join("\\n")
+      : "";
     const apiMessages = [{ role: "system", content: system }, ...messages];
+    if (attachmentContext) {
+      const lastUser = apiMessages.at(-1);
+      if (lastUser?.role === "user") lastUser.content += attachmentContext;
+    }
     if (imageData.length) {
       const last = apiMessages.at(-1);
       if (last?.role === "user") last.images = imageData;
@@ -248,23 +238,21 @@ export async function onRequestPost({ request, env }) {
         const name=call?.function?.name;
         let args=call?.function?.arguments;
         if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
-        const executed=executeWorkspaceTool(workspace,name,args);
-        workspace=executed.workspace;
-        workspaceActions.push({tool:name,path:args?.path||args?.to||args?.from||null,ok:!/"ok":false/.test(executed.result)});
+        const executed=executeFileTool(generatedFiles,name,args);
+        generatedFiles=executed.files;
         agentMessages.push({role:"tool",tool_name:name,content:executed.result});
       }
     }
 
     if(!finalMessage && lastData?.message?.content) finalMessage=lastData.message.content;
-    if(!finalMessage) finalMessage="I finished the workspace operation.";
+    if(!finalMessage) finalMessage="I finished the file-generation operation.";
 
     return json({
       message: limitResponse(String(finalMessage).trim()),
       model: profile.name,
       demo: true,
       demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo.",
-      workspace,
-      workspaceActions
+      generatedFiles: generatedFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"}))
     });
   } catch (error) {
     console.error("[Cookie chat]", error);
