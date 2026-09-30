@@ -67,6 +67,7 @@ export default function App(){
   const [memoryName,setMemoryName]=useState("");
   const [memoryOccupation,setMemoryOccupation]=useState("");
   const [memoryAbout,setMemoryAbout]=useState("");
+  const [profileName,setProfileName]=useState("Cookie user");
   const [profileUsername,setProfileUsername]=useState("Cookie user");
   const [profileEmail,setProfileEmail]=useState("");
   const [aiPersonality,setAiPersonality]=useState("Balanced");
@@ -195,6 +196,7 @@ export default function App(){
       if(p.memoryName!==undefined)setMemoryName(String(p.memoryName));
       if(p.memoryOccupation!==undefined)setMemoryOccupation(String(p.memoryOccupation));
       if(p.memoryAbout!==undefined)setMemoryAbout(String(p.memoryAbout));
+      if(p.profileName!==undefined)setProfileName(String(p.profileName));
       if(p.profileUsername!==undefined)setProfileUsername(String(p.profileUsername));
       if(p.profileEmail!==undefined)setProfileEmail(String(p.profileEmail));
       if(p.aiPersonality!==undefined)setAiPersonality(String(p.aiPersonality));
@@ -203,7 +205,7 @@ export default function App(){
   useEffect(()=>localStorage.setItem("cookie_preferences",JSON.stringify({
     dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,
     autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,
-    profileUsername,profileEmail,aiPersonality
+    profileName,profileUsername,profileEmail,aiPersonality
   })),[dark,accent,textSize,compact,animations,keyboardHints,appLanguage,autoCorrect,haptics,autoSwitch,autocomplete,trendingSearches,memoryEnabled,memoryName,memoryOccupation,memoryAbout,profileUsername,profileEmail,aiPersonality]);
   useEffect(()=>{
     document.body.classList.toggle("sidebar-open",sidebarOpen);
@@ -259,7 +261,7 @@ export default function App(){
         responseMode:model,language:(APP_LANGUAGES.find(x=>x[0]===appLanguage)?.[1]||"en"),
         answerLength:"auto",creativity:.7,autoSwitch,autocomplete,trendingSearches,
         memory:memoryEnabled?{name:memoryName,occupation:memoryOccupation,about:memoryAbout}:null,
-        personality:aiPersonality,profile:{username:profileUsername,email:profileEmail}
+        personality:aiPersonality,profile:{name:profileName,username:profileUsername,email:profileEmail}
       },attachments:attachments.map(a=>({kind:a.kind,name:a.name,mime:a.mime,data:a.data}))})});
       const d=await r.json();
       if(!r.ok)throw Error(d.error||"Cookie could not answer.");
@@ -307,6 +309,7 @@ export default function App(){
         autocomplete={autocomplete} setAutocomplete={setAutocomplete} trendingSearches={trendingSearches} setTrendingSearches={setTrendingSearches}
         memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} memoryName={memoryName} setMemoryName={setMemoryName}
         memoryOccupation={memoryOccupation} setMemoryOccupation={setMemoryOccupation} memoryAbout={memoryAbout} setMemoryAbout={setMemoryAbout}
+        profileName={profileName} setProfileName={setProfileName}
         model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length} profileUsername={profileUsername} setProfileUsername={setProfileUsername} profileEmail={profileEmail} setProfileEmail={setProfileEmail} aiPersonality={aiPersonality} setAiPersonality={setAiPersonality} goBack={()=>setView("chat")}
       />
     </main>;
@@ -518,6 +521,7 @@ function AccountSettingsPage(props:{
   memoryName:string;setMemoryName:React.Dispatch<React.SetStateAction<string>>;
   memoryOccupation:string;setMemoryOccupation:React.Dispatch<React.SetStateAction<string>>;
   memoryAbout:string;setMemoryAbout:React.Dispatch<React.SetStateAction<string>>;
+  profileName:string;setProfileName:React.Dispatch<React.SetStateAction<string>>;
   profileUsername:string;setProfileUsername:React.Dispatch<React.SetStateAction<string>>;
   profileEmail:string;setProfileEmail:React.Dispatch<React.SetStateAction<string>>;
   aiPersonality:string;setAiPersonality:React.Dispatch<React.SetStateAction<string>>;
@@ -525,6 +529,7 @@ function AccountSettingsPage(props:{
   sessionMessages:number;goBack:()=>void;
 }){
   const [panel,setPanel]=useState<string|null>(null);
+  const [draftName,setDraftName]=useState(props.profileName);
   const [draftUsername,setDraftUsername]=useState(props.profileUsername);
   const [draftEmail,setDraftEmail]=useState(props.profileEmail);
   const personalities=["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
@@ -546,93 +551,62 @@ function AccountSettingsPage(props:{
     </div>;
 
   if(panel==="Profile"){
-    return <div className="page-container settings-reference-page">
-    <div className="settings-reference-head">
-      <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
-      <h2>Settings</h2>
-    </div>
-
-    <section className="settings-reference-section settings-profile-section">
-      <div className="settings-profile">
-        <span className="settings-profile-avatar">{(props.profileUsername.trim()[0]||"C").toUpperCase()}</span>
-        <div className="settings-profile-copy"><strong>{props.profileUsername||"Cookie user"}</strong><small>{props.profileEmail||"Local account"}</small></div>
-        <button className="settings-profile-edit" aria-label="Edit profile" onClick={()=>setPanel("Profile")}><UserRound size={18}/></button>
+    const displayName=props.profileName.trim()||"Cookie user";
+    const initials=displayName.trim().split(/\\s+/).map(v=>v[0]).join("").slice(0,2).toUpperCase()||"C";
+    return <div className="profile-edit-underlay">
+      <div className="profile-edit-underlay-page">
+        <div className="settings-reference-head">
+          <span className="settings-reference-eyebrow">COOKIE SETTINGS</span>
+          <h2>Settings</h2>
+        </div>
+        <section className="settings-reference-section settings-profile-section">
+          <div className="settings-profile">
+            <span className="settings-profile-avatar">{initials}</span>
+            <div className="settings-profile-copy"><strong>{displayName}</strong><small>{props.profileEmail||"Local account"}</small></div>
+            <button className="settings-profile-edit" aria-label="Edit profile"><UserRound size={18}/></button>
+          </div>
+          <div className="settings-upgrade"><div><strong>Do more with Cookie</strong><small>Get higher limits and access to advanced features.</small></div><button>Edit</button></div>
+        </section>
+        <section className="settings-reference-section">
+          <h3>Customize Cookie</h3>
+          <div className="settings-reference-card">
+            <div className="settings-mobile-row"><span className="settings-mobile-row-icon"><UserRound size={22}/></span><span className="settings-mobile-row-copy"><strong>Personalization</strong></span><span className="settings-mobile-value">{props.aiPersonality}</span></div>
+            <div className="settings-mobile-row"><span className="settings-mobile-row-icon"><Brain size={22}/></span><span className="settings-mobile-row-copy"><strong>Memory</strong></span><span className="settings-mobile-value">{props.memoryEnabled?"On":"Off"}</span></div>
+          </div>
+        </section>
       </div>
-      <div className="settings-upgrade">
-        <div><strong>Do more with Cookie</strong><small>Get higher limits and access to advanced features.</small></div>
-        <button onClick={()=>setPanel("Profile")}>Edit</button>
-      </div>
-    </section>
-
-    <section className="settings-reference-section">
-      <h3>Customize Cookie</h3>
-      <div className="settings-reference-card">
-        <Row icon={UserRound} label="Personalization" value={props.aiPersonality} onClick={()=>setPanel("Personality")}/>
-        <Row icon={Brain} label="Memory" value={props.memoryEnabled?"On":"Off"} onClick={()=>setPanel("Memory")}/>
-        <Row icon={Plus} label="Plugins" value="Coming later"/>
-      </div>
-    </section>
-
-    <section className="settings-reference-section">
-      <h3>Account</h3>
-      <div className="settings-reference-card">
-        <Row icon={UserRound} label="Username" value={props.profileUsername} onClick={()=>setPanel("Username")}/>
-        <Row icon={Mail} label="Email" value={props.profileEmail||"Not connected"} onClick={()=>setPanel("Email")}/>
-        <Row icon={CreditCard} label="Subscription" value="Cookie account"/>
-        <Row icon={RotateCcw} label="Restore purchases"/>
-        <Row icon={BarChart3} label="Usage and limits" value={props.sessionMessages+" responses"} onClick={()=>setPanel("Usage and limits")}/>
-      </div>
-    </section>
-
-    <section className="settings-reference-section">
-      <h3>Theme</h3>
-      <div className="settings-reference-card">
-        <button className="settings-mobile-row" onClick={()=>props.setDark(v=>!v)}>
-          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
-          <span className="settings-mobile-row-copy"><strong>Appearance</strong></span>
-          <span className="settings-mobile-value">{props.dark?"Dark":"Light"}</span>
-          <ChevronRight className="settings-mobile-chevron" size={21}/>
-        </button>
-        <button className="settings-mobile-row" onClick={()=>props.setAccent(v=>v==="blue"?"cream":v==="cream"?"orange":v==="orange"?"cocoa":"blue")}>
-          <span className="settings-mobile-row-icon"><Palette size={22}/></span>
-          <span className="settings-mobile-row-copy"><strong>Accent color</strong></span>
-          <span className={"settings-accent-dot "+props.accent}></span>
-          <span className="settings-mobile-value">{props.accent==="blue"?"Blue":props.accent==="cream"?"Cream":props.accent==="orange"?"Orange":"Cocoa"}</span>
-          <ChevronRight className="settings-mobile-chevron" size={21}/>
-        </button>
-      </div>
-    </section>
-
-    <section className="settings-reference-section">
-      <h3>App settings</h3>
-      <div className="settings-reference-card">
-        <Row icon={Settings} label="General" value="Chat & interface" onClick={()=>setPanel("General")}/>
-        <Row icon={Bell} label="Notifications" value="Coming later"/>
-        <Row icon={Volume2} label="Voice" value="Coming later"/>
-        <Row icon={UsersRound} label="Parental controls" value="Coming later"/>
-        <Row icon={ShieldCheck} label="Trusted contact" value="Coming later"/>
-        <Row icon={ShieldCheck} label="Safety" value="Built in"/>
-        <Row icon={LockKeyhole} label="Security and login" value="Local account"/>
-        <Row icon={Monitor} label="Remote control" value="Coming later"/>
-        <Row icon={HardDrive} label="Storage" value="Browser"/>
-        <Row icon={UserRound} label="Data controls" value="Local preferences"/>
-        <Row icon={Megaphone} label="Ads controls" value="Coming later"/>
-      </div>
-    </section>
-
-    <section className="settings-reference-section">
-      <h3>Get help</h3>
-      <div className="settings-reference-card">
-        <Row icon={Flag} label="Report app issue"/>
-        <Row icon={HelpCircle} label="Help Center"/>
-        <Row icon={ShieldCheck} label="Privacy Center"/>
-        <Row icon={Info} label="About"/>
-      </div>
-    </section>
-
-    <button className="settings-logout-row" onClick={()=>setPanel("Log out")}><LogOut size={22}/><span>Log out</span></button>
-    <p className="settings-reference-footer">Cookie settings are kept together so account, chat, and interface controls are in one place.</p>
-  </div>;
+      <div className="profile-edit-backdrop" />
+      <section className="profile-edit-modal" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title">
+        <button className="profile-edit-close" aria-label="Close profile editor" onClick={()=>setPanel(null)}><X size={34}/></button>
+        <div className="profile-edit-hero">
+          <div className="profile-edit-avatar">
+            <span>{initials}</span>
+            <button className="profile-edit-camera" aria-label="Change profile photo"><Camera size={25}/></button>
+          </div>
+          <h2 id="profile-edit-title">{displayName}</h2>
+        </div>
+        <div className="profile-edit-fields">
+          <label>
+            <span>Name</span>
+            <input value={draftName} onChange={e=>setDraftName(e.target.value)} autoComplete="name" />
+          </label>
+          <label>
+            <span>Username</span>
+            <input value={draftUsername} onChange={e=>setDraftUsername(e.target.value)} autoComplete="username" />
+          </label>
+          <p>Your profile helps people recognize you in group chats.</p>
+          <button className="profile-edit-save" onClick={()=>{
+            const nextName=draftName.trim()||"Cookie user";
+            const nextUsername=draftUsername.trim()||"Cookie user";
+            props.setProfileName(nextName);
+            props.setProfileUsername(nextUsername);
+            setPanel(null);
+          }}>Save profile</button>
+          <button className="profile-edit-cancel" onClick={()=>setPanel(null)}>Cancel</button>
+        </div>
+      </section>
+    </div>;
+  }
 }
 
 function AccountMobileSection({title,children}:{title:string;children:React.ReactNode}){
