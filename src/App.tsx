@@ -4,7 +4,7 @@ import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
 import {
   ArrowUp, ChevronDown, Check, Copy, FileText, FileUp, ImagePlus,
-  HelpCircle, Menu, MessageSquare, MoreHorizontal, Paperclip, Plus,
+  Camera, Images, Plug, Brain, HelpCircle, Menu, MessageSquare, MoreHorizontal, Plus,
   Search, Settings, X, PanelRight, SlidersHorizontal,
   Keyboard, ShieldCheck, Palette, MessageCircleQuestion, Wrench,
   Code2, Globe2, ScanSearch
@@ -46,6 +46,7 @@ export default function App(){
   const [keyboardHints,setKeyboardHints]=useState(true);
   const [search,setSearch]=useState("");
   const imageRef=useRef<HTMLInputElement>(null);
+  const cameraRef=useRef<HTMLInputElement>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const chatScroll=useRef<HTMLDivElement>(null);
   const active=useMemo(()=>MODELS.find(x=>x.id===model)||MODELS[0],[model]);
@@ -108,7 +109,7 @@ export default function App(){
     })));
     setAttachments(v=>[...v,...xs].slice(0,10));e.target.value="";setAttachMenuOpen(false);
   }
-  function openPicker(kind:"image"|"file"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="image"?imageRef:fileRef).current?.click()})}
+  function openPicker(kind:"image"|"file"|"camera"){setAttachMenuOpen(false);requestAnimationFrame(()=>{(kind==="camera"?cameraRef:kind==="image"?imageRef:fileRef).current?.click()})}
   function removeAttachment(removeId:string){setAttachments(v=>v.filter(a=>a.id!==removeId))}
   function newChat(){setMessages([]);setInput("");setAttachments([]);setView("chat");setSidebarOpen(false)}
   function openView(next:View){setView(next);setSidebarOpen(false);setModelOpen(false);setAttachMenuOpen(false);setToolsOpen(false)}
@@ -194,10 +195,31 @@ export default function App(){
           <div className="composer-toolbar">
             <div className="toolbar-left">
               <div className="composer-menu-wrap">
-                <button className={"round-tool "+(attachMenuOpen?"selected":"")} onClick={()=>{setAttachMenuOpen(v=>!v);setToolsOpen(false)}} aria-label="Upload"><Paperclip size={19}/></button>
+                <button className={"round-tool attachment-trigger "+(attachMenuOpen?"selected":"")} onClick={()=>{setAttachMenuOpen(v=>!v);setToolsOpen(false)}} aria-label="Add attachment" aria-expanded={attachMenuOpen}>
+                  <Plus size={21}/>
+                </button>
                 {attachMenuOpen&&<div className="composer-menu attachment-menu">
-                  <button onClick={()=>openPicker("image")}><ImagePlus size={17}/><span><b>Upload image</b><small>Images only · up to {10-attachments.length}</small></span></button>
-                  <button onClick={()=>openPicker("file")}><FileUp size={17}/><span><b>Upload file</b><small>Non-image files only · up to {10-attachments.length}</small></span></button>
+                  <button className="attachment-menu-item" onClick={()=>openPicker("camera")}>
+                    <span className="attachment-menu-icon"><Camera size={22}/></span>
+                    <span><b>Camera</b><small>Take a photo · up to {10-attachments.length}</small></span>
+                  </button>
+                  <button className="attachment-menu-item" onClick={()=>openPicker("image")}>
+                    <span className="attachment-menu-icon"><Images size={22}/></span>
+                    <span><b>Photos</b><small>Images only · up to {10-attachments.length}</small></span>
+                  </button>
+                  <button className="attachment-menu-item" onClick={()=>openPicker("file")}>
+                    <span className="attachment-menu-icon"><FileUp size={22}/></span>
+                    <span><b>Files</b><small>Files only · up to {10-attachments.length}</small></span>
+                  </button>
+                  <button className="attachment-menu-item" onClick={()=>useTool("Help me with available plugins and integrations.")}>
+                    <span className="attachment-menu-icon"><Plug size={22}/></span>
+                    <span><b>Plugins</b><small>Tools and integrations</small></span>
+                  </button>
+                  <button className="attachment-menu-item" onClick={()=>{setModel("max");setAttachMenuOpen(false)}}>
+                    <span className="attachment-menu-icon"><Brain size={22}/></span>
+                    <span><b>Think harder</b><small>Use CPT-2 MAX for deeper reasoning</small></span>
+                    {model==="max"&&<Check className="attachment-check" size={18}/>}
+                  </button>
                   <div className="menu-limit">{attachments.length}/10 attachments · folders are not supported</div>
                 </div>}
               </div>
@@ -216,6 +238,7 @@ export default function App(){
           </div>
         </div>
         <input ref={imageRef} hidden type="file" accept="image/*" multiple onChange={e=>attach(e,"image")}/>
+        <input ref={cameraRef} hidden type="file" accept="image/*" capture="environment" onChange={e=>attach(e,"image")}/>
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
