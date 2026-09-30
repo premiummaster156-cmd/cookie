@@ -22,6 +22,12 @@ const MODELS=[
   {id:"ultra",name:"CPT-3 ULTRA",desc:"Maximum agentic capability"}
 ];
 const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+const APP_LANGUAGES=[
+  ["English","en"],["Uzbek","uz"],["Russian","ru"],["Turkish","tr"],["Kazakh","kk"],
+  ["Kyrgyz","ky"],["Tajik","tg"],["Arabic","ar"],["Persian","fa"],["Hindi","hi"],
+  ["Urdu","ur"],["Chinese","zh"],["Japanese","ja"],["Korean","ko"],["Spanish","es"],
+  ["French","fr"],["German","de"],["Italian","it"],["Portuguese","pt"],["Indonesian","id"]
+] as const;
 
 function CookieIcon({size=22}:{size?:number}){
   return <img className="cookie-ai-icon" src={COOKIE_ICON_URL} width={size} height={size} alt="Cookie AI" draggable={false}/>;
@@ -61,12 +67,6 @@ export default function App(){
   const [memoryName,setMemoryName]=useState("");
   const [memoryOccupation,setMemoryOccupation]=useState("");
   const [memoryAbout,setMemoryAbout]=useState("");
-  const APP_LANGUAGES=[
-    ["English","en"],["Uzbek","uz"],["Russian","ru"],["Turkish","tr"],["Kazakh","kk"],
-    ["Kyrgyz","ky"],["Tajik","tg"],["Arabic","ar"],["Persian","fa"],["Hindi","hi"],
-    ["Urdu","ur"],["Chinese","zh"],["Japanese","ja"],["Korean","ko"],["Spanish","es"],
-    ["French","fr"],["German","de"],["Italian","it"],["Portuguese","pt"],["Indonesian","id"]
-  ] as const;
   const [search,setSearch]=useState("");
   const [headerScrolled,setHeaderScrolled]=useState(false);
   const imageRef=useRef<HTMLInputElement>(null);
@@ -320,7 +320,6 @@ export default function App(){
       </div>
       <div className="sidebar-bottom">
         <button className={"nav-item "+(view==="help"?"active":"")} onClick={()=>openView("help")}><span className="nav-icon"><HelpCircle size={17}/></span><span>Help & shortcuts</span></button>
-        <button className={"account "+(view==="account"?"active":"")} onClick={()=>openView("account")} aria-label="Open account settings">
           <span className="avatar">D</span>
           <span className="account-copy"><strong>Settings</strong><small>Cookie account</small></span>
           <span className="account-more"><MoreHorizontal size={15}/></span>
@@ -468,7 +467,6 @@ export default function App(){
         <input ref={fileRef} hidden type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.java,.c,.cpp,.h,.hpp,.csv,.xml,.yaml,.yml,.log,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple onChange={e=>attach(e,"file")}/>
         <div className="disclaimer">Cookie can make mistakes. Check important information.</div>
       </div>}
-      {(view==="account"||view==="settings")&&<AccountSettingsPage dark={dark} setDark={setDark} accent={accent} setAccent={setAccent} textSize={textSize} setTextSize={setTextSize} compact={compact} setCompact={setCompact} animations={animations} setAnimations={animations} keyboardHints={keyboardHints} setKeyboardHints={setKeyboardHints} appLanguage={appLanguage} setAppLanguage={setAppLanguage} autoCorrect={autoCorrect} setAutoCorrect={setAutoCorrect} haptics={haptics} setHaptics={setHaptics} autoSwitch={autoSwitch} setAutoSwitch={setAutoSwitch} autocomplete={autocomplete} setAutocomplete={setAutocomplete} trendingSearches={trendingSearches} setTrendingSearches={setTrendingSearches} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} memoryName={memoryName} setMemoryName={setMemoryName} memoryOccupation={memoryOccupation} setMemoryOccupation={setMemoryOccupation} memoryAbout={memoryAbout} setMemoryAbout={setMemoryAbout} model={model} setModel={setModel} sessionMessages={messages.filter(m=>m.role==="assistant").length}/>}
       {view==="help"&&<HelpPage/>}
     </section>
 
