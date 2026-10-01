@@ -39,12 +39,19 @@ function limitResponse(text) {
 
 const FILE_LIMITS = { maxFiles: 30, maxFileChars: 500000, maxPathChars: 240 };
 
-const agentTools = [
+const fileTools = [
   { type:"function", function:{ name:"file_create", description:"Create a downloadable file for the user. Use this whenever the user asks for code, a document, configuration, or any file they can download.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
   { type:"function", function:{ name:"file_read", description:"Read a file you created earlier in this same response before revising it.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } },
   { type:"function", function:{ name:"file_update", description:"Update a file you created earlier in this same response.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
   { type:"function", function:{ name:"file_delete", description:"Delete a generated file from this response when the user asks you to remove it.", parameters:{type:"object",required:["path"],properties:{path:{type:"string"}}} } }
 ];
+
+const webTools = [
+  { type:"function", function:{ name:"web_search", description:"Search the live web for current information. Use for recent facts, news, products, documentation, comparisons, or whenever the user explicitly asks you to research/search the web.", parameters:{type:"object",required:["query"],properties:{query:{type:"string",description:"The search query."},max_results:{type:"integer",minimum:1,maximum:8,description:"Number of search results to return."}}} } },
+  { type:"function", function:{ name:"web_fetch", description:"Fetch and read a specific public webpage when a URL is provided or when a search result needs deeper inspection.", parameters:{type:"object",required:["url"],properties:{url:{type:"string",description:"The public webpage URL to fetch."}}} } }
+];
+
+const agentTools = [...fileTools];
 
 function normalizeFiles(input) {
   if (!Array.isArray(input)) return [];
@@ -83,24 +90,59 @@ function executeFileTool(files, name, args) {
   }
   return {files,result:JSON.stringify({ok:false,error:"Unknown file tool: "+name})};
 }
+async function executeWebTool(name, args, apiKey) {
+  const a = args && typeof args === "object" ? args : {};
+  const endpoint = name === "web_search" ? "https://ollama.com/api/web_search" : "https://ollama.com/api/web_fetch";
+  const payload = name === "web_search"
+    ? { query:String(a.query || "").slice(0,500), max_results:Math.min(8,Math.max(1,Number(a.max_results)||5)) }
+    : { url:String(a.url || "").slice(0,2000) };
+  if (!payload.query && name === "web_search") return {ok:false,error:"A search query is required."};
+  if (!payload.url && name === "web_fetch") return {ok:false,error:"A URL is required."};
+  try {
+    const r = await fetch(endpoint, {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiKey},
+      body:JSON.stringify(payload)
+    });
+    const raw = await r.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch {}
+    if (!r.ok) return {ok:false,error:data?.error || raw?.slice(0,500) || ("Web API returned "+r.status)};
+    if (name === "web_search") {
+      const results = Array.isArray(data?.results) ? data.results.slice(0,8).map(x=>({
+        title:String(x?.title||"").slice(0,300),
+        url:String(x?.url||""),
+        content:String(x?.content||"").slice(0,7000)
+      })) : [];
+      return {ok:true,results};
+    }
+    return {ok:true,title:String(data?.title||""),content:String(data?.content||"").slice(0,16000),links:Array.isArray(data?.links)?data.links.slice(0,40):[]};
+  } catch (error) {
+    return {ok:false,error:String(error?.message||"Web request failed")};
+  }
+}
+
 const profiles = {
   standard: {
     name: "CPT-1",
     model: "gemma4:cloud",
     temperature: 0.55,
-    instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it."
+    instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it.",
+    thinking: false
   },
   max: {
     name: "CPT-2 MAX",
     model: "gemma4:cloud",
     temperature: 0.68,
-    instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions."
+    instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions.",
+    thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
     model: "gemma4:cloud",
     temperature: 0.62,
-    instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer."
+    instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
+    thinking: true
   }
 };
 
@@ -148,6 +190,9 @@ export async function onRequestPost({ request, env }) {
     const personality = personalityNames.includes(preferences.personality) ? preferences.personality : "Balanced";
     const profileUsername = typeof preferences.profile?.username === "string" ? preferences.profile.username.slice(0,80) : "";
     const profileEmail = typeof preferences.profile?.email === "string" ? preferences.profile.email.slice(0,160) : "";
+    const reasoning = ["auto","fast","deep"].includes(preferences.reasoning) ? preferences.reasoning : "auto";
+    const customInstructions = typeof preferences.instructions === "string" ? preferences.instructions.slice(0,6000).trim() : "";
+    const useWebSearch = preferences.webSearch === true;
 
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
@@ -165,6 +210,8 @@ export async function onRequestPost({ request, env }) {
       "COOKIE PRODUCT BEHAVIOR: Do not invent Cookie features, buttons, pages, integrations, subscriptions, workspaces, browsing abilities, external actions, or persistent storage. If a capability is not in the current product knowledge or available internal tools, say so instead of pretending it exists.",
       "COOKIE PRODUCT BEHAVIOR: You do not need to expose internal tool names or implementation details to ordinary users. Use internal file capabilities when appropriate and describe the user-facing result instead.",
       `USER PREFERENCES: Respond with the selected Cookie personality: ${personality}. Balanced = natural and adaptable; Friendly = warm and conversational; Professional = clear and formal; Concise = short and direct; Creative = imaginative and expressive; Teacher = step-by-step and educational.`,
+      customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : "",
+      useWebSearch ? "WEB RESEARCH: Live web search and page fetching are enabled for this message. Use them when the user asks for current information, research, sources, recent facts, or when browsing materially improves accuracy. When you use web research, cite useful sources inline as Markdown links using the returned URLs. Do not claim you browsed unless a web tool actually returned results." : "WEB RESEARCH: Live web research is disabled for this message. Do not claim to have searched the web.",
       profileUsername ? `USER PROFILE: The user's Cookie username is "${profileUsername}". Use it naturally when useful; do not reveal private profile data unless relevant.` : "",
       profileEmail ? "USER PROFILE: An email address is saved for the Cookie account interface. Do not expose or repeat it unless the user explicitly asks." : "",
       "You are Cookie, a polished general-purpose AI assistant.",
@@ -230,21 +277,32 @@ export async function onRequestPost({ request, env }) {
     }
 
     const agentMessages = apiMessages.slice();
+    const availableTools = useWebSearch ? [...fileTools, ...webTools] : fileTools;
+    const think = reasoning === "deep" ? true : reasoning === "fast" ? false : !!profile.thinking;
     let finalMessage = "";
     let lastData = null;
 
-    for (let turn = 0; turn < 10; turn++) {
-      const upstream = await fetch(ollamaUrl, {
+    for (let turn = 0; turn < 12; turn++) {
+      let upstream;
+      try {
+        upstream = await fetch(ollamaUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
         body: JSON.stringify({
           model,
           stream: false,
           messages: agentMessages,
-          tools: agentTools,
-          options: { temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35) }
+          tools: availableTools,
+          think,
+          truncate: true,
+          shift: true,
+          options: { temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35), top_p:0.95, top_k:64, num_ctx:32000 }
         })
       });
+      } catch (error) {
+        console.error("[Cookie Ollama fetch]", error);
+        return json({error:"Cookie could not reach Ollama Cloud. Check the OLLAMA_API_KEY and Ollama service connection."},502);
+      }
 
       const responseText = await upstream.text();
       let data = null;
@@ -272,7 +330,13 @@ export async function onRequestPost({ request, env }) {
         const name=call?.function?.name;
         let args=call?.function?.arguments;
         if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
-        const executed=executeFileTool(generatedFiles,name,args);
+        let executed;
+        if(name === "web_search" || name === "web_fetch") {
+          const webResult = await executeWebTool(name,args,apiKey);
+          executed = {files:generatedFiles,result:JSON.stringify(webResult)};
+        } else {
+          executed=executeFileTool(generatedFiles,name,args);
+        }
         generatedFiles=executed.files;
         agentMessages.push({role:"tool",tool_name:name,content:executed.result});
       }
