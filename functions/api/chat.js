@@ -1,3 +1,4 @@
+import { executeWebTool, researchWeb } from "./web.js";
 import { json, readJson } from "./_lib.js";
 
 function limitResponse(text) {
@@ -90,48 +91,6 @@ function executeFileTool(files, name, args) {
   }
   return {files,result:JSON.stringify({ok:false,error:"Unknown file tool: "+name})};
 }
-async function executeWebTool(name, args, apiKey) {
-  const a = args && typeof args === "object" ? args : {};
-  const endpoint = name === "web_search" ? "https://ollama.com/api/web_search" : "https://ollama.com/api/web_fetch";
-  const payload = name === "web_search"
-    ? { query:String(a.query || "").slice(0,500), max_results:Math.min(8,Math.max(1,Number(a.max_results)||5)) }
-    : { url:String(a.url || "").slice(0,2000) };
-  if (!payload.query && name === "web_search") return {ok:false,error:"A search query is required."};
-  if (!payload.url && name === "web_fetch") return {ok:false,error:"A URL is required."};
-  try {
-    const r = await fetch(endpoint, {
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiKey},
-      body:JSON.stringify(payload)
-    });
-    const raw = await r.text();
-    let data = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch {}
-    if (!r.ok) return {ok:false,error:data?.error || raw?.slice(0,500) || ("Web API returned "+r.status)};
-    if (name === "web_search") {
-      const results = Array.isArray(data?.results) ? data.results.slice(0,8).map(x=>({
-        title:String(x?.title||"").slice(0,300),
-        url:String(x?.url||""),
-        content:String(x?.content||"").slice(0,7000)
-      })) : [];
-      if (!results.length) {
-        return {
-          ok:false,
-          error:"Ollama web search returned no results. The web-search service may be unavailable or the API quota may be exhausted."
-        };
-      }
-      return {ok:true,results};
-    }
-    const content = String(data?.content || "").slice(0,16000);
-    if (!content && name === "web_fetch") {
-      return {ok:false,error:"The webpage fetch returned no readable page content."};
-    }
-    return {ok:true,title:String(data?.title||""),content,links:Array.isArray(data?.links)?data.links.slice(0,40):[]};
-  } catch (error) {
-    return {ok:false,error:String(error?.message||"Web request failed")};
-  }
-}
-
 const profiles = {
   standard: {
     name: "CPT-1",
@@ -301,62 +260,32 @@ export async function onRequestPost({ request, env }) {
         ]
       : [model];
 
-    // When web search is enabled, perform real server-side research before asking
-    // the model to answer. For a domain/site name, fetch the actual site first.
+    // When web search is enabled, research public pages directly. This does not
+    // depend on the Ollama API key, so OpenRouter deployments work correctly too.
     if (useWebSearch && requestedWebQuery) {
-      const domainMatch = requestedWebQuery.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?:[\/?#][^\s]*)?/i);
-      let directWeb = null;
-
-      if (domainMatch) {
-        directWeb = await executeWebTool("web_fetch", {
-          url: "https://" + domainMatch[1]
-        }, apiKey);
-      }
-
-      // Normal research questions use the real Ollama web-search API.
-      // If a direct page fetch failed, search is also attempted as a fallback.
-      if (domainMatch || !directWeb?.ok) {
-        directWeb = await executeWebTool("web_search", {
-          query: domainMatch ? "site:" + domainMatch[1] : requestedWebQuery.slice(0, 500),
-          max_results: 8
-        }, apiKey);
-      }
-
-      if (directWeb?.ok && (directWeb.content || (Array.isArray(directWeb.results) && directWeb.results.length))) {
+      const directWeb = await researchWeb(requestedWebQuery);
+      if (directWeb?.ok && (directWeb.content || directWeb.pages?.length || directWeb.results?.length)) {
         let webContext = "";
-        if (Array.isArray(directWeb.results)) {
-          webContext = directWeb.results.map((r, i) =>
-            `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
+        if (Array.isArray(directWeb.pages)) {
+          webContext = directWeb.pages.map((r, i) =>
+            "[Source " + (i + 1) + "] " + (r.title || "Web page") + "\nURL: " + r.url + "\nContent: " + (r.content || "")
           ).join("\n\n");
-        } else {
-          webContext =
-            `[Fetched page] ${directWeb.title || "Web page"}\n` +
-            `URL: ${domainMatch ? "https://" + domainMatch[1] : requestedWebQuery}\n` +
-            `Content: ${directWeb.content || ""}\n` +
-            (directWeb.links?.length ? `Links: ${directWeb.links.join(", ")}` : "");
+        } else if (Array.isArray(directWeb.results)) {
+          webContext = directWeb.results.map((r, i) =>
+            "[Source " + (i + 1) + "] " + (r.title || "Web result") + "\nURL: " + r.url + "\nContent: " + (r.content || "")
+          ).join("\n\n");
         }
-
         agentMessages.push({
-          role: "system",
-          content:
-            "MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n" +
-            webContext +
-            "\n\nUse these actual live results to answer the user. " +
-            "Do not say you cannot browse. Do not claim anything not supported by the supplied page/search results. " +
-            "When useful, include the source URL as a Markdown link. " +
-            "Do not create files unless the user explicitly asks for a downloadable file or code artifact."
+          role:"system",
+          content:"MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n"+webContext+"\n\nUse these actual live results to answer the user. Do not claim anything not supported by the supplied pages. When useful, include source URLs as Markdown links. Do not create files unless the user explicitly asks for a downloadable file or code artifact."
         });
       } else {
         agentMessages.push({
-          role: "system",
-          content:
-            "LIVE WEB RESEARCH FAILED. The server attempted a real web request but received no usable result. " +
-            "Do not pretend that browsing succeeded. Tell the user live web access failed and include this diagnostic: " +
-            String(directWeb?.error || "no usable response from the web provider")
+          role:"system",
+          content:"LIVE WEB RESEARCH FAILED. Do not pretend that browsing succeeded. Tell the user live web access failed and include this diagnostic: "+String(directWeb?.error||"no usable public page response")
         });
       }
     }
-
     const availableTools = useWebSearch ? [...fileTools, ...webTools] : fileTools;
     const think = reasoning === "deep" ? (mode === "ultra" ? "high" : true) : reasoning === "fast" ? false : (mode === "ultra" ? "high" : mode === "max" ? "medium" : false);
     let finalMessage = "";
@@ -377,7 +306,7 @@ export async function onRequestPost({ request, env }) {
                 tools: availableTools,
                 temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35),
                 top_p: 0.95,
-                max_tokens: 65536
+                max_tokens: 32768
               }
             : {
                 model: candidate,
