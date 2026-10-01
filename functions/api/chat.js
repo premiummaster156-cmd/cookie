@@ -193,6 +193,7 @@ export async function onRequestPost({ request, env }) {
     const reasoning = ["auto","fast","deep"].includes(preferences.reasoning) ? preferences.reasoning : "auto";
     const customInstructions = typeof preferences.instructions === "string" ? preferences.instructions.slice(0,6000).trim() : "";
     const useWebSearch = preferences.webSearch === true;
+    const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
 
     const system = [
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
@@ -277,6 +278,42 @@ export async function onRequestPost({ request, env }) {
     }
 
     const agentMessages = apiMessages.slice();
+
+    // When the user explicitly enables web search, perform the first search server-side.
+    // This makes browsing deterministic instead of depending on the model deciding to
+    // call a tool. The model still receives the web tools for follow-up searches/fetches.
+    if (useWebSearch && requestedWebQuery) {
+      const directWeb = await executeWebTool("web_search", {
+        query: requestedWebQuery.slice(0, 500),
+        max_results: 6
+      }, apiKey);
+
+      if (directWeb.ok && Array.isArray(directWeb.results) && directWeb.results.length) {
+        const webContext = directWeb.results.map((r, i) =>
+          `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
+        ).join("\n\n");
+
+        agentMessages.push({
+          role: "system",
+          content:
+            "MANDATORY WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n" +
+            webContext +
+            "\n\nUse these results to answer the user's request. " +
+            "Do not claim you searched unless these results are present. " +
+            "When using factual information from these results, include the relevant source URL as a Markdown link. " +
+            "Do not create files unless the user explicitly asks for a downloadable file or code artifact."
+        });
+      } else if (!directWeb.ok) {
+        agentMessages.push({
+          role: "system",
+          content:
+            "Web research was enabled, but the web search service returned an error: " +
+            String(directWeb.error || "unknown error") +
+            ". Do not pretend that you searched successfully. Answer from your existing knowledge only if that is still useful, and clearly say live search failed."
+        });
+      }
+    }
+
     const availableTools = useWebSearch ? [...fileTools, ...webTools] : fileTools;
     const think = reasoning === "deep" ? (mode === "ultra" ? "high" : true) : reasoning === "fast" ? false : (mode === "ultra" ? "high" : mode === "max" ? "medium" : false);
     let finalMessage = "";
@@ -343,7 +380,9 @@ export async function onRequestPost({ request, env }) {
     }
 
     if(!finalMessage && lastData?.message?.content) finalMessage=lastData.message.content;
-    if(!finalMessage) finalMessage="I finished the file-generation operation.";
+    if(!finalMessage) finalMessage = useWebSearch
+      ? "I couldn't produce a web-researched answer. The search request did not return a usable response."
+      : "I couldn't produce a response. Please try again.";
 
     return json({
       message: limitResponse(String(finalMessage).trim()),
