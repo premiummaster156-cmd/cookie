@@ -152,12 +152,8 @@ button:active{transform:scale(.98)}
     background:var(--panel2);
     color:var(--text);
   }
-  .settings-page>main .settings-mobile-back::after{
-    content:"General";
-    font-size:20px;
-    font-weight:700;
-    letter-spacing:-.02em;
-  }
+  .settings-page>main .settings-mobile-back::after{content:none}
+  .settings-page>main .settings-mobile-back span{font-size:20px;font-weight:700;letter-spacing:-.02em}
   .settings-page section{
     width:100%;
     max-width:none;
