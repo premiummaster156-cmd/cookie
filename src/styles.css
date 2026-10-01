@@ -249,3 +249,5 @@ button:active{transform:scale(.98)}
   .set-row b{font-size:14px}
   .set-row span{font-size:10px}
 }
+
+.settings-shell>.topbar{display:none!important}
