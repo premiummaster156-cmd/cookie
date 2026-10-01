@@ -251,3 +251,43 @@ button:active{transform:scale(.98)}
 }
 
 .settings-shell>.topbar{display:none!important}
+
+
+/* Cookie AI upgrade: cleaner mobile composer, research state, and message rhythm */
+.search-chip{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  width:max-content;
+  max-width:100%;
+  margin:0 0 7px 4px;
+  padding:6px 9px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--panel);
+  color:var(--text);
+  font-size:10px;
+  box-shadow:0 4px 18px rgba(0,0,0,.12);
+}
+.search-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-chip button{width:20px;height:20px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--muted);padding:0}
+.attach-menu button.active{background:var(--active);color:var(--text)}
+.message-body{min-width:0}
+.message-row.assistant .message-body{max-width:min(820px,100%)}
+.rich{line-height:1.65;overflow-wrap:anywhere}
+.rich .md-line{min-height:1.35em}
+.rich .md-heading{line-height:1.25;font-weight:700;letter-spacing:-.02em}
+.rich .md-h1{font-size:1.55em}.rich .md-h2{font-size:1.3em}.rich .md-h3{font-size:1.15em}
+.rich ul,.rich ol{margin:7px 0 7px 22px;padding:0}.rich li{padding:2px 0}
+.rich blockquote{margin:9px 0;padding:5px 12px;border-left:3px solid var(--line2);color:var(--muted)}
+.code-block{margin:12px 0;overflow:hidden;border:1px solid var(--line);border-radius:13px}
+.code-head{min-height:34px}
+.code-head button{font-size:10px}
+@media(max-width:900px){
+  .search-chip{margin-left:2px}
+  .composer-wrap{max-width:860px}
+  .message-row.assistant .message-body{max-width:100%}
+}
+@media(max-width:560px){
+  .search-chip{font-size:9px;padding:5px 8px}
+}
