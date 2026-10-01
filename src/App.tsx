@@ -118,9 +118,11 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
 
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>}){
   const tabs:[SettingsTab,string,React.ReactNode][]=[["general","General",<SettingsIcon size={17}/>],["personalization","Personalization",<Plus size={17}/>],["data","Data controls",<Library size={17}/>],["notifications","Notifications",<Bell size={17}/>],["voice","Voice",<Volume2 size={17}/>],["account","Account",<UserRound size={17}/>],["about","About",<Info size={17}/>]];
+  const [mobileHome,setMobileHome]=useState(true);
   const Toggle=({k}:{k:string})=><button className={"toggle "+(settings[k]?"on":"")} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
+  const openTab=(id:SettingsTab)=>{setTab(id);setMobileHome(false)};
   const Row=({title,desc,children}:{title:string;desc:string;children:React.ReactNode})=><div className="set-row"><div><b>{title}</b><span>{desc}</span></div>{children}</div>;
-  return <div className="settings-page"><aside><h2>Settings</h2>{tabs.map(([id,label,icon])=><button className={tab===id?"selected":""} key={id} onClick={()=>setTab(id)}>{icon}{label}</button>)}</aside><main><div className="settings-mobile-back"><ChevronLeft size={17}/> Settings</div>
+  return <div className="settings-page"><aside><h2>Settings</h2>{tabs.map(([id,label,icon])=><button className={tab===id?"selected":""} key={id} onClick={()=>openTab(id)}>{icon}{label}<ChevronRight className="settings-nav-chevron" size={16}/></button>)}</aside><div className={"settings-mobile-home "+(mobileHome?"show":"")}><h1>Settings</h1>{tabs.map(([id,label])=><button key={id} onClick={()=>openTab(id)}><span>{label}</span><ChevronRight size={18}/></button>)}</div><main className={mobileHome?"mobile-hidden":""}><button className="settings-mobile-back" onClick={()=>setMobileHome(true)}><ChevronLeft size={17}/> Settings</button>
     {tab==="general"&&<section><h1>General</h1>
       <div className="settings-group"><div className="settings-group-title">Appearance</div>
         <div className="settings-card"><Row title="Theme" desc="Choose how Cookie looks."><select value={settings.theme} onChange={e=>setSettings((s:any)=>({...s,theme:e.target.value}))}><option>System</option><option>Light</option><option>Dark</option></select></Row>
