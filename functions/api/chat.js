@@ -135,21 +135,21 @@ async function executeWebTool(name, args, apiKey) {
 const profiles = {
   standard: {
     name: "CPT-1",
-    model: "deepseek/deepseek-v4-flash-0731:free",
+    model: "inclusionai/ling-3.0-flash:free",
     temperature: 0.55,
     instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it.",
     thinking: false
   },
   max: {
     name: "CPT-2 MAX",
-    model: "moonshotai/kimi-k2:free",
+    model: "poolside/laguna-s-2.1:free",
     temperature: 0.7,
     instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions.",
     thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    model: "nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
     temperature: 0.68,
     instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
@@ -162,7 +162,7 @@ export async function onRequestPost({ request, env }) {
     const ollamaKey = String(env.OLLAMA_API_KEY || "").trim();
     const provider = openRouterKey ? "openrouter" : "ollama";
     const apiKey = openRouterKey || ollamaKey;
-    let model = "deepseek/deepseek-v4-flash-0731:free";
+    let model = "inclusionai/ling-3.0-flash:free";
     const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
     const openRouterUrl = String(env.OPENROUTER_URL || "https://openrouter.ai/api/v1/chat/completions").trim();
 
@@ -294,9 +294,10 @@ export async function onRequestPost({ request, env }) {
     const agentMessages = apiMessages.slice();
     const modelFallbacks = provider === "openrouter"
       ? [
-          "nvidia/nemotron-3-ultra-550b-a55b:free",
-          "deepseek/deepseek-v4-flash-0731:free",
-          "moonshotai/kimi-k2:free"
+          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+          "poolside/laguna-s-2.1:free",
+          "inclusionai/ling-3.0-flash:free",
+          "openrouter/free"
         ]
       : [model];
 
@@ -452,7 +453,11 @@ export async function onRequestPost({ request, env }) {
           executed=executeFileTool(generatedFiles,name,args);
         }
         generatedFiles=executed.files;
-        agentMessages.push({role:"tool",tool_name:name,content:executed.result});
+        agentMessages.push({
+          role:"tool",
+          tool_call_id: call?.id || call?.function?.id || ("cookie-tool-" + turn + "-" + generatedFiles.length),
+          content: executed.result
+        });
       }
     }
 
