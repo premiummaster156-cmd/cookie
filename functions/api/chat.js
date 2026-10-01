@@ -279,37 +279,58 @@ export async function onRequestPost({ request, env }) {
 
     const agentMessages = apiMessages.slice();
 
-    // When the user explicitly enables web search, perform the first search server-side.
-    // This makes browsing deterministic instead of depending on the model deciding to
-    // call a tool. The model still receives the web tools for follow-up searches/fetches.
+    // When web search is enabled, perform real server-side research before asking
+    // the model to answer. For a domain/site name, fetch the actual site first.
     if (useWebSearch && requestedWebQuery) {
-      const directWeb = await executeWebTool("web_search", {
-        query: requestedWebQuery.slice(0, 500),
-        max_results: 6
-      }, apiKey);
+      const domainMatch = requestedWebQuery.match(/(?:https?:\\/\\/)?(?:www\\.)?([a-z0-9-]+(?:\\.[a-z0-9-]+)+)(?:[\\/?#][^\\s]*)?/i);
+      let directWeb = null;
 
-      if (directWeb.ok && Array.isArray(directWeb.results) && directWeb.results.length) {
-        const webContext = directWeb.results.map((r, i) =>
-          `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
-        ).join("\n\n");
+      if (domainMatch) {
+        directWeb = await executeWebTool("web_fetch", {
+          url: "https://" + domainMatch[1]
+        }, apiKey);
+      }
+
+      // Normal research questions use the real Ollama web-search API.
+      // If a direct page fetch failed, search is also attempted as a fallback.
+      if (!directWeb?.ok) {
+        directWeb = await executeWebTool("web_search", {
+          query: requestedWebQuery.slice(0, 500),
+          max_results: 6
+        }, apiKey);
+      }
+
+      if (directWeb?.ok && (directWeb.content || (Array.isArray(directWeb.results) && directWeb.results.length))) {
+        let webContext = "";
+        if (Array.isArray(directWeb.results)) {
+          webContext = directWeb.results.map((r, i) =>
+            `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
+          ).join("\n\n");
+        } else {
+          webContext =
+            `[Fetched page] ${directWeb.title || "Web page"}\n` +
+            `URL: ${domainMatch ? "https://" + domainMatch[1] : requestedWebQuery}\n` +
+            `Content: ${directWeb.content || ""}\n` +
+            (directWeb.links?.length ? `Links: ${directWeb.links.join(", ")}` : "");
+        }
 
         agentMessages.push({
           role: "system",
           content:
-            "MANDATORY WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n" +
+            "MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n" +
             webContext +
-            "\n\nUse these results to answer the user's request. " +
-            "Do not claim you searched unless these results are present. " +
-            "When using factual information from these results, include the relevant source URL as a Markdown link. " +
+            "\n\nUse these actual live results to answer the user. " +
+            "Do not say you cannot browse. Do not claim anything not supported by the supplied page/search results. " +
+            "When useful, include the source URL as a Markdown link. " +
             "Do not create files unless the user explicitly asks for a downloadable file or code artifact."
         });
-      } else if (!directWeb.ok) {
+      } else {
         agentMessages.push({
           role: "system",
           content:
-            "Web research was enabled, but the web search service returned an error: " +
-            String(directWeb.error || "unknown error") +
-            ". Do not pretend that you searched successfully. Answer from your existing knowledge only if that is still useful, and clearly say live search failed."
+            "LIVE WEB RESEARCH FAILED. The server attempted a real web request but received no usable result. " +
+            "Do not pretend that browsing succeeded. Tell the user live web access failed and include this diagnostic: " +
+            String(directWeb?.error || "no usable response from the web provider")
         });
       }
     }
