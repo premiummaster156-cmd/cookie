@@ -114,9 +114,19 @@ async function executeWebTool(name, args, apiKey) {
         url:String(x?.url||""),
         content:String(x?.content||"").slice(0,7000)
       })) : [];
+      if (!results.length) {
+        return {
+          ok:false,
+          error:"Ollama web search returned no results. The web-search service may be unavailable or the API quota may be exhausted."
+        };
+      }
       return {ok:true,results};
     }
-    return {ok:true,title:String(data?.title||""),content:String(data?.content||"").slice(0,16000),links:Array.isArray(data?.links)?data.links.slice(0,40):[]};
+    const content = String(data?.content || "").slice(0,16000);
+    if (!content && name === "web_fetch") {
+      return {ok:false,error:"The webpage fetch returned no readable page content."};
+    }
+    return {ok:true,title:String(data?.title||""),content,links:Array.isArray(data?.links)?data.links.slice(0,40):[]};
   } catch (error) {
     return {ok:false,error:String(error?.message||"Web request failed")};
   }
