@@ -292,7 +292,7 @@ export async function onRequestPost({ request, env }) {
     // When web search is enabled, perform real server-side research before asking
     // the model to answer. For a domain/site name, fetch the actual site first.
     if (useWebSearch && requestedWebQuery) {
-      const domainMatch = requestedWebQuery.match(/(?:https?:\\/\\/)?(?:www\\.)?([a-z0-9-]+(?:\\.[a-z0-9-]+)+)(?:[\\/?#][^\\s]*)?/i);
+      const domainMatch = requestedWebQuery.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?:[\/?#][^\s]*)?/i);
       let directWeb = null;
 
       if (domainMatch) {
