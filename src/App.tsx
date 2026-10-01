@@ -38,34 +38,48 @@ function Avatar({size="sm"}:{size?:"sm"|"md"|"lg"}) {
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
 function safeTextParts(text:string){ return [text]; }
 function Inline({text}:{text:string}){
-  return <>{safeTextParts(text).map((p,i)=>{
-    if(p.startsWith("**")&&p.endsWith("**")) return <strong key={i}>{p.slice(2,-2)}</strong>;
-    const t=String.fromCharCode(96);
-    if(p.startsWith(t)&&p.endsWith(t)) return <code key={i} className="inline-code">{p.slice(1,-1)}</code>;
+  const token=/(\`[^\`]+\`|\*\*[^*]+\*\*|__[^_]+__|(?<!\*)\*[^*]+\*(?!\*)|(?<!_)_[^_]+_(?!_)|\[[^\]]+\]\([^\)]+\))/g;
+  return <>{text.split(token).map((p,i)=>{
+    if(/^\`[^\`]+\`$/.test(p)) return <code key={i} className="inline-code">{p.slice(1,-1)}</code>;
+    if(/^\*\*.*\*\*$/.test(p)||/^__.*__$/.test(p)) return <strong key={i}>{p.slice(2,-2)}</strong>;
+    if(/^\*.*\*$/.test(p)||/^_.*_$/.test(p)) return <em key={i}>{p.slice(1,-1)}</em>;
+    const link=p.match(/^\[([^\]]+)\]\(([^\)]+)\)$/);
+    if(link) return <a key={i} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>;
     return <React.Fragment key={i}>{p}</React.Fragment>;
   })}</>;
 }
 function CodeBlock({code,lang}:{code:string;lang:string}){
   const [copied,setCopied]=useState(false);
-  return <div className="code-block"><div className="code-head"><span>{lang||"code"}</span><button onClick={async()=>{try{await navigator.clipboard.writeText(code)}catch{}setCopied(true);setTimeout(()=>setCopied(false),1200)}}>{copied?<Check size={14}/>:<Copy size={14}/>} {copied?"Copied":"Copy"}</button></div><pre><code>{code}</code></pre></div>;
+  const copy=async()=>{try{await navigator.clipboard.writeText(code)}catch{}setCopied(true);setTimeout(()=>setCopied(false),1400)};
+  return <div className="code-block"><div className="code-head"><span>{lang||"code"}</span><button onClick={copy}>{copied?<><Check size={14}/>Copied</>:<><Copy size={14}/>Copy</>}</button></div><pre><code>{code}</code></pre></div>;
 }
 function Rich({text}:{text:string}){
-  const tick=String.fromCharCode(96);
-  const fence=tick.repeat(3);
-  return <div className="rich">{text.split(new RegExp("("+fence+"[\\s\\S]*?"+fence+")","g")).map((part,pi)=>{
+  const fence="```";
+  return <div className="rich">{text.split(new RegExp("("+fence+"[^]*?"+fence+")","g")).map((part,pi)=>{
     if(part.startsWith(fence)){
       const nl=part.indexOf("\n");
-      return <CodeBlock key={pi} lang={nl>3?part.slice(3,nl):"code"} code={part.slice(nl>3?nl+1:3,-3).trim()}/>;
+      const lang=nl>3?part.slice(3,nl).trim():"";
+      const code=part.slice(nl>=0?nl+1:3,-3).replace(/^\n|\n$/g,"");
+      return <CodeBlock key={pi} lang={lang} code={code}/>;
     }
-    return <React.Fragment key={pi}>{part.split("\n").map((line,li)=>{
-      if(!line.trim()) return <div className="md-gap" key={li}/>;
-      if(/^#{1,3}\s/.test(line)) return <div className="md-heading" key={li}><Inline text={line.replace(/^#+\s/,"")}/></div>;
-      if(/^[-*]\s/.test(line)) return <div className="md-list" key={li}><span>•</span><Inline text={line.replace(/^[-*]\s/,"")}/></div>;
-      return <div className="md-line" key={li}><Inline text={line}/></div>;
-    })}</React.Fragment>;
+    const lines=part.split("\n"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
+    const flush=()=>{if(!listType||!list.length)return;nodes.push(listType==="ol"?<ol key={"ol"+nodes.length}>{list}</ol>:<ul key={"ul"+nodes.length}>{list}</ul>);list=[];listType=null};
+    lines.forEach((line,li)=>{
+      if(!line.trim()){flush();nodes.push(<div className="md-gap" key={"g"+li}/>);return;}
+      const h=line.match(/^(#{1,6})\s+(.+)$/);
+      if(h){flush();nodes.push(<div className={"md-heading md-h"+h[1].length} key={li}><Inline text={h[2]}/></div>);return;}
+      const bullet=line.match(/^\s*[-*+]\s+(.+)$/);
+      if(bullet){if(listType!=="ul"){flush();listType="ul"}list.push(<li key={li}><Inline text={bullet[1]}/></li>);return;}
+      const num=line.match(/^\s*\d+[.)]\s+(.+)$/);
+      if(num){if(listType!=="ol"){flush();listType="ol"}list.push(<li key={li}><Inline text={num[1]}/></li>);return;}
+      const quote=line.match(/^\s*>\s?(.*)$/);
+      if(quote){flush();nodes.push(<blockquote key={li}><Inline text={quote[1]}/></blockquote>);return;}
+      if(/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(line)){flush();nodes.push(<hr key={li}/>);return;}
+      flush();nodes.push(<div className="md-line" key={li}><Inline text={line}/></div>);
+    });
+    flush(); return <React.Fragment key={pi}>{nodes}</React.Fragment>;
   })}</div>;
 }
-
 function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:()=>void;onAction:(action:"pin"|"archive"|"delete")=>void}){
   const [open,setOpen]=useState(false);
   return <div className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>setOpen(v=>!v)}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
@@ -103,7 +117,7 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
 }
 
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>}){
-  const tabs:[SettingsTab,string,React.ReactNode][]=[["general","General",<SettingsIcon size={17}/>],["personalization","Personalization",<Sparkles size={17}/>],["data","Data controls",<Library size={17}/>],["notifications","Notifications",<Bell size={17}/>],["voice","Voice",<Volume2 size={17}/>],["account","Account",<UserRound size={17}/>],["about","About",<Info size={17}/>]];
+  const tabs:[SettingsTab,string,React.ReactNode][]=[["general","General",<SettingsIcon size={17}/>],["personalization","Personalization",<Plus size={17}/>],["data","Data controls",<Library size={17}/>],["notifications","Notifications",<Bell size={17}/>],["voice","Voice",<Volume2 size={17}/>],["account","Account",<UserRound size={17}/>],["about","About",<Info size={17}/>]];
   const Toggle=({k}:{k:string})=><button className={"toggle "+(settings[k]?"on":"")} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
   const Row=({title,desc,children}:{title:string;desc:string;children:React.ReactNode})=><div className="set-row"><div><b>{title}</b><span>{desc}</span></div>{children}</div>;
   return <div className="settings-page"><aside><h2>Settings</h2>{tabs.map(([id,label,icon])=><button className={tab===id?"selected":""} key={id} onClick={()=>setTab(id)}>{icon}{label}</button>)}</aside><main><div className="settings-mobile-back"><ChevronLeft size={17}/> Settings</div>
@@ -120,7 +134,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile}:{tab:
 function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[]}){
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
-  if(view==="gpts") return <div className="page"><h1>GPTs</h1><p>Specialized Cookie experiences.</p><div className="gpt-grid">{[["Study buddy","Guided learning and explanations."],["Code reviewer","Debug and improve your code."],["Writing partner","Draft polished writing."],["Idea maker","Brainstorm concepts fast."]].map(([a,b])=><button className="gpt-item" key={a} onClick={()=>onPrompt("Act as my "+a+". "+b)}><div className="gpt-icon"><Sparkles size={18}/></div><div><b>{a}</b><span>{b}</span></div><ChevronRight size={17}/></button>)}</div></div>;
+  if(view==="gpts") return <div className="page"><h1>GPTs</h1><p>Specialized Cookie experiences.</p><div className="gpt-grid">{[["Study buddy","Guided learning and explanations."],["Code reviewer","Debug and improve your code."],["Writing partner","Draft polished writing."],["Idea maker","Brainstorm concepts fast."]].map(([a,b])=><button className="gpt-item" key={a} onClick={()=>onPrompt("Act as my "+a+". "+b)}><div className="gpt-icon"><Code2 size={18}/></div><div><b>{a}</b><span>{b}</span></div><ChevronRight size={17}/></button>)}</div></div>;
   if(view==="work") return <div className="work-page"><div className="work-label"><Zap size={16}/> Work</div><h1>Get work done with Cookie</h1><p>Turn a goal into a structured conversation.</p><div className="work-grid"><button onClick={()=>onPrompt("Plan this project step by step and help me complete it.")}>Plan a project</button><button onClick={()=>onPrompt("Break this task into actionable steps.")}>Break down a task</button></div></div>;
   if(view==="help") return <div className="page"><h1>Help with Cookie</h1><p>Quick answers.</p><div className="help-grid">{[["Search","Use Search or ⌘K / Ctrl+K to find conversations."],["Files","Use + in the composer to attach images or files."],["Voice","Use the voice button and allow microphone access."],["Temporary chats","Start a temporary chat from the sidebar menu."]].map(([a,b])=><div className="help-item" key={a}><CircleHelp size={18}/><div><b>{a}</b><span>{b}</span></div></div>)}</div></div>;
   return null;
@@ -176,7 +190,7 @@ export default function App(){
       <div className="sidebar-head"><button className="brand" onClick={()=>setView("chat")}><CookieIcon size={23}/><span>Cookie</span></button><div><button className="side-icon hide-mobile" onClick={()=>setSidebar(false)}><PanelLeft size={18}/></button><button className="side-icon" onClick={()=>createChat(false)}><MessageSquarePlus size={18}/></button></div></div>
       <div className="switcher"><button className={view==="chat"?"active":""} onClick={()=>setView("chat")}><MessageSquare size={16}/>Chat</button><button className={view==="work"?"active":""} onClick={()=>setView("work")}><Zap size={16}/>Work</button></div>
       <div className="sidebar-scroll"><button className="nav-btn" onClick={()=>setView("search")}><Search size={18}/><span>Search</span><kbd>⌘K</kbd></button><button className="nav-btn" onClick={()=>setView("library")}><Library size={18}/><span>Library</span></button><button className="nav-btn" onClick={()=>setView("gpts")}><Sparkles size={18}/><span>GPTs</span></button><div className="side-label">Recent</div>{recent.map(c=><ChatRow key={c.id} chat={c} active={c.id===activeId} onOpen={()=>{setActiveId(c.id);setTemporary(!!c.temporary);setView("chat");setSidebar(false)}} onAction={a=>a==="pin"?updateChat(c.id,x=>({...x,pinned:!x.pinned})):a==="archive"?updateChat(c.id,x=>({...x,archived:true})):setChats(p=>p.filter(x=>x.id!==c.id))}/>)}</div>
-      <div className="sidebar-foot"><button className="nav-btn" onClick={()=>setNewOpen(v=>!v)}><Sparkles size={18}/><span>Try something new</span><ChevronDown size={15}/></button>{newOpen&&<div className="new-menu"><button onClick={()=>createChat(true)}><Sparkles size={17}/><span><b>Temporary chat</b><small>Don't save this chat to history.</small></span></button><button onClick={()=>{setView("work");setNewOpen(false)}}><Zap size={17}/><span><b>Work</b><small>Structured tasks.</small></span></button></div>}<button className="account" onClick={()=>setProfileOpen(v=>!v)}><Avatar/><span><b>{profile.name||"Cookie user"}</b><small>Cookie Preview</small></span><MoreHorizontal size={17}/></button>{profileOpen&&<div className="profile-menu"><div className="profile-menu-head"><Avatar size="md"/><div><b>{profile.name}</b><span>@{profile.username}</span></div></div><button onClick={()=>{setSettingsTab("account");setView("settings");setProfileOpen(false)}}><UserRound size={16}/>Account</button><button onClick={()=>{setSettingsTab("general");setView("settings");setProfileOpen(false)}}><SettingsIcon size={16}/>Settings</button><button onClick={()=>{setView("help");setProfileOpen(false)}}><CircleHelp size={16}/>Help</button><div className="divider"/><button className="danger" onClick={()=>{localStorage.clear();location.reload()}}><LogOut size={16}/>Log out</button></div>}</div>
+      <div className="sidebar-foot"><button className="nav-btn" onClick={()=>setNewOpen(v=>!v)}><Plus size={18}/><span>Try something new</span><ChevronDown size={15}/></button>{newOpen&&<div className="new-menu"><button onClick={()=>createChat(true)}><Clock3 size={17}/><span><b>Temporary chat</b><small>Don't save this chat to history.</small></span></button><button onClick={()=>{setView("work");setNewOpen(false)}}><Zap size={17}/><span><b>Work</b><small>Structured tasks.</small></span></button></div>}<button className="account" onClick={()=>setProfileOpen(v=>!v)}><Avatar/><span><b>{profile.name||"Cookie user"}</b><small>Cookie Preview</small></span><MoreHorizontal size={17}/></button>{profileOpen&&<div className="profile-menu"><div className="profile-menu-head"><Avatar size="md"/><div><b>{profile.name}</b><span>@{profile.username}</span></div></div><button onClick={()=>{setSettingsTab("account");setView("settings");setProfileOpen(false)}}><UserRound size={16}/>Account</button><button onClick={()=>{setSettingsTab("general");setView("settings");setProfileOpen(false)}}><SettingsIcon size={16}/>Settings</button><button onClick={()=>{setView("help");setProfileOpen(false)}}><CircleHelp size={16}/>Help</button><div className="divider"/><button className="danger" onClick={()=>{localStorage.clear();location.reload()}}><LogOut size={16}/>Log out</button></div>}</div>
     </aside>
     <main className="main-shell">
       <header className="topbar"><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)}><Menu size={20}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu">{MODELS.map(x=><button key={x.id} className={x.id===model?"selected":""} onClick={()=>{setModel(x.id);setModelOpen(false)}}><span><b>{x.name}</b><small>{x.detail}</small></span>{x.id===model&&<Check size={16}/>}</button>)}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Sparkles size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)}><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
