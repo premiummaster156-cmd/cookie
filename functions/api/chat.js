@@ -132,15 +132,15 @@ const profiles = {
   },
   max: {
     name: "CPT-2 MAX",
-    model: "gemma4:cloud",
-    temperature: 0.68,
+    model: "gpt-oss:20b-cloud",
+    temperature: 0.7,
     instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions.",
     thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "gemma4:cloud",
-    temperature: 0.62,
+    model: "gpt-oss:120b-cloud",
+    temperature: 0.68,
     instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
   }
@@ -278,7 +278,7 @@ export async function onRequestPost({ request, env }) {
 
     const agentMessages = apiMessages.slice();
     const availableTools = useWebSearch ? [...fileTools, ...webTools] : fileTools;
-    const think = reasoning === "deep" ? true : reasoning === "fast" ? false : !!profile.thinking;
+    const think = reasoning === "deep" ? (mode === "ultra" ? "high" : true) : reasoning === "fast" ? false : (mode === "ultra" ? "high" : mode === "max" ? "medium" : false);
     let finalMessage = "";
     let lastData = null;
 
