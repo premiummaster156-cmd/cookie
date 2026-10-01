@@ -83,7 +83,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button onClick={()=>{imageRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Photos & images</span></button>
         <button onClick={()=>{cameraRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Camera</span></button>
         <button onClick={()=>{fileRef.current?.click();setOpen(false)}}><FilePlus2 size={18}/><span>Upload files</span></button>
-        <button onClick={()=>{setValue(v=>(v?v+"\n":"")+"Search the web for ");setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>Search the web</span></button>
+        <button onClick={()=>{setValue((value ? value+"\n" : "")+"Search the web for ");setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>Search the web</span></button>
       </div>}</div></div>
       <textarea ref={textRef} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();onSend()}}} placeholder="Message Cookie" rows={1}/>
       <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={onSend}><ArrowUp size={19}/></button>}</div>
