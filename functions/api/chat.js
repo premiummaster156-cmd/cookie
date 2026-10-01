@@ -303,10 +303,10 @@ export async function onRequestPost({ request, env }) {
 
       // Normal research questions use the real Ollama web-search API.
       // If a direct page fetch failed, search is also attempted as a fallback.
-      if (!directWeb?.ok) {
+      if (domainMatch || !directWeb?.ok) {
         directWeb = await executeWebTool("web_search", {
-          query: requestedWebQuery.slice(0, 500),
-          max_results: 6
+          query: domainMatch ? "site:" + domainMatch[1] : requestedWebQuery.slice(0, 500),
+          max_results: 8
         }, apiKey);
       }
 
