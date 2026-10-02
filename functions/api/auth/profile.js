@@ -1,5 +1,5 @@
-import { json, readJson } from "../../_lib.js";
-import { dbAvailable, getSessionUser } from "../_auth.js";
+import { json, readJson } from "../_lib.js";
+import { dbAvailable, getSessionUser } from "./_auth.js";
 
 function safeName(v){return String(v||"").trim().slice(0,80)}
 function safeUsername(v){return String(v||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g,"").slice(0,24)}
