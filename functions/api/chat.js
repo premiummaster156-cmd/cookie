@@ -1,5 +1,6 @@
 import { executeWebTool, researchWeb } from "./web.js";
 import { getSessionUser, randomToken } from "./auth/_auth.js";
+import { generateImage } from "./_images.js";
 import { json, readJson } from "./_lib.js";
 
 function limitResponse(text) {
@@ -54,6 +55,10 @@ const webTools = [
 ];
 
 const agentTools = [...fileTools];
+
+const imageTools = [
+  { type:"function", function:{ name:"image_generate", description:"Generate or edit an image for the user. Use this when the user explicitly asks you to create, draw, visualize, or edit an image. For edits, the user's most recent uploaded image can be used automatically.", parameters:{type:"object",required:["prompt"],properties:{prompt:{type:"string",description:"Detailed image generation or editing prompt."},mode:{type:"string",enum:["generate","edit"]},size:{type:"string",enum:["1024x1024","1536x1024","1024x1536","auto"]},quality:{type:"string",enum:["auto","low","medium","high"]}}} } },
+];
 
 const memoryTools = [
   { type:"function", function:{ name:"memory_search", description:"Search the user's long-term Cookie memory for relevant saved preferences, facts, or instructions.", parameters:{type:"object",properties:{query:{type:"string",description:"What to look for in memory."}}} } },
@@ -203,6 +208,7 @@ export async function onRequestPost({ request, env }) {
     model = profile.model;
     const attachments = Array.isArray(body?.attachments) ? body.attachments.slice(0,10) : [];
     let generatedFiles = [];
+    let generatedImages = [];
     const fileAttachments = attachments.filter(a => a && a.kind === "file" && typeof a.data === "string");
     const imageAttachments = attachments.filter(a => a && a.kind === "image" && typeof a.data === "string");
 
@@ -244,7 +250,7 @@ export async function onRequestPost({ request, env }) {
       "You are Cookie AI, the AI assistant built into the Cookie website. Your identity is Cookie AI, not the website's hosting provider and not the underlying model provider. If a user asks who you are, identify yourself as Cookie AI and explain that you run inside the Cookie website.",
       "COOKIE PRODUCT KNOWLEDGE: The current Cookie website has a chat composer, a mobile/desktop sidebar, recent chats, Settings, Help, model profiles (CPT-1, CPT-2 MAX, CPT-3 ULTRA), conversation search, persistent account-backed chat history, long-term memory, persistent Projects, live web research, image/file attachments, downloadable generated files, a Tools menu, and assistant-message actions.",
       "COOKIE PRODUCT KNOWLEDGE: The + attachment picker supports Camera, Photos, and Files. Camera/Photos are for images; Files are for non-image files. Users can attach at most 10 images/files per message. Folder uploads are not supported.",
-      "COOKIE PRODUCT KNOWLEDGE: Cookie can analyze user-provided images/files, answer questions, explain concepts, write and rewrite content, translate, plan, reason, help with programming, debug and review code, and create downloadable files when the user asks for an artifact.",
+      "COOKIE PRODUCT KNOWLEDGE: Cookie can analyze user-provided images/files, answer questions, explain concepts, write and rewrite content, translate, plan, reason, help with programming, debug and review code, create downloadable files, and can generate or edit images when OPENAI_API_KEY is configured.",
       "COOKIE PRODUCT KNOWLEDGE: Generated files are temporary response artifacts. Cookie can use its internal file_create, file_read, file_update, and file_delete capabilities during the current response to build and refine downloadable files. These capabilities are internal and are not presented as a user-facing Tools menu.",
       "COOKIE PRODUCT KNOWLEDGE: Cookie Projects are persistent account-backed workspaces. Users can create projects, keep project descriptions, and store text files under project paths. Do not claim that temporary generated response files automatically become project files.",
       "COOKIE PRODUCT KNOWLEDGE: The website no longer exposes a Tools button/menu in the composer. Do not instruct users to click a Tools button. When a task requires one of Cookie's internal capabilities, use it directly rather than asking the user to activate a tool.",
@@ -256,6 +262,7 @@ export async function onRequestPost({ request, env }) {
       customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : "",
       useWebSearch ? "WEB RESEARCH: Live web search and page fetching are enabled for this message. Use them when the user asks for current information, research, sources, recent facts, or when browsing materially improves accuracy. When you use web research, cite useful sources inline as Markdown links using the returned URLs. Do not claim you browsed unless a web tool actually returned results." : "WEB RESEARCH: Live web research is disabled for this message. Do not claim to have searched the web.",
       memoryEnabled ? "LONG-TERM USER MEMORY: You have access to the user's persistent memory. Use it only when relevant. Do not expose the complete memory store. Save only stable preferences or helpful facts when the user clearly asks you to remember something or when a durable preference is obvious and appropriate." : "LONG-TERM USER MEMORY: Memory is disabled for this message.",
+      env.OPENAI_API_KEY ? "IMAGE GENERATION: When the user asks to create or edit an image, use the image_generate tool and wait for its result. If editing, use the most recent uploaded image when suitable." : "IMAGE GENERATION: Image generation is not configured in this deployment."
       persistentMemories.length ? "CURRENT SAVED MEMORY:\n" + persistentMemories.map(m => "- " + m.key + ": " + m.value).join("\n") : "",
       profileUsername ? `USER PROFILE: The user's Cookie username is "${profileUsername}". Use it naturally when useful; do not reveal private profile data unless relevant.` : "",
       profileEmail ? "USER PROFILE: An email address is saved for the Cookie account interface. Do not expose or repeat it unless the user explicitly asks." : "",
@@ -358,7 +365,8 @@ export async function onRequestPost({ request, env }) {
     const availableTools = [
       ...fileTools,
       ...(useWebSearch ? webTools : []),
-      ...(memoryEnabled ? memoryTools : [])
+      ...(memoryEnabled ? memoryTools : []),
+      ...(env.OPENAI_API_KEY ? imageTools : [])
     ];
     const think = mode === "standard" || reasoning === "fast" ? false : true;
     let finalMessage = "";
@@ -434,7 +442,22 @@ export async function onRequestPost({ request, env }) {
         let args=call?.function?.arguments;
         if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
         let executed;
-        if(name === "web_search" || name === "web_fetch") {
+        if(name === "image_generate") {
+          const requestedImage = typeof args?.prompt === "string" ? args.prompt : "";
+          const sourceImage = args?.mode === "edit" ? imageAttachments[0]?.data : "";
+          try {
+            const imageResult = await generateImage(env,{
+              prompt:requestedImage,
+              size:args?.size,
+              quality:args?.quality,
+              imageData:sourceImage || ""
+            });
+            generatedImages.push({dataUrl:imageResult.dataUrl,model:imageResult.model,prompt:requestedImage});
+            executed = {files:generatedFiles,result:JSON.stringify({ok:true,imageGenerated:true,model:imageResult.model})};
+          } catch(error) {
+            executed = {files:generatedFiles,result:JSON.stringify({ok:false,error:String(error?.message||"Image generation failed.")})};
+          }
+        } else if(name === "web_search" || name === "web_fetch") {
           const webResult = await executeWebTool(name,args,apiKey);
           executed = {files:generatedFiles,result:JSON.stringify(webResult)};
         } else if(name === "memory_search" || name === "memory_save" || name === "memory_delete") {
@@ -473,6 +496,7 @@ export async function onRequestPost({ request, env }) {
       demo: true,
       demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo.",
       generatedFiles: generatedFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
+      generatedImages,
       creditsRemaining: plan === "free" ? Math.max(0, credits - 1) : null
     });
   } catch (error) {
