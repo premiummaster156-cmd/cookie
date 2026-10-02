@@ -18,7 +18,8 @@
     "react-dom": "latest",
     "perfect-scrollbar": "latest",
     "three": "latest",
-    "animate.css": "^4.1.1"
+    "animate.css": "^4.1.1",
+    "nodemailer": "^10.0.13"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
