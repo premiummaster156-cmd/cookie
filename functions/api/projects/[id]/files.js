@@ -1,5 +1,5 @@
 import { json, readJson } from "../../_lib.js";
-import { dbAvailable, getSessionUser, randomToken } from "../auth/_auth.js";
+import { dbAvailable, getSessionUser, randomToken } from "../../auth/_auth.js";
 
 async function auth(request,env){
   if(!dbAvailable(env)) return {error:json({error:"Cookie database is not connected."},503)};
