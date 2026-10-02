@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Github, KeyRound, Loader2, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type AuthUser = {
@@ -18,7 +18,7 @@ type Mode = "login"|"signup"|"verify"|"forgot"|"reset";
 function ProviderMark({provider}:{provider:"google"|"github"|"discord"}) {
   if(provider==="google") return <span className="auth-provider-mark google-mark">G</span>;
   if(provider==="discord") return <span className="auth-provider-mark discord-mark">◒</span>;
-  return <Github size={18}/>;
+  return <span className="auth-provider-mark github-mark">GH</span>;
 }
 
 async function api(path:string, body:Record<string,unknown>) {
