@@ -267,7 +267,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         const r=await fetch("/api/chats",{credentials:"same-origin",cache:"no-store"});
         const d=await r.json();
         if(cancelled)return;
-        const remote=Array.isArray(d?.chats)?d.chats:[];
+        const remote:Chat[]=Array.isArray(d?.chats)?(d.chats as Chat[]):[];
         if(remote.length){
           setChats(remote);setActiveId(prev=>remote.some(x=>x.id===prev)?prev:remote[0]?.id||"");
         } else if(chats.length){
