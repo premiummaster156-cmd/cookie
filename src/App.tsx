@@ -104,6 +104,16 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button onClick={()=>{fileRef.current?.click();setOpen(false)}}><FilePlus2 size={18}/><span>Upload files</span></button>
         <button className={webSearch?"active":""} onClick={()=>{setWebSearch(!webSearch);setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>{webSearch?"Web research on":"Search the web"}</span></button>
       </div>}</div></div>
+      <div className="tools-wrap attach-wrap">
+        <button className={"composer-icon tool-button "+(toolsOpen?"active":"")} aria-label="Tools" onClick={()=>{setToolsOpen(v=>!v);setOpen(false)}}><Wrench size={18}/></button>
+        {toolsOpen&&<div className="attach-menu tools-menu">
+          <button className={webSearch?"active":""} onClick={()=>{setWebSearch(!webSearch);setToolsOpen(false)}}><Globe2 size={18}/><span><b>Web research</b><small>{webSearch?"Enabled for this chat":"Search current web sources"}</small></span></button>
+          <button className={memoryEnabled?"active":""} onClick={()=>{setMemoryEnabled(!memoryEnabled);setToolsOpen(false)}}><Brain size={18}/><span><b>Memory</b><small>{memoryEnabled?"Use long-term memory":"Memory is off"}</small></span></button>
+          <button onClick={()=>{onImagePrompt();setToolsOpen(false)}}><ImagePlus size={18}/><span><b>Create image</b><small>Generate or edit an image</small></span></button>
+          <div className="tools-divider"/>
+          <div className="tools-note"><CreditCard size={15}/><span>File tools run automatically when needed.</span></div>
+        </div>}
+      </div>
       <textarea ref={textRef} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sendOnEnter){e.preventDefault();onSend()}}} placeholder="Message Cookie" rows={1}/>
       <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={onSend}><ArrowUp size={19}/></button>}</div>
     </div>
@@ -249,7 +259,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [files,setFiles]=useState<GeneratedFile[]>(readJSON("cookie_library",[]));
   const chat=chats.find(c=>c.id===activeId)||null;
   const recent=useMemo(()=>chats.filter(c=>!c.archived).sort((a,b)=>b.updatedAt-a.updatedAt),[chats]);
-  useEffect(()=>saveJSON("cookie_chats",chats),[chats]); useEffect(()=>saveJSON("cookie_profile",profile),[profile]);
+  useEffect(()=>saveJSON("cookie_chats",chats.map(chat=>({...chat,messages:chat.messages.map(m=>{const {images,...rest}=m;return rest})}))),[chats]); useEffect(()=>saveJSON("cookie_profile",profile),[profile]);
   useEffect(()=>{
     let cancelled=false;
     (async()=>{
@@ -261,7 +271,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         if(remote.length){
           setChats(remote);setActiveId(prev=>remote.some(x=>x.id===prev)?prev:remote[0]?.id||"");
         } else if(chats.length){
-          await fetch("/api/chats",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({chats})});
+          await fetch("/api/chats",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({chats:chats.filter(chat=>!chat.temporary).map(chat=>({...chat,messages:chat.messages.map(m=>{const {images,...rest}=m;return rest})}))})});
         }
       }catch{}finally{if(!cancelled)setServerSyncReady(true)}
     })();
