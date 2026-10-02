@@ -142,7 +142,7 @@ export async function uniqueUsername(env, desired) {
   return base + "-" + randomToken(3).toLowerCase().slice(0, 5);
 }
 export function originOf(request, env) {
-  const configured = String(env?.APP_URL || "").trim().replace(/\\/$/, "");
+  const configured = String(env?.APP_URL || "").trim().replace(/\/$/, "");
   if (configured) return configured;
   return new URL(request.url).origin;
 }
