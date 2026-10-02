@@ -254,7 +254,7 @@ export async function onRequestPost({ request, env }) {
       customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : "",
       useWebSearch ? "WEB RESEARCH: Live web search and page fetching are enabled for this message. Use them when the user asks for current information, research, sources, recent facts, or when browsing materially improves accuracy. When you use web research, cite useful sources inline as Markdown links using the returned URLs. Do not claim you browsed unless a web tool actually returned results." : "WEB RESEARCH: Live web research is disabled for this message. Do not claim to have searched the web.",
       memoryEnabled ? "LONG-TERM USER MEMORY: You have access to the user's persistent memory. Use it only when relevant. Do not expose the complete memory store. Save only stable preferences or helpful facts when the user clearly asks you to remember something or when a durable preference is obvious and appropriate." : "LONG-TERM USER MEMORY: Memory is disabled for this message.",
-      persistentMemories.length ? "CURRENT SAVED MEMORY:\n" + persistentMemories.map(m => "- " + m.key + ": " + m.value).join("\n") : ""
+      persistentMemories.length ? "CURRENT SAVED MEMORY:\n" + persistentMemories.map(m => "- " + m.key + ": " + m.value).join("\n") : "",
       profileUsername ? `USER PROFILE: The user's Cookie username is "${profileUsername}". Use it naturally when useful; do not reveal private profile data unless relevant.` : "",
       profileEmail ? "USER PROFILE: An email address is saved for the Cookie account interface. Do not expose or repeat it unless the user explicitly asks." : "",
       "You are Cookie, a polished general-purpose AI assistant.",
