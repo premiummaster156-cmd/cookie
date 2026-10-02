@@ -65,20 +65,22 @@ async function executeMemoryTool(env, userId, name, args) {
   const a=args && typeof args==="object" ? args : {};
   if (!env?.DB || !userId) return {ok:false,error:"Long-term memory is unavailable."};
 
-  if(name==="memory_search"){
+  if (name === "memory_search") {
     const q=String(a.query||"").trim().slice(0,160);
-    if(!q) {
-      const rows=await env.DB.prepare("SELECT id,key,value,updated_at FROM memories WHERE user_id=? ORDER BY updated_at DESC LIMIT 20").bind(userId).all();
+    if (!q) {
+      const rows=await env.DB.prepare(
+        "SELECT id,key,value,updated_at FROM memories WHERE user_id=? ORDER BY updated_at DESC LIMIT 20"
+      ).bind(userId).all();
       return {ok:true,memories:rows.results||[]};
     }
-    const pattern="%"+q.replace(/[%_]/g, m=>"\"+m)+"%";
+    const pattern="%" + q.replace(/[%_]/g, m => "\\" + m) + "%";
     const rows=await env.DB.prepare(
       "SELECT id,key,value,updated_at FROM memories WHERE user_id=? AND (key LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\') ORDER BY updated_at DESC LIMIT 20"
     ).bind(userId,pattern,pattern).all();
     return {ok:true,memories:rows.results||[]};
   }
 
-  if(name==="memory_save"){
+  if (name === "memory_save") {
     const key=String(a.key||"").trim().slice(0,120);
     const value=String(a.value||"").trim().slice(0,4000);
     if(!key||!value) return {ok:false,error:"Both memory key and value are required."};
@@ -89,14 +91,14 @@ async function executeMemoryTool(env, userId, name, args) {
     return {ok:true,key,value};
   }
 
-  if(name==="memory_delete"){
+  if (name === "memory_delete") {
     const key=String(a.key||"").trim().slice(0,120);
     if(!key) return {ok:false,error:"A memory key is required."};
     await env.DB.prepare("DELETE FROM memories WHERE user_id=? AND key=?").bind(userId,key).run();
     return {ok:true,key};
   }
 
-  return {ok:false,error:"Unknown memory tool."};
+  return {ok:false,error:"Unknown memory tool: "+name};
 }
 
 async function loadMemories(env,userId) {
