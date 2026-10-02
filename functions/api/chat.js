@@ -117,16 +117,14 @@ const profiles = {
 
 export async function onRequestPost({ request, env }) {
   try {
-    const openRouterKey = String(env.OPENROUTER_API_KEY || "").trim();
-    const ollamaKey = String(env.OLLAMA_API_KEY || "").trim();
-    const provider = openRouterKey ? "openrouter" : "ollama";
-    const apiKey = openRouterKey || ollamaKey;
-    let model = "inclusionai/ling-3.0-flash:free";
+    // Cookie runs directly on Ollama Cloud. OpenRouter is intentionally not used.
+    const provider = "ollama";
+    const apiKey = String(env.OLLAMA_API_KEY || "").trim();
+    let model = "gpt-oss:20b-cloud";
     const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
-    const openRouterUrl = String(env.OPENROUTER_URL || "https://openrouter.ai/api/v1/chat/completions").trim();
 
     if (!apiKey) {
-      return json({ error: "Cookie AI is not configured yet. Add OPENROUTER_API_KEY in Pages secrets." }, 503);
+      return json({ error: "Cookie AI is not configured yet. Add OLLAMA_API_KEY in Pages secrets." }, 503);
     }
 
     const body = await readJson(request);
@@ -251,14 +249,12 @@ export async function onRequestPost({ request, env }) {
     }
 
     const agentMessages = apiMessages.slice();
-    const modelFallbacks = provider === "openrouter"
-      ? [
-          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
-          "poolside/laguna-s-2.1:free",
-          "inclusionai/ling-3.0-flash:free",
-          "openrouter/free"
-        ]
-      : [model];
+    const modelFallbacks = [
+      "deepseek-v4-pro:cloud",
+      "qwen3-coder:480b-cloud",
+      "minimax-m3:cloud",
+      "gpt-oss:120b-cloud"
+    ];
 
     // When web search is enabled, research public pages directly. This does not
     // depend on the Ollama API key, so OpenRouter deployments work correctly too.
@@ -299,36 +295,26 @@ export async function onRequestPost({ request, env }) {
 
       for (const candidate of [model, ...modelFallbacks.filter(x => x !== model)]) {
         try {
-          const requestBody = provider === "openrouter"
-            ? {
-                model: candidate,
-                messages: agentMessages,
-                tools: availableTools,
-                temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35),
-                top_p: 0.95,
-                max_tokens: 32768
-              }
-            : {
-                model: candidate,
-                stream: false,
-                messages: agentMessages,
-                tools: availableTools,
-                think,
-                truncate: true,
-                shift: true,
-                options: { temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35), top_p:0.95, top_k:64, num_ctx:32000 }
-              };
+          const requestBody = {
+            model: candidate,
+            stream: false,
+            messages: agentMessages,
+            tools: availableTools,
+            think,
+            options: {
+              temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35),
+              top_p:0.95,
+              top_k:64,
+              num_ctx:64000
+            }
+          };
 
-          upstream = await fetch(provider === "openrouter" ? openRouterUrl : ollamaUrl, {
+          upstream = await fetch(ollamaUrl, {
             method: "POST",
-            headers: provider === "openrouter"
-              ? {
-                  "Content-Type": "application/json",
-                  "Authorization": "Bearer " + apiKey,
-                  "HTTP-Referer": "https://cookie.pages.dev",
-                  "X-Title": "Cookie AI"
-                }
-              : { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + apiKey
+            },
             body: JSON.stringify(requestBody)
           });
           responseText = await upstream.text();
@@ -347,18 +333,14 @@ export async function onRequestPost({ request, env }) {
 
       if (!upstream?.ok) {
         return json({
-          error: provider === "openrouter"
-            ? "Cookie could not reach any configured free AI model. Check OPENROUTER_API_KEY or OpenRouter availability."
-            : "Cookie could not reach Ollama Cloud. Check the OLLAMA_API_KEY and Ollama service connection."
+          error: "Cookie could not reach Ollama Cloud. Check OLLAMA_API_KEY, Ollama Cloud availability, and the selected cloud model."
         }, 502);
       }
 
       model = successfulModel;
       lastData = data;
 
-      const assistantMessage = provider === "openrouter"
-        ? data?.choices?.[0]?.message
-        : data?.message;
+      const assistantMessage = data?.message;
       if (!assistantMessage || typeof assistantMessage !== "object") {
         return json({error:"Cookie received an invalid model response."},502);
       }
@@ -384,8 +366,8 @@ export async function onRequestPost({ request, env }) {
         generatedFiles=executed.files;
         agentMessages.push({
           role:"tool",
-          tool_call_id: call?.id || call?.function?.id || ("cookie-tool-" + turn + "-" + generatedFiles.length),
-          content: executed.result
+          tool_name:name,
+          content:executed.result
         });
       }
     }
