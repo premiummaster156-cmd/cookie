@@ -283,7 +283,7 @@ export async function onRequestPost({ request, env }) {
       }
     }
     const availableTools = useWebSearch ? [...fileTools, ...webTools] : fileTools;
-    const think = reasoning === "deep" ? (mode === "ultra" ? "high" : true) : reasoning === "fast" ? false : (mode === "ultra" ? "high" : mode === "max" ? "medium" : false);
+    const think = mode === "standard" || reasoning === "fast" ? false : true;
     let finalMessage = "";
     let lastData = null;
 
