@@ -94,21 +94,21 @@ function executeFileTool(files, name, args) {
 const profiles = {
   standard: {
     name: "CPT-1",
-    model: "inclusionai/ling-3.0-flash:free",
+    model: "gpt-oss:20b-cloud",
     temperature: 0.55,
     instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it.",
     thinking: false
   },
   max: {
     name: "CPT-2 MAX",
-    model: "poolside/laguna-s-2.1:free",
+    model: "qwen3-coder:480b-cloud",
     temperature: 0.7,
     instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions.",
     thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+    model: "deepseek-v4-pro:cloud",
     temperature: 0.68,
     instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
