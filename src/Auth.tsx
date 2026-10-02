@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, Eye, EyeOff, Github, KeyRound, Loader2, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, KeyRound, Loader2, Mail, ShieldCheck, UserRound } from "lucide-react";
 
 export type AuthUser = {
   id:string;
@@ -16,7 +16,7 @@ type Mode = "login"|"signup"|"verify"|"forgot"|"reset";
 
 function ProviderMark({provider}:{provider:"google"|"github"|"discord"}) {
   if(provider==="google") return <span className="auth-provider-mark google-mark">G</span>;
-  if(provider==="github") return <Github size={17}/>;
+  if(provider==="github") return <span className="auth-provider-mark github-mark" aria-hidden="true">●</span>;
   return <span className="auth-provider-mark discord-mark">●</span>;
 }
 
