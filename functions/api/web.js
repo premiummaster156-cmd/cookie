@@ -69,9 +69,9 @@ export async function executeWebTool(name,args,apiKey="") {
   return fetchPage(String(a.url||""),18000);
 }
 
-export async function researchWeb(query) {
+export async function researchWeb(query, apiKey = "") {
   const domain=domainOf(query);
-  if (!domain) return executeWebTool("web_search",{query});
+  if (!domain) return executeWebTool("web_search",{query},apiKey);
   const base="https://"+domain;
   const pages=[]; const seen=new Set();
   for (const url of [base+"/",base+"/sitemap.xml",base+"/robots.txt"]) {
