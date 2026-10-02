@@ -1,6 +1,4 @@
 const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
 function bytesToB64(bytes) {
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
