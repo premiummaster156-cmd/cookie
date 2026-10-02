@@ -214,7 +214,7 @@ function ProjectsPage(){
     if(!active||!path.trim())return;setSaving(true);
     try{
       const r=await fetch("/api/projects/"+encodeURIComponent(active.id)+"/files",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({path,content,mime:"text/plain"}),credentials:"same-origin"});
-      if(r.ok){const d=await fetch("/api/projects/"+encodeURIComponent(active.id),{credentials:"same-origin"}).then(x=>x.json());setFiles(d.files||[]);const f=(d.files||[]).find((x:ProjectFile)=>x.path===path);if(f)setSelected(f);setProjects(p=>p.map(x=>x.id===active.id?{...x,updated_at:Date.now()/1000}:x))}
+      if(r.ok){const d=await fetch("/api/projects/"+encodeURIComponent(active.id),{credentials:"same-origin"}).then(x=>x.json());setFiles(d.files||[]);const f=(d.files||[]).find((x:ProjectFile)=>x.path===path);if(f)setSelected(f);setProjects((p:Project[])=>p.map((x:Project)=>x.id===active.id?{...x,updated_at:Date.now()/1000}:x))}
     }finally{setSaving(false)}
   };
   const removeProject=async()=>{
