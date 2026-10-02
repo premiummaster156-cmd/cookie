@@ -4,7 +4,7 @@ import {
   Archive, ArrowUp, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download,
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
-  Wrench, ImagePlus, FolderKanban, CreditCard, Brain
+  Wrench, ImagePlus, FolderKanban, CreditCard, Brain,
   RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
   Volume2, X, Zap
 } from "lucide-react";
@@ -84,12 +84,12 @@ function Rich({text}:{text:string}){
   })}</div>;
 }
 function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:()=>void;onAction:(action:"pin"|"archive"|"delete")=>void}){
-  const [open,setOpen]=useState(false),[toolsOpen,setToolsOpen]=useState(false);
+  const [open,setOpen]=useState(false);
   return <div className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>setOpen(v=>!v)}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
 }
 
 function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,onImagePrompt}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;onImagePrompt:()=>void}){
-  const [open,setOpen]=useState(false);
+  const [open,setOpen]=useState(false),[toolsOpen,setToolsOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
   useEffect(()=>{const t=textRef.current;if(t){t.style.height="0px";t.style.height=Math.min(220,Math.max(52,t.scrollHeight))+"px"}},[value]);
   const add=(list:FileList|null)=>{if(!list)return;Array.from(list).slice(0,10-attachments.length).forEach(file=>{const r=new FileReader();r.onload=()=>setAttachments(p=>[...p,{id:uid(),kind:file.type.startsWith("image/")?"image":"file",name:file.name,mime:file.type,data:String(r.result||""),size:file.size}]);r.readAsDataURL(file)})};
