@@ -8,7 +8,11 @@ function required(env, key) {
 }
 
 function transporter(env) {
-  const host = required(env, "SMTP_HOST");
+  const user = required(env, "SMTP_USER");
+  const pass = required(env, "SMTP_PASS");
+  const smtpUrl = String(env.SMTP_URL || "").trim();
+  if (smtpUrl) return nodemailer.createTransport(smtpUrl);
+  const host = String(env.SMTP_HOST || "smtp.gmail.com").trim();
   const port = Number(env.SMTP_PORT || 465);
   const secure = String(env.SMTP_SECURE || (port === 465 ? "true" : "false")).toLowerCase() === "true";
   const servername = String(env.SMTP_TLS_SERVERNAME || "").trim();
@@ -16,16 +20,13 @@ function transporter(env) {
     host,
     port,
     secure,
-    auth: {
-      user: required(env, "SMTP_USER"),
-      pass: required(env, "SMTP_PASS")
-    },
+    auth: { user, pass },
     ...(servername ? { tls: { servername } } : {})
   });
 }
 
 export async function sendVerificationEmail(request, env, { email, name, code, token, purpose = "signup" }) {
-  const from = required(env, "EMAIL_FROM");
+  const from = String(env.EMAIL_FROM || env.SMTP_USER || "").trim() || required(env, "EMAIL_FROM");
   const base = originOf(request, env);
   const kind = purpose === "reset" ? "reset your Cookie password" : "verify your Cookie account";
   const subject = purpose === "reset" ? "Reset your Cookie password" : "Verify your Cookie account";
