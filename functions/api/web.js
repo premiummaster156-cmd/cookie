@@ -28,9 +28,44 @@ function domainOf(value) {
   return m?.[1]?.toLowerCase()||"";
 }
 
-export async function executeWebTool(name,args) {
+export async function executeWebTool(name,args,apiKey="") {
   const a=args&&typeof args==="object"?args:{};
-  if (name==="web_search") return {ok:false,error:"Search-engine API is not configured. Use a specific URL or domain; Cookie can crawl public pages directly."};
+  const key=String(apiKey||"").trim();
+
+  // Prefer Ollama's hosted web tools when Cookie is running on Ollama Cloud.
+  if (key) {
+    const endpoint=name==="web_search"
+      ? "https://ollama.com/api/web_search"
+      : "https://ollama.com/api/web_fetch";
+    const payload=name==="web_search"
+      ? {query:String(a.query||"").slice(0,500),max_results:Math.min(8,Math.max(1,Number(a.max_results)||5))}
+      : {url:String(a.url||"").slice(0,2000)};
+    try {
+      const r=await fetch(endpoint,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+        body:JSON.stringify(payload)
+      });
+      const raw=await r.text();
+      let data=null; try { data=raw?JSON.parse(raw):null; } catch {}
+      if (r.ok) {
+        if(name==="web_search") {
+          const results=Array.isArray(data?.results)?data.results.slice(0,8).map(x=>({
+            title:String(x?.title||"").slice(0,300),
+            url:String(x?.url||""),
+            content:String(x?.content||"").slice(0,7000)
+          })).filter(x=>x.url):[];
+          if(results.length) return {ok:true,results};
+        } else {
+          const content=String(data?.content||"").slice(0,18000);
+          if(content) return {ok:true,title:String(data?.title||""),content,links:Array.isArray(data?.links)?data.links.slice(0,60):[]};
+        }
+      }
+    } catch {}
+  }
+
+  // Always retain a public direct-fetch fallback.
+  if(name==="web_search") return {ok:false,error:"Ollama web search returned no usable results."};
   return fetchPage(String(a.url||""),18000);
 }
 
