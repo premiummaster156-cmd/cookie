@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Check, Eye, EyeOff, Github, KeyRound, Loader2, Mail, ShieldCheck, UserRound } from "lucide-react";
 
 export type AuthUser = {
   id:string;
@@ -17,8 +16,8 @@ type Mode = "login"|"signup"|"verify"|"forgot"|"reset";
 
 function ProviderMark({provider}:{provider:"google"|"github"|"discord"}) {
   if(provider==="google") return <span className="auth-provider-mark google-mark">G</span>;
-  if(provider==="discord") return <span className="auth-provider-mark discord-mark">◒</span>;
-  return <span className="auth-provider-mark github-mark">GH</span>;
+  if(provider==="github") return <Github size={17}/>;
+  return <span className="auth-provider-mark discord-mark">●</span>;
 }
 
 async function api(path:string, body:Record<string,unknown>) {
@@ -67,7 +66,7 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
   },[onAuthenticated,query]);
 
   useEffect(()=>{
-    if(!initialVerify&&!initialReset)return;
+    if(!initialVerify)return;
     const run=async()=>{
       setBusy(true);
       try{
@@ -76,7 +75,7 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
       }catch(e:any){setError(e?.message||"That verification link is invalid or expired.");}
       finally{setBusy(false);}
     };
-    if(initialVerify) run();
+    run();
   },[initialVerify,onAuthenticated]);
 
   function clearNotice(){setError("");setMessage("")}
@@ -92,7 +91,7 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
         setEmail(String(d?.email||email)); setMode("verify"); setMessage("Check your email for the 6-digit code or secure verification link.");
       } else if(mode==="verify"){
         const d=await api("/api/auth/verify",token?{token}:{email,code});
-        if(d?.user) { setMessage("Verified. Welcome to Cookie."); onAuthenticated(d.user); }
+        if(d?.user) onAuthenticated(d.user);
       } else if(mode==="forgot"){
         await api("/api/auth/forgot",{email});
         setMessage("If that account exists, a password reset email has been sent.");
@@ -115,75 +114,65 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
     finally{setBusy(false)}
   }
 
-  const title=mode==="login"?"Welcome back":mode==="signup"?"Create your Cookie account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
-  const subtitle=mode==="login"?"Sign in to continue to your personal AI workspace.":mode==="signup"?"Keep your chats, memory, projects, and preferences with you.":mode==="verify"?"Enter the code from your email, or use the secure link we sent.":mode==="forgot"?"We will email you a secure reset link.":"Your reset link is valid for a limited time.";
+  const title=mode==="login"?"Sign in":mode==="signup"?"Create your account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
+  const subtitle=mode==="login"?"Use your Cookie account to continue.":mode==="signup"?"Your chats, projects and preferences stay with your account.":mode==="verify"?"Enter the 6-digit code from your email.":"We’ll send a secure link to your email address.";
 
   return <div className="auth-shell">
-    <div className="auth-glow auth-glow-a"/><div className="auth-glow auth-glow-b"/>
-    <div className="auth-grid"/>
-    <motion.div className="auth-brand" initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}}>
-      <div className="auth-cookie">C</div><span>Cookie</span>
-    </motion.div>
+    <header className="auth-brand">
+      <div className="auth-cookie" aria-hidden="true">C</div>
+      <span>Cookie</span>
+    </header>
+
     <main className="auth-layout">
-      <section className="auth-showcase">
-        <div className="auth-orbit"><span/><span/><span/></div>
-        <div className="auth-showcase-copy">
-          <div className="auth-eyebrow"><Sparkles size={14}/> Personal AI, built around you</div>
-          <h1>Your AI.<br/><em>Your workspace.</em></h1>
-          <p>One account for conversations, projects, memory, live research, and the tools you use every day.</p>
-          <div className="auth-points">
-            <div><ShieldCheck size={17}/><span>Private session cookies and verified email</span></div>
-            <div><KeyRound size={17}/><span>Google, GitHub, Discord, or email</span></div>
-            <div><CheckCircle2 size={17}/><span>Persistent chats and project workspaces</span></div>
-          </div>
-        </div>
-      </section>
+      <aside className="auth-intro">
+        <p className="auth-overline">PERSONAL AI WORKSPACE</p>
+        <h1>Everything you<br/><span>work on, together.</span></h1>
+        <p className="auth-intro-text">Keep conversations, projects and your Cookie account in one place.</p>
+      </aside>
 
-      <motion.section className="auth-card" initial={{opacity:0,scale:.97,y:10}} animate={{opacity:1,scale:1,y:0}} transition={{duration:.35}}>
+      <section className="auth-card">
         <div className="auth-card-head">
-          <div className="auth-mini-icon"><Sparkles size={17}/></div>
-          <div><h2>{title}</h2><p>{subtitle}</p></div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
         </div>
 
-        <AnimatePresence mode="wait">
-          {mode==="login"||mode==="signup" ? <motion.div key="credentials" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-8}}>
-            <div className="auth-providers">
-              <button className="auth-provider" onClick={()=>location.href="/api/auth/google"}><ProviderMark provider="google"/><span>Continue with Google</span></button>
-              <button className="auth-provider" onClick={()=>location.href="/api/auth/github"}><ProviderMark provider="github"/><span>Continue with GitHub</span></button>
-              <button className="auth-provider" onClick={()=>location.href="/api/auth/discord"}><ProviderMark provider="discord"/><span>Continue with Discord</span></button>
-            </div>
-            <div className="auth-divider"><span>or continue with email</span></div>
-          </motion.div> : null}
-        </AnimatePresence>
+        {(mode==="login"||mode==="signup")&&<>
+          <div className="auth-providers">
+            <button className="auth-provider" onClick={()=>location.href="/api/auth/google"}><ProviderMark provider="google"/><span>Google</span></button>
+            <button className="auth-provider" onClick={()=>location.href="/api/auth/github"}><ProviderMark provider="github"/><span>GitHub</span></button>
+            <button className="auth-provider" onClick={()=>location.href="/api/auth/discord"}><ProviderMark provider="discord"/><span>Discord</span></button>
+          </div>
+          <div className="auth-divider"><span>or use email</span></div>
+        </>}
 
-        {(mode==="login"||mode==="signup"||mode==="forgot"||mode==="reset") &&
+        {(mode==="login"||mode==="signup"||mode==="forgot"||mode==="reset")&&
         <form onSubmit={submit} className="auth-form">
-          {mode==="signup"&&<label><span>Name</span><div className="auth-input"><UserRound size={17}/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name"/></div></label>}
-          <label><span>Email</span><div className="auth-input"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label>
-          {mode!=="forgot"&&<label><span>{mode==="reset"?"New password":"Password"}</span><div className="auth-input"><KeyRound size={17}/><input type={showPassword?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete={mode==="login"?"current-password":"new-password"} minLength={8} required/><button type="button" className="auth-eye" onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>}
+          {mode==="signup"&&<label><span>Name</span><div className="auth-input"><UserRound size={16}/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name" required/></div></label>}
+          <label><span>Email</span><div className="auth-input"><Mail size={16}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label>
+          {mode!=="forgot"&&<label><span>{mode==="reset"?"New password":"Password"}</span><div className="auth-input"><KeyRound size={16}/><input type={showPassword?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password" autoComplete={mode==="login"?"current-password":"new-password"} minLength={8} required/><button type="button" className="auth-eye" aria-label={showPassword?"Hide password":"Show password"} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label>}
           {mode==="login"&&<div className="auth-row-links"><button type="button" onClick={()=>switchMode("forgot")}>Forgot password?</button></div>}
-          <button className="auth-submit" disabled={busy}>{busy?<Loader2 className="spin" size={18}/>:<ArrowRight size={18}/>}<span>{mode==="signup"?"Create account":mode==="reset"?"Reset password":mode==="forgot"?"Send reset link":"Sign in"}</span></button>
+          <button className="auth-submit" disabled={busy}>{busy?<Loader2 className="spin" size={17}/>:<ArrowRight size={17}/>}<span>{mode==="signup"?"Create account":mode==="reset"?"Reset password":mode==="forgot"?"Email reset link":"Sign in"}</span></button>
         </form>}
 
         {mode==="verify"&&<form onSubmit={submit} className="auth-form">
-          <label><span>Email</span><div className="auth-input"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" required/></div></label>
+          <label><span>Email</span><div className="auth-input"><Mail size={16}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required/></div></label>
           <label><span>Verification code</span><input className="auth-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={e=>{setToken("");setCode(e.target.value.replace(/\D/g,"").slice(0,6))}} placeholder="000000" required={!token}/></label>
-          <button className="auth-submit" disabled={busy}>{busy?<Loader2 className="spin" size={18}/>:<ShieldCheck size={18}/>}<span>Verify email</span></button>
-          <button type="button" className="auth-secondary" onClick={resend} disabled={busy}><Mail size={16}/> Resend verification email</button>
+          <button className="auth-submit" disabled={busy}>{busy?<Loader2 className="spin" size={17}/>:<ShieldCheck size={17}/>}<span>Verify email</span></button>
+          <button type="button" className="auth-secondary" onClick={resend} disabled={busy}><Mail size={15}/> Resend code</button>
         </form>}
 
-        {(error||message)&&<div className={"auth-notice "+(error?"error":"success")}>{error||message}</div>}
-        {configError&&<div className="auth-config-note">Admin setup required: connect D1 and add the auth provider/email secrets in Cloudflare Pages.</div>}
+        {(error||message)&&<div className={"auth-notice "+(error?"error":"success")} role="status">{error||message}</div>}
+        {configError&&<div className="auth-config-note">Account setup is incomplete. Connect D1 and the email/provider secrets in Cloudflare Pages.</div>}
 
         <div className="auth-bottom">
           {mode==="login"&&<><span>New to Cookie?</span><button onClick={()=>switchMode("signup")}>Create an account</button></>}
           {mode==="signup"&&<><span>Already have an account?</span><button onClick={()=>switchMode("login")}>Sign in</button></>}
-          {mode==="verify"&&<><span>Need another method?</span><button onClick={()=>switchMode("login")}>Back to sign in</button></>}
-          {mode==="forgot"&&<><span>Remember it?</span><button onClick={()=>switchMode("login")}>Back to sign in</button></>}
-          {mode==="reset"&&<><span>Done resetting?</span><button onClick={()=>switchMode("login")}>Sign in</button></>}
+          {mode==="verify"&&<><span>Wrong email?</span><button onClick={()=>switchMode("signup")}>Start again</button></>}
+          {mode==="forgot"&&<><span>Remember your password?</span><button onClick={()=>switchMode("login")}>Sign in</button></>}
+          {mode==="reset"&&<><span>Back to sign in?</span><button onClick={()=>switchMode("login")}>Sign in</button></>}
         </div>
-        <small className="auth-legal">By continuing, you agree to Cookie's terms and privacy policy.</small>
-      </motion.section>
+        <p className="auth-legal">By continuing, you agree to Cookie’s Terms and Privacy Policy.</p>
+      </section>
     </main>
-  </div>
+  </div>;
 }
