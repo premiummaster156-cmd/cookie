@@ -390,3 +390,59 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
 @media (max-width:560px){.cs-activity{display:none}.cs-explorer{left:0;top:40px;width:86vw}.cs-title-actions button{padding:0 6px}.cs-title-actions button:nth-child(3){font-size:0}.cs-title-actions button:nth-child(3) svg{margin:0}.cs-tabs button{min-width:110px}.cs-breadcrumb{padding:0 7px}.cs-gutter{width:42px;flex-basis:42px;padding-right:8px}.cs-code-editor textarea{font-size:11px;padding-left:7px}.cs-bottom{height:42vh;flex-basis:42vh}.review-panel{padding:10px}.review-actions{flex-wrap:wrap}.review-actions button{flex:1;justify-content:center}.cs-statusbar{gap:7px}.cs-statusbar span:nth-child(1){display:none}}
 
 .cs-automation{border:1px solid rgba(255,255,255,.08);background:#0d1014;padding:10px;margin:8px 0 10px;display:flex;flex-direction:column;gap:7px}.cs-automation>div{display:flex;flex-direction:column;gap:2px}.cs-automation strong{font:11px ui-monospace;color:#cbd2dc}.cs-automation small,.cs-automation p{font:9px/1.45 ui-monospace;color:#687382}.cs-automation label{display:flex;align-items:center;gap:7px;color:#aeb7c2;font:10px ui-monospace;cursor:pointer}.cs-automation input{accent-color:#8ea6ff}.cs-automation p{margin:1px 0 0}
+
+
+/* ===== Code Studio mobile workspace ===== */
+@media (max-width: 760px){
+  .code-studio-v2{height:100dvh;min-height:100dvh;position:relative;overflow:hidden}
+  .cs-titlebar{height:48px;flex-basis:48px;padding:0 9px;gap:8px;padding-top:env(safe-area-inset-top)}
+  .cs-mobile-menu{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:7px}
+  .cs-mobile-menu:active{background:rgba(255,255,255,.08)}
+  .cs-title-left{gap:7px;overflow:hidden}
+  .cs-title-left>svg{display:none}
+  .cs-title-left strong{font-size:12px;white-space:nowrap}
+  .cs-title-left>span:not(.branch-chip){display:none}
+  .branch-chip{font-size:9px!important;padding:4px 6px!important}
+  .cs-title-actions{margin-left:auto;overflow:visible}
+  .cs-title-actions button{font-size:0;width:30px;padding:0;justify-content:center;border:0;background:transparent}
+  .cs-title-actions button svg{width:16px;height:16px}
+  .cs-title-actions button:nth-child(1),.cs-title-actions button:nth-child(2){display:none}
+  .cs-title-actions button kbd{display:none}
+  .cs-workbench{position:relative;min-height:0}
+  .cs-activity{width:44px;flex-basis:44px;z-index:5}
+  .cs-activity button{width:38px;height:40px}
+  .cs-explorer{position:absolute;z-index:30;left:0;top:0;bottom:0;width:min(86vw,340px);max-width:calc(100vw - 44px);box-shadow:18px 0 45px rgba(0,0,0,.45);transform:none}
+  .cs-explorer .mobile-only{display:grid!important}
+  .cs-editor-area{width:calc(100% - 44px);min-width:0}
+  .cs-tabs{height:38px;flex-basis:38px}
+  .cs-tabs button{height:38px;min-width:145px;max-width:190px;font-size:9px}
+  .cs-breadcrumb{height:27px;flex-basis:27px;padding:0 7px}
+  .cs-breadcrumb .cs-editor-tools{display:none}
+  .cs-editor-wrap{font-size:12px;-webkit-overflow-scrolling:touch}
+  .cs-code-editor{min-width:620px}
+  .cs-code-editor textarea{font-size:12px;line-height:20px}
+  .cs-gutter{font-size:10px;line-height:20px}
+  .cs-minimap{display:none}
+  .cs-empty{padding:20px 14px}
+  .cs-empty h2{font-size:16px}
+  .cs-empty>div{flex-direction:column;width:min(230px,80vw)}
+  .cs-empty button{justify-content:center}
+  .cs-statusbar{height:27px;min-height:27px;padding:0 7px;font-size:8px;gap:8px}
+  .cs-statusbar span:nth-child(3),.cs-statusbar span:nth-child(6){display:none}
+  .cs-bottom{height:min(43dvh,390px);min-height:220px}
+  .cs-bottom-tabs{overflow-x:auto}
+  .cs-bottom-tabs button{min-width:max-content;padding:0 10px;font-size:9px}
+  .cs-bottom-body{font-size:10px}
+  .review-grid{grid-template-columns:1fr!important}
+  .review-actions{flex-wrap:wrap}
+  .review-actions button{flex:1;min-width:145px}
+  .deployment-panel{align-items:flex-start;flex-wrap:wrap}
+  .deployment-panel a{margin-left:40px}
+  .cs-errorbar{left:8px;right:8px;bottom:calc(34px + env(safe-area-inset-bottom));max-width:none;font-size:11px;padding:10px 11px;z-index:100}
+  .cs-toast{left:10px;right:10px;bottom:calc(34px + env(safe-area-inset-bottom));max-width:none;text-align:center;z-index:99}
+  .cs-modal-backdrop{padding:12px}
+  .cs-modal,.cs-command{width:min(100%,420px);max-height:calc(100dvh - 24px);overflow:auto}
+  .cs-command button{min-height:44px}
+  .cs-explorer-foot{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+}
+@media (min-width: 761px){.cs-pane-head .mobile-only{display:none!important}}
