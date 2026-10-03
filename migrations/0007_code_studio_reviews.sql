@@ -54,10 +54,6 @@ CREATE TABLE IF NOT EXISTS codebase_settings (
   updated_at INTEGER NOT NULL
 );
 
--- Older deployments may already have codebase_files without the deleted flag.
--- Keep this migration compatible with those databases.
-ALTER TABLE codebase_files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
-
 INSERT OR IGNORE INTO codebase_settings (key,value,updated_at)
 VALUES ('auto_review','1',strftime('%s','now'));
 INSERT OR IGNORE INTO codebase_settings (key,value,updated_at)
