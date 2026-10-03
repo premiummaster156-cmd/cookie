@@ -37,18 +37,20 @@ export async function issueEmailToken(env, { userId, email, purpose }) {
     return { ok: false, rateLimited: true, retryAfter: wait };
   }
   await env.DB.prepare("DELETE FROM email_tokens WHERE expires_at<? OR used_at IS NOT NULL").bind(now).run();
-  await env.DB.prepare(
-    "INSERT INTO email_tokens (id,user_id,email,purpose,code_hash,token_hash,attempts,expires_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)"
-  ).bind(
-    randomToken(16),
-    userId || null,
-    email,
-    purpose,
-    await sha256(code),
-    await sha256(token),
-    0,
-    now + 600,
-    now
-  ).run();
+  const values = [
+    ["user_id", userId || null],
+    ["email", email],
+    ["purpose", purpose],
+    ["code_hash", await sha256(code)],
+    ["token_hash", await sha256(token)],
+    ["attempts", 0],
+    ["expires_at", now + 600],
+    ["created_at", now]
+  ];
+  if (existing.has("id")) values.unshift(["id", randomToken(16)]);
+  const columns = values.map(([name]) => name).join(",");
+  const placeholders = values.map(() => "?").join(",");
+  await env.DB.prepare("INSERT INTO email_tokens (" + columns + ") VALUES (" + placeholders + ")")
+    .bind(...values.map(([, value]) => value)).run();
   return { ok: true, code, token };
 }
