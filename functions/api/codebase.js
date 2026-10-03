@@ -208,7 +208,7 @@ async function commitApproved(env,user,reviewId){
     await env.DB.prepare("UPDATE codebase_reviews SET status='Blocked',summary=?,updated_at=? WHERE id=?").bind("GitHub changed after this review. Sync and review again.",now(),reviewId).run();
     return {ok:false,error:"GitHub changed after the review. Sync the workspace and review again."};
   }
-  const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path)});
+  const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
   const changes=changedFiles(files,baseline);if(!changes.length)return {ok:false,error:"There are no changes to commit."};
   const freshChecks=deterministicChecks(changes);if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety check failed during commit."};
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
@@ -236,7 +236,7 @@ async function state(env){
   const deployment=await deploymentState(latestReview?.commit_sha||null,String(env.GITHUB_TOKEN||"").trim());
   return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
 }
-export async function onRequestGet({request,env}){
+async function handleGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
   const url=new URL(request.url),requested=cleanPath(url.searchParams.get("path")),action=String(url.searchParams.get("action")||"");
   const t=now();await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("cookie-owner",OWNER_EMAIL,"owner",1,t,t).run();
@@ -251,7 +251,7 @@ export async function onRequestGet({request,env}){
   const members=await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all();
   return json({ok:true,owner:a.owner,role:a.member.role,files:files.results||[],members:members.results||[]})
 }
-export async function onRequestPut({request,env}){
+async function handlePut({request,env}){
   const a=await access(request,env);if(a.error)return a.error;const body=await readJson(request),action=String(body?.action||"");
   if(action==="rename"||action==="duplicate"){
     const from=cleanPath(body?.from),to=cleanPath(body?.to);if(!from||!to)return json({error:"Both source and destination paths are required."},400);
@@ -269,8 +269,8 @@ export async function onRequestPut({request,env}){
   await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0").bind(path,content,String(body?.mime||mimeFor(path)),0,size,previous?.github_sha||null,a.user.email,t,t).run();
   return json({ok:true,updatedAt:t});
 }
-export async function onRequestDelete({request,env}){const a=await access(request,env);if(a.error)return a.error;const path=cleanPath(new URL(request.url).searchParams.get("path"));if(!path)return json({error:"File path is required."},400);const t=now();await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,path).run();return json({ok:true})}
-export async function onRequestPost({request,env}){
+async function handleDelete({request,env}){const a=await access(request,env);if(a.error)return a.error;const path=cleanPath(new URL(request.url).searchParams.get("path"));if(!path)return json({error:"File path is required."},400);const t=now();await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,path).run();return json({ok:true})}
+async function handlePost({request,env}){
   const a=await access(request,env);if(a.error)return a.error;const body=await readJson(request),action=String(body?.action||"");
   if(action==="sync"){if(!a.owner)return json({error:"Only the owner can sync the GitHub codebase."},403);const count=await seedFromGithub(env,a.user.email);return json({ok:true,count})}
   if(action==="member"){if(!a.owner)return json({error:"Only the owner can manage Code Studio members."},403);const email=normalizeEmail(body?.email);if(!/^\S+@\S+\.\S+$/.test(email))return json({error:"Enter a valid email address."},400);const t=now();await env.DB.prepare("INSERT INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(email) DO UPDATE SET role=excluded.role,active=1,updated_at=excluded.updated_at").bind(randomToken(16),email,"frontend-developer",1,t,t).run();return json({ok:true})}
@@ -285,3 +285,16 @@ export async function onRequestPost({request,env}){
   }
   return json({error:"Unknown Code Studio action."},400)
 }
+
+async function safeCodebase(handler,context){
+  try{return await handler(context)}
+  catch(error){
+    console.error("[Cookie Code Studio]",error);
+    const message=String(error?.message||"Unknown server error").slice(0,300);
+    return json({error:"Code Studio server error: "+message,code:"CODEBASE_SERVER_ERROR"},500);
+  }
+}
+export async function onRequestGet(context){return safeCodebase(handleGet,context)}
+export async function onRequestPut(context){return safeCodebase(handlePut,context)}
+export async function onRequestDelete(context){return safeCodebase(handleDelete,context)}
+export async function onRequestPost(context){return safeCodebase(handlePost,context)}
