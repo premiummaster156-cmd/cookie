@@ -20,7 +20,7 @@ async function access(request,env){
 async function githubJson(url){const r=await fetch(url,{headers:{Accept:"application/vnd.github+json","User-Agent":"Cookie-Code-Studio"}});if(!r.ok)throw new Error("GitHub request failed: "+r.status);return r.json()}
 async function seedFromGithub(env,actor){
  const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees/main?recursive=1");
- const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")&&x.path!=="package-lock.json").slice(0,500):[];
+ const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")).slice(0,500):[];
  for(const item of rows){
   const path=cleanPath(item.path);if(!path||Number(item.size||0)>MAX_FILE_BYTES)continue;
   const r=await fetch("https://raw.githubusercontent.com/"+REPO+"/main/"+item.path,{headers:{"User-Agent":"Cookie-Code-Studio"}});if(!r.ok)continue;
