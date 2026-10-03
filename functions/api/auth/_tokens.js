@@ -48,6 +48,9 @@ export async function issueEmailToken(env, { userId, email, purpose }) {
     ["expires_at", now + 600],
     ["created_at", now]
   ];
+  // Some production databases still have the legacy required `type` column.
+  // Keep it populated with the same semantic value as the current `purpose` field.
+  if (existing.has("type")) values.push(["type", purpose]);
   if (existing.has("id")) values.unshift(["id", randomToken(16)]);
   const columns = values.map(([name]) => name).join(",");
   const placeholders = values.map(() => "?").join(",");
