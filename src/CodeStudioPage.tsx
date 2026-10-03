@@ -22,22 +22,22 @@ function escapeHtml(v:string){return String(v).replace(/&/g,"&amp;").replace(/</
 function highlightCode(source:string,path:string){
   const e=ext(path);
   const keywords=new Set(("const let var function return if else for while do switch case break continue throw try catch finally class extends new import from export default async await yield typeof instanceof in of interface type enum public private protected readonly abstract implements as satisfies declare namespace def elif except with lambda pass raise global nonlocal and or not is True False None SELECT FROM WHERE INSERT INTO UPDATE DELETE CREATE ALTER TABLE DROP VALUES JOIN LEFT RIGHT INNER OUTER ON AS AND OR NOT NULL TRUE FALSE BEGIN END").split(/\s+/));
-  const tokenRe=/(\/\*[\\s\\S]*?\*\/|\/\/[^\\n]*|#[^\\n]*|\`(?:\\\\.|[^\`\\\\])*\`|&quot;(?:\\\\.|[^&]|&(?!quot;))*?&quot;|'(?:\\\\.|[^'\\\\])*'|\\b\\d+(?:\\.\\d+)?\\b)/g;
+  const tokenRe=/(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*|\x60(?:\\.|[^\x60\\])*\x60|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?\b)/g;
   let out="",last=0;
   const plain=(raw:string)=>{
     let s=escapeHtml(raw);
-    s=s.replace(/\\b([A-Za-z_$][\\w$]*)\\b/g,(m)=>keywords.has(m)?'<span class="tok-keyword">'+m+"</span>":m);
-    s=s.replace(/([A-Za-z_$][\\w$]*)(?=\\s*:)/g,'<span class="tok-property">$1</span>');
-    if(e==="css")s=s.replace(/(^|[{};\\s])(\\.[A-Za-z_-][\\w-]*|#[A-Za-z_-][\\w-]*)/g,'$1<span class="tok-selector">$2</span>');
-    if(e==="html"||e==="tsx"||e==="jsx")s=s.replace(/(&lt;\\/?)([A-Za-z][\\w:-]*)/g,'$1<span class="tok-tag">$2</span>');
+    s=s.replace(/\b([A-Za-z_$][\w$]*)\b/g,(m)=>keywords.has(m)?'<span class="tok-keyword">'+m+"</span>":m);
+    s=s.replace(/([A-Za-z_$][\w$]*)(?=\s*:)/g,'<span class="tok-property">$1</span>');
+    if(e==="css")s=s.replace(/(^|[{};\s])(\.[A-Za-z_-][\w-]*|#[A-Za-z_-][\w-]*)/g,'$1<span class="tok-selector">$2</span>');
+    if(e==="html"||e==="tsx"||e==="jsx")s=s.replace(/(&lt;\/?)([A-Za-z][\w:-]*)/g,'$1<span class="tok-tag">$2</span>');
     return s;
   };
   let m;
   while((m=tokenRe.exec(source))){
     out+=plain(source.slice(last,m.index));
-    const token=m[0], escaped=escapeHtml(token);
+    const token=m[0],escaped=escapeHtml(token);
     if(token.startsWith("//")||token.startsWith("/*")||token.startsWith("#"))out+='<span class="tok-comment">'+escaped+"</span>";
-    else if(token.startsWith("`")||token.startsWith('"')||token.startsWith("'"))out+='<span class="tok-string">'+escaped+"</span>";
+    else if(token.startsWith("\x60")||token.startsWith('"')||token.startsWith("'"))out+='<span class="tok-string">'+escaped+"</span>";
     else out+='<span class="tok-number">'+escaped+"</span>";
     last=m.index+token.length;
   }
