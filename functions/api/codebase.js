@@ -61,7 +61,7 @@ async function seedFromGithub(env,actor){
     seen.add(path);
     const prev=existing.get(path);
     if(!prev){
-      statements.push(env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0)")
+      statements.push(env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,0)")
         .bind(path,"",mimeFor(path),0,Number(item.size||0),item.sha||null,"github-sync",t,t));
     }else if(Number(prev.dirty||0)){
       statements.push(env.DB.prepare("UPDATE codebase_files SET mime=?,size=?,deleted=0 WHERE path=?")
