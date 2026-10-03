@@ -186,10 +186,14 @@ export async function sendVerificationEmail(request, env, { email, name, code, t
   const text = [
     "Hi " + safeName + ",",
     "",
-    "Use this code to " + kind + ": " + code,
-    "The code expires in 10 minutes and can be used once.",
+    purpose === "reset"
+      ? "Use the secure link below to reset your Cookie password:",
+      : "Use this code to " + kind + ": " + code,
+    purpose === "reset"
+      ? "The reset link expires in 10 minutes and can be used once.",
+      : "The code expires in 10 minutes and can be used once.",
     "",
-    "You can also use this secure link:",
+    "Continue securely:",
     link,
     "",
     "If you did not request this, you can ignore this email.",
@@ -201,9 +205,9 @@ export async function sendVerificationEmail(request, env, { email, name, code, t
 <div style="max-width:560px;margin:32px auto;padding:32px;background:#1a1a1a;border:1px solid #2c2c2c;border-radius:22px">
   <div style="font-size:26px;font-weight:800;letter-spacing:-.04em;margin-bottom:24px">Cookie</div>
   <p style="font-size:16px;line-height:1.6">Hi ${safeName},</p>
-  <p style="font-size:16px;line-height:1.6">Use the code below to ${kind}.</p>
-  <div style="font-size:34px;letter-spacing:.24em;font-weight:800;padding:22px 18px;background:#111;border:1px solid #333;border-radius:16px;text-align:center;margin:20px 0">${code}</div>
-  <p style="font-size:13px;color:#999;line-height:1.6">This code expires in 10 minutes and can only be used once.</p>
+  ${purpose === "reset"
+    ? '<p style="font-size:16px;line-height:1.6">Use the secure link below to reset your Cookie password.</p><p style="font-size:13px;color:#999;line-height:1.6">The reset link expires in 10 minutes and can only be used once.</p>'
+    : '<p style="font-size:16px;line-height:1.6">Use the code below to verify your Cookie account.</p><div style="font-size:34px;letter-spacing:.24em;font-weight:800;padding:22px 18px;background:#111;border:1px solid #333;border-radius:16px;text-align:center;margin:20px 0">' + code + '</div><p style="font-size:13px;color:#999;line-height:1.6">This code expires in 10 minutes and can only be used once.</p>'}
   <a href="${link}" style="display:inline-block;margin-top:8px;padding:12px 18px;background:#fff;color:#111;text-decoration:none;border-radius:12px;font-weight:700">Continue securely</a>
   <p style="font-size:12px;color:#777;line-height:1.6;margin-top:24px">If you did not request this email, you can safely ignore it.</p>
 </div></body></html>`;
