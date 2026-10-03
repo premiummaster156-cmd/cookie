@@ -7,6 +7,7 @@ export function verificationCode() {
 
 export async function issueEmailToken(env, { userId, email, purpose }) {
   // Repair legacy email_tokens schemas before the verification flow touches them.
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS email_tokens (id TEXT PRIMARY KEY, user_id TEXT, email TEXT NOT NULL, purpose TEXT NOT NULL, code_hash TEXT, token_hash TEXT UNIQUE, attempts INTEGER NOT NULL DEFAULT 0, expires_at INTEGER NOT NULL, used_at INTEGER, created_at INTEGER NOT NULL)`).run();
   const info = await env.DB.prepare("PRAGMA table_info(email_tokens)").all();
   const existing = new Set((info.results || []).map(column => String(column.name)));
   const missing = [
