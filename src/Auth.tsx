@@ -89,12 +89,7 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
         <div className="auth-card-head"><h2>{title}</h2><p>{subtitle}</p></div>
 
         {(mode==="login"||mode==="signup")&&<>
-          <div className="auth-providers">
-            <button type="button" className="auth-provider" onClick={()=>location.href="/api/auth/google"}><ProviderMark provider="google"/><span>Google</span></button>
-            <button type="button" className="auth-provider" onClick={()=>location.href="/api/auth/github"}><ProviderMark provider="github"/><span>GitHub</span></button>
-            <button type="button" className="auth-provider" onClick={()=>location.href="/api/auth/discord"}><ProviderMark provider="discord"/><span>Discord</span></button>
-          </div>
-          <div className="auth-divider"><span>or use email</span></div>
+          <div className="auth-divider"><span>Email verification</span></div>
         </>}
 
         {(mode==="login"||mode==="signup"||mode==="forgot"||mode==="reset")&&<form onSubmit={submit} className="auth-form">
