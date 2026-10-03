@@ -90,16 +90,26 @@ export async function getSessionUser(request, env) {
   return row ? { ...publicUser(row), _row: row } : null;
 }
 export async function createSession(env, userId, remember = true) {
-  // Keep session creation resilient on production databases that predate the auth workspace migration.
-  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)`).run();
+  // Repair production session schemas that predate the auth workspace migration.
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)").run();
+  const info = await env.DB.prepare("PRAGMA table_info(sessions)").all();
+  const existing = new Set((info.results || []).map(column => String(column.name)));
+  const missing = [["user_id", "TEXT"], ["token_hash", "TEXT"], ["created_at", "INTEGER NOT NULL DEFAULT 0"], ["expires_at", "INTEGER NOT NULL DEFAULT 0"]];
+  for (const [name, definition] of missing) {
+    if (!existing.has(name)) await env.DB.prepare("ALTER TABLE sessions ADD COLUMN " + name + " " + definition).run();
+  }
   const raw = randomToken(32);
   const hash = await sha256(raw);
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 24;
   const now = Math.floor(Date.now() / 1000);
-  await env.DB.prepare("INSERT INTO sessions (id,user_id,token_hash,created_at,expires_at) VALUES (?,?,?,?,?)")
-    .bind(randomToken(16), userId, hash, now, now + maxAge).run();
-  await env.DB.prepare("DELETE FROM sessions WHERE expires_at<=? OR user_id=? AND expires_at<?")
-    .bind(now, userId, now - 60 * 60 * 24 * 60).run();
+  const values = [["user_id", userId], ["token_hash", hash], ["created_at", now], ["expires_at", now + maxAge]];
+  if (existing.has("token")) values.push(["token", raw]);
+  if (existing.has("type")) values.push(["type", "session"]);
+  if (existing.has("id")) values.unshift(["id", randomToken(16)]);
+  const columns = values.map(([name]) => name).join(",");
+  const placeholders = values.map(() => "?").join(",");
+  await env.DB.prepare("INSERT INTO sessions (" + columns + ") VALUES (" + placeholders + ")").bind(...values.map(([, value]) => value)).run();
+  await env.DB.prepare("DELETE FROM sessions WHERE expires_at<=? OR user_id=? AND expires_at<?").bind(now, userId, now - 60 * 60 * 24 * 60).run();
   return cookie("__Host-cookie_session", raw, { maxAge, sameSite: "Lax" });
 }
 export async function revokeSession(request, env) {
