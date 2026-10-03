@@ -520,3 +520,9 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
 
 .cs-protected-note{display:flex;align-items:center;gap:5px;padding:5px 8px;color:#5f6b79;font:8px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);}
 .cs-protected-note svg{flex:0 0 auto;color:#7487a8}
+
+/* Standalone Code Studio shell */
+.cs-back-cookie{display:flex;align-items:center;gap:6px;height:30px;padding:0 9px;border:1px solid rgba(255,255,255,.09);border-radius:7px;color:#b7bec9;background:rgba(255,255,255,.025);font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.cs-back-cookie:hover{color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}
+.cs-title-divider{width:1px;height:20px;background:rgba(255,255,255,.09);margin:0 5px}
+@media(max-width:700px){.cs-back-cookie span{display:none}.cs-back-cookie{width:31px;padding:0;justify-content:center}.cs-title-divider{margin:0 2px}.cs-title-left>strong{font-size:12px}}
