@@ -70,7 +70,7 @@ export default function CodeStudioPage(){
  const addMember=async()=>{if(!memberEmail.trim())return;const r=await fetch("/api/codebase",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({action:"member",email:memberEmail})}),d=await parseApiResponse(r);if(!r.ok){setError(d?.error||"Could not add member.");return}setMemberEmail("");setMemberOpen(false);await load()};
  const setting=async(key:string,value:boolean)=>{if(!owner)return;const r=await fetch("/api/codebase",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({action:"settings",key,value})});if(!r.ok){const d=await parseApiResponse(r);setError(d?.error||"Could not update setting.");return}if(key==="auto_review")setAutoReview(value);if(key==="auto_commit")setAutoCommit(value)};
  const normalizeReview=(d:any):Review=>({id:d.reviewId||d.id,status:d.status||"Needs changes",risk:d.risk||"unknown",summary:d.summary||"",findings:d.findings||[],checks:d.checks||[],commit_sha:d.commitSha,deployment_status:d.deploymentStatus||d.deployment_status});
- const filtered=useMemo(()=>files.filter(f=>!f.deleted&&!(!f.path.includes("/")&&/\.md$/i.test(f.path))&&(!search||f.path.toLowerCase().includes(search.toLowerCase()))),[files,search]);
+ const filtered=useMemo(()=>files.filter(f=>!f.deleted&&!/\.md$/i.test(f.path)&&(!search||f.path.toLowerCase().includes(search.toLowerCase()))),[files,search]);
  const root=useMemo(()=>treeFor(filtered),[filtered]);
  const lines=Math.max(1,content.split("\n").length);
  const commands=[
