@@ -7,6 +7,15 @@ const REPO="premiummaster156-cmd/cookie";
 const BRANCH="main";
 const MAX_FILE_BYTES=1000000;
 const MAX_REVIEW_CHARS=140000;
+const PROTECTED_PATHS=new Set(["functions/api/codebase.js","src/CodeStudioPage.tsx","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
+function isHiddenPath(path){
+  const p=cleanPath(path);
+  if(!p)return true;
+  if(/^\.env(?:\.|$)/i.test(p)||/^\.dev\.vars(?:\.|$)/i.test(p))return true;
+  if(PROTECTED_PATHS.has(p))return true;
+  if(!p.includes("/")&&/\.md$/i.test(p))return true;
+  return false;
+}
 
 function mimeFor(path){const e=String(path).toLowerCase().split(".").pop();return ({ts:"text/typescript",tsx:"text/tsx",js:"text/javascript",jsx:"text/jsx",css:"text/css",html:"text/html",json:"application/json",md:"text/markdown",sql:"application/sql",yml:"text/yaml",yaml:"text/yaml",toml:"text/plain",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",webp:"image/webp"}[e]||"text/plain")}
 function cleanPath(v){const p=String(v||"").replace(/\\/g,"/").replace(/^\/+/,"").trim();return !p||p.length>500||p.includes("..")||p.includes("//")?"" : p}
@@ -23,6 +32,8 @@ async function ensureSchema(env){
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_members (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,role TEXT NOT NULL DEFAULT 'frontend-developer',active INTEGER NOT NULL DEFAULT 1,created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_reviews (id TEXT PRIMARY KEY,user_email TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'needs_changes',risk TEXT NOT NULL DEFAULT 'unknown',summary TEXT NOT NULL DEFAULT '',findings_json TEXT NOT NULL DEFAULT '[]',checks_json TEXT NOT NULL DEFAULT '[]',diff_hash TEXT NOT NULL DEFAULT '',base_sha TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,commit_sha TEXT,deployment_status TEXT NOT NULL DEFAULT 'not_started')").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_settings (key TEXT PRIMARY KEY,value TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_audit (id TEXT PRIMARY KEY,action TEXT NOT NULL,path TEXT NOT NULL,before_revision_id TEXT,meta_json TEXT NOT NULL DEFAULT '{}',editor_email TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0,undone INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_codebase_audit_created ON codebase_audit(created_at DESC)").run();
   try{await env.DB.prepare("ALTER TABLE codebase_files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0").run()}catch{}
   const t=now();
   await env.DB.prepare("INSERT OR IGNORE INTO codebase_settings (key,value,updated_at) VALUES ('auto_review','1',?)").bind(t).run();
@@ -57,7 +68,7 @@ async function seedFromGithub(env,actor){
   const existing=new Map(existingRows.map(x=>[x.path,x]));
   const seen=new Set(),t=now(),statements=[];
   for(const item of rows){
-    const path=cleanPath(item.path);if(!path||Number(item.size||0)>MAX_FILE_BYTES)continue;
+    const path=cleanPath(item.path);if(!path||isHiddenPath(path)||Number(item.size||0)>MAX_FILE_BYTES)continue;
     seen.add(path);
     const prev=existing.get(path);
     if(!prev){
@@ -81,7 +92,7 @@ async function seedFromGithub(env,actor){
 }
 async function loadVirtual(env){
   const r=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted,COALESCE(dirty,0) AS dirty FROM codebase_files ORDER BY path LIMIT 1200").all();
-  return r.results||[];
+  return (r.results||[]).filter(x=>!isHiddenPath(x.path));
 }
 async function fetchGithubRaw(path){
   const url="https://raw.githubusercontent.com/"+REPO+"/"+BRANCH+"/"+path.split("/").map(encodeURIComponent).join("/");
@@ -111,8 +122,8 @@ async function githubFile(path,token=""){
 }
 function changedFiles(files,baseline){
   const map=new Map(baseline.map(x=>[x.path,x]));
-  const candidates=files.filter(x=>x.deleted||Number(x.dirty||0)||!x.github_sha);
-  const paths=new Set([...baseline.map(x=>x.path),...candidates.map(x=>x.path)]);
+  const candidates=files.filter(x=>!isHiddenPath(x.path)&&(x.deleted||Number(x.dirty||0)||!x.github_sha));
+  const paths=new Set([...baseline.map(x=>x.path),...candidates.map(x=>x.path)].filter(p=>!isHiddenPath(p)));
   const out=[];
   for(const path of paths){
     const v=candidates.find(x=>x.path===path);const b=map.get(path);
@@ -208,7 +219,7 @@ async function getBranch(token=""){
 }
 async function reviewWorkspace(env,user){
   const files=await loadVirtual(env);
-  const candidates=files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha));
+  const candidates=files.filter(x=>!x.deleted&&!isHiddenPath(x.path)&&(Number(x.dirty||0)||!x.github_sha));
   const baseline=[];
   for(const f of candidates){
     const b=await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim());baseline.push({path:f.path,...b});
@@ -227,6 +238,39 @@ async function reviewWorkspace(env,user){
   }
   const status=ai.status==="Approved"&&!checks.some(x=>x.status==="fail")?"Approved":ai.status;
   return {...ai,status,checks,changes,baseSha:branch?.object?.sha||null,diffHash,diff};
+}
+async function recordAudit(env,{action,path,beforeRevisionId=null,meta={},editorEmail}) {
+  const id=randomToken(16);
+  await env.DB.prepare("INSERT INTO codebase_audit (id,action,path,before_revision_id,meta_json,editor_email,created_at,undone) VALUES (?,?,?,?,?,?,?,0)")
+    .bind(id,action,path,beforeRevisionId,JSON.stringify(meta),editorEmail,now()).run();
+  return id;
+}
+async function undoAudit(env,auditId,actorEmail){
+  const audit=await env.DB.prepare("SELECT * FROM codebase_audit WHERE id=? LIMIT 1").bind(auditId).first();
+  if(!audit||Number(audit.undone||0))return {ok:false,error:"That Code Studio action is already undone or no longer exists."};
+  if(normalizeEmail(audit.editor_email)!==normalizeEmail(actorEmail))return {ok:false,error:"Only the developer who made the change or the owner can undo it."};
+  let meta={};try{meta=JSON.parse(audit.meta_json||"{}")}catch{}
+  const revision=audit.before_revision_id?await env.DB.prepare("SELECT * FROM codebase_revisions WHERE id=? LIMIT 1").bind(audit.before_revision_id).first():null;
+  const t=now();
+  if(audit.action==="create"||audit.action==="duplicate"){
+    await env.DB.prepare("UPDATE codebase_files SET deleted=1,dirty=1,updated_by=?,updated_at=? WHERE path=?").bind(actorEmail,t,audit.path).run();
+  }else if(audit.action==="edit"||audit.action==="delete"){
+    if(!revision)return {ok:false,error:"The saved undo snapshot is missing."};
+    await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=codebase_files.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
+      .bind(revision.path,revision.content,revision.mime,0,new TextEncoder().encode(revision.content).byteLength,actorEmail,t,t).run();
+  }else if(audit.action==="rename"){
+    if(!revision)return {ok:false,error:"The saved rename snapshot is missing."};
+    const from=String(meta.from||audit.path),to=String(meta.to||"");
+    await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=codebase_files.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
+      .bind(from,revision.content,revision.mime,0,new TextEncoder().encode(revision.content).byteLength,actorEmail,t,t).run();
+    if(to)await env.DB.prepare("UPDATE codebase_files SET deleted=1,dirty=1,updated_by=?,updated_at=? WHERE path=?").bind(actorEmail,t,to).run();
+  }else return {ok:false,error:"This action type cannot be undone yet."};
+  await env.DB.prepare("UPDATE codebase_audit SET undone=1 WHERE id=?").bind(auditId).run();
+  return {ok:true,auditId};
+}
+async function recentAudits(env){
+  const r=await env.DB.prepare("SELECT id,action,path,editor_email,created_at,undone FROM codebase_audit ORDER BY created_at DESC LIMIT 12").all();
+  return r.results||[];
 }
 async function saveReview(env,user,result){
   const id=randomToken(16),t=now();
@@ -263,17 +307,19 @@ async function commitApproved(env,user,reviewId){
 }
 async function state(env){
   const files=await loadVirtual(env);const changed=[];
-  for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))changed.push({...f,status:f.github_sha?"modified":"added"});
+  for(const f of files.filter(x=>!x.deleted&&!isHiddenPath(x.path)&&(Number(x.dirty||0)||!x.github_sha)))changed.push({...f,status:f.github_sha?"modified":"added"});
   const reviews=await env.DB.prepare("SELECT * FROM codebase_reviews ORDER BY updated_at DESC LIMIT 8").all();
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
   const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim()).catch(()=>null);
   const latestReview=reviews.results?.[0]||null;
   const deployment=await deploymentState(latestReview?.commit_sha||null,String(env.GITHUB_TOKEN||"").trim());
-  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
+  const audits=await recentAudits(env);
+  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment,audits};
 }
 async function handleGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
   const url=new URL(request.url),requested=cleanPath(url.searchParams.get("path")),action=String(url.searchParams.get("action")||"");
+  if(requested&&isHiddenPath(requested))return json({error:"This file is hidden from Code Studio for security."},404);
   const t=now();await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("cookie-owner",OWNER_EMAIL,"owner",1,t,t).run();
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0||action==="state")await seedFromGithub(env,a.user.email);
   if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
@@ -306,32 +352,60 @@ async function handleGet({request,env}){
   }
   const files=await env.DB.prepare("SELECT path,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files WHERE COALESCE(deleted,0)=0 ORDER BY path LIMIT 1200").all();
   const members=await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all();
-  return json({ok:true,owner:a.owner,role:a.member.role,files:files.results||[],members:members.results||[]})
+  return json({ok:true,owner:a.owner,role:a.member.role,files:(files.results||[]).filter(x=>!isHiddenPath(x.path)),members:members.results||[]})
 }
 async function handlePut({request,env}){
   const a=await access(request,env);if(a.error)return a.error;const body=await readJson(request),action=String(body?.action||"");
   if(action==="rename"||action==="duplicate"){
     const from=cleanPath(body?.from),to=cleanPath(body?.to);if(!from||!to)return json({error:"Both source and destination paths are required."},400);
+    if(isHiddenPath(from)||isHiddenPath(to))return json({error:"Protected or hidden Code Studio files cannot be changed here."},403);
     const src=await env.DB.prepare("SELECT * FROM codebase_files WHERE path=? LIMIT 1").bind(from).first();if(!src||src.deleted)return json({error:"Source file not found."},404);
     if(action==="rename")await env.DB.prepare("DELETE FROM codebase_files WHERE path=?").bind(to).run();
     const t=now();await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1").bind(to,src.content,src.mime,src.is_binary,src.size,action==="duplicate"?null:src.github_sha,a.user.email,t,t).run();
-    if(action==="rename")await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,from).run();
-    return json({ok:true,path:to});
+    let revisionId=null;
+    if(action==="rename"){
+      revisionId=randomToken(16);
+      await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(revisionId,from,src.content,src.mime,a.user.email,t).run();
+      await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,from).run();
+    }
+    const auditId=await recordAudit(env,{action,path:to,beforeRevisionId:revisionId,meta:{from,to},editorEmail:a.user.email});
+    return json({ok:true,path:to,auditId});
   }
   const path=cleanPath(body?.path),content=String(body?.content??"");if(!path)return json({error:"A valid file path is required."},400);
+  if(isHiddenPath(path))return json({error:"Protected or hidden Code Studio files cannot be changed here."},403);
   const size=new TextEncoder().encode(content).byteLength;if(size>MAX_FILE_BYTES)return json({error:"File is too large for Code Studio."},413);
   const t=now(),previous=await env.DB.prepare("SELECT content,mime FROM codebase_files WHERE path=? LIMIT 1").bind(path).first();
   if(previous&&!Number(previous.deleted||0)&&String(previous.content)===content)return json({ok:true,unchanged:true});
-  if(previous&&!Number(previous.deleted||0))await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(randomToken(16),path,previous.content,previous.mime,a.user.email,t).run();
+  let revisionId=null;
+  if(previous&&!Number(previous.deleted||0)){revisionId=randomToken(16);await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(revisionId,path,previous.content,previous.mime,a.user.email,t).run();}
   await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1").bind(path,content,String(body?.mime||mimeFor(path)),0,size,previous?.github_sha||null,a.user.email,t,t).run();
-  return json({ok:true,updatedAt:t});
+  const auditId=await recordAudit(env,{action:previous&&!Number(previous.deleted||0)?"edit":"create",path,beforeRevisionId:revisionId,editorEmail:a.user.email});
+  return json({ok:true,updatedAt:t,auditId});
 }
-async function handleDelete({request,env}){const a=await access(request,env);if(a.error)return a.error;const path=cleanPath(new URL(request.url).searchParams.get("path"));if(!path)return json({error:"File path is required."},400);const t=now();await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,path).run();return json({ok:true})}
+async function handleDelete({request,env}){
+  const a=await access(request,env);if(a.error)return a.error;
+  const path=cleanPath(new URL(request.url).searchParams.get("path"));
+  if(!path)return json({error:"File path is required."},400);
+  if(isHiddenPath(path))return json({error:"Protected or hidden Code Studio files cannot be deleted."},403);
+  const current=await env.DB.prepare("SELECT * FROM codebase_files WHERE path=? LIMIT 1").bind(path).first();
+  if(!current||current.deleted)return json({error:"File not found."},404);
+  const t=now(),revisionId=randomToken(16);
+  await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(revisionId,path,current.content,current.mime,a.user.email,t).run();
+  await env.DB.prepare("UPDATE codebase_files SET deleted=1,dirty=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,path).run();
+  const auditId=await recordAudit(env,{action:"delete",path,beforeRevisionId:revisionId,editorEmail:a.user.email});
+  return json({ok:true,auditId,watch:"AI review will inspect this deletion."});
+}
 async function handlePost({request,env}){
   const a=await access(request,env);if(a.error)return a.error;const body=await readJson(request),action=String(body?.action||"");
   if(action==="sync"){if(!a.owner)return json({error:"Only the owner can sync the GitHub codebase."},403);const count=await seedFromGithub(env,a.user.email);return json({ok:true,count})}
   if(action==="member"){if(!a.owner)return json({error:"Only the owner can manage Code Studio members."},403);const email=normalizeEmail(body?.email);if(!/^\S+@\S+\.\S+$/.test(email))return json({error:"Enter a valid email address."},400);const t=now();await env.DB.prepare("INSERT INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(email) DO UPDATE SET role=excluded.role,active=1,updated_at=excluded.updated_at").bind(randomToken(16),email,"frontend-developer",1,t,t).run();return json({ok:true})}
   if(action==="review"){const result=await reviewWorkspace(env,a.user);const id=await saveReview(env,a.user,result);return json({ok:true,reviewId:id,...result})}
+  if(action==="undo"){
+    const auditId=String(body?.auditId||"").trim();
+    const latest=auditId?null:await env.DB.prepare("SELECT id FROM codebase_audit WHERE editor_email=? AND undone=0 ORDER BY created_at DESC LIMIT 1").bind(a.user.email).first();
+    const result=await undoAudit(env,auditId||latest?.id||"",a.user.email);
+    return json(result,result.ok?200:409);
+  }
   if(action==="commit"){const reviewId=String(body?.reviewId||"");const result=await commitApproved(env,a.user,reviewId);return json(result,result.ok?200:409)}
   if(action==="settings"){if(!a.owner)return json({error:"Only the owner can change automation settings."},403);const key=String(body?.key||"");if(!["auto_review","auto_commit"].includes(key))return json({error:"Unknown setting."},400);const value=body?.value?"1":"0";await env.DB.prepare("INSERT INTO codebase_settings (key,value,updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at").bind(key,value,now()).run();return json({ok:true,key,value})}
   if(action==="auto-review-and-commit"){
