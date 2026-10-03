@@ -94,10 +94,11 @@ async function githubFile(path,token=""){
 }
 function changedFiles(files,baseline){
   const map=new Map(baseline.map(x=>[x.path,x]));
-  const paths=new Set([...baseline.map(x=>x.path),...files.map(x=>x.path)]);
+  const candidates=files.filter(x=>x.deleted||Number(x.dirty||0)||!x.github_sha);
+  const paths=new Set([...baseline.map(x=>x.path),...candidates.map(x=>x.path)]);
   const out=[];
   for(const path of paths){
-    const v=files.find(x=>x.path===path);const b=map.get(path);
+    const v=candidates.find(x=>x.path===path);const b=map.get(path);
     const before=b?.content||"";const after=v?.deleted?null:(v?.content??"");
     if(after===null&&b?.exists){out.push({path,status:"deleted",before,after:""});continue}
     if(!b?.exists&&after!==null){out.push({path,status:"added",before:"",after});continue}
@@ -240,7 +241,7 @@ async function commitApproved(env,user,reviewId){
 }
 async function state(env){
   const files=await loadVirtual(env);const changed=[];
-  for(const f of files.filter(x=>!x.deleted))if(!f.github_sha)changed.push({...f,status:"added"});else changed.push({...f,status:"modified"});
+  for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))changed.push({...f,status:f.github_sha?"modified":"added"});
   const reviews=await env.DB.prepare("SELECT * FROM codebase_reviews ORDER BY updated_at DESC LIMIT 8").all();
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
   const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim()).catch(()=>null);
