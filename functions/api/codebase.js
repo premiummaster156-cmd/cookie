@@ -2,6 +2,7 @@ import { json, readJson } from "./_lib.js";
 import { dbAvailable, getSessionUser, normalizeEmail, randomToken } from "./auth/_auth.js";
 
 const OWNER_EMAIL="cookie.ai.noreply@gmail.com";
+const ILLU_EMAIL="illu.dev.official@gmail.com";
 const REPO="premiummaster156-cmd/cookie";
 const MAX_FILE_BYTES=1000000;
 
@@ -12,8 +13,13 @@ async function access(request,env){
  const user=await getSessionUser(request,env);if(!user)return {error:json({error:"Sign in required.",code:"AUTH_REQUIRED"},401)};
  const email=normalizeEmail(user.email);
  const member=await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
- if(email!==OWNER_EMAIL&&!member?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
- return {user,owner:email===OWNER_EMAIL,member:{...member,role:email===OWNER_EMAIL?"owner":member?.role||"developer"}}
+ if(email===ILLU_EMAIL&&!member){
+   const now=Math.floor(Date.now()/1000);
+   await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("illu-developer",ILLU_EMAIL,"frontend-developer",1,now,now).run();
+ }
+ const effectiveMember=member||await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
+ if(email!==OWNER_EMAIL&&!effectiveMember?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
+ return {user,owner:email===OWNER_EMAIL,member:{...(effectiveMember||{}),role:email===OWNER_EMAIL?"owner":effectiveMember?.role||"developer"}}
 }
 async function githubJson(url){const r=await fetch(url,{headers:{Accept:"application/vnd.github+json","User-Agent":"Cookie-Code-Studio"}});if(!r.ok)throw new Error("GitHub request failed: "+r.status);return r.json()}
 async function seedFromGithub(env,actor){
