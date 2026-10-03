@@ -42,10 +42,17 @@ export async function onRequestPost({ request, env }) {
       token: issued.token,
       purpose: "signup"
     });
-    const response = json({ ok:true, needsVerification:true, email });
-    return response;
+    return json({ ok:true, needsVerification:true, email });
   } catch (error) {
     console.error("[Cookie register]", error);
-    return json({ error: "We could not create your account right now. Check your email configuration and try again." }, 502);
+    const code = String(error?.code || "");
+    const responseCode = Number(error?.responseCode || 0);
+    if (code === "EAUTH" || responseCode === 535) {
+      return json({ error: "SMTP authentication failed. Check the SMTP password/app password." }, 502);
+    }
+    if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
+      return json({ error: "SMTP host could not be resolved. Check SMTP_HOST." }, 502);
+    }
+    return json({ error: "Email delivery failed. Check the Cloudflare Pages Function logs for the exact SMTP error." }, 502);
   }
 }
