@@ -2,7 +2,7 @@ const encoder = new TextEncoder();
 function bytesToB64(bytes) {
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 function b64ToBytes(value) {
   const s = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
@@ -77,7 +77,8 @@ export function publicUser(row) {
 }
 export async function getSessionUser(request, env) {
   if (!dbAvailable(env)) return null;
-  const token = parseCookies(request).__Host-cookie_session || parseCookies(request).cookie_session;
+  const cookies = parseCookies(request);
+  const token = cookies["__Host-cookie_session"] || cookies["cookie_session"];
   if (!token) return null;
   const hash = await sha256(token);
   const now = Math.floor(Date.now() / 1000);
@@ -101,7 +102,8 @@ export async function createSession(env, userId, remember = true) {
 }
 export async function revokeSession(request, env) {
   if (!dbAvailable(env)) return clearCookie("__Host-cookie_session");
-  const token = parseCookies(request).__Host-cookie_session;
+  const cookies = parseCookies(request);
+  const token = cookies["__Host-cookie_session"];
   if (token) await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?").bind(await sha256(token)).run();
   return clearCookie("__Host-cookie_session");
 }
