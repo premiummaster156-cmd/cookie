@@ -34,3 +34,5 @@ CREATE INDEX IF NOT EXISTS idx_codebase_revisions_path ON codebase_revisions(pat
 
 INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at)
 VALUES ('cookie-owner','cookie.ai.noreply@gmail.com','owner',1,strftime('%s','now'),strftime('%s','now'));
+INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at)
+VALUES ('illu-developer','illu.dev.official@gmail.com','frontend-developer',1,strftime('%s','now'),strftime('%s','now'));
