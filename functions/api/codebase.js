@@ -289,7 +289,16 @@ async function handleGet({request,env}){
     // subrequest limit. Hydrate the real file on first open. Do not use size as
     // the gate because GitHub tree metadata can omit it for some blobs.
     if(!file.content&&!Number(file.dirty||0)&&file.github_sha){
-      const loaded=await fetchGithubRaw(requested);
+      const token=String(env.GITHUB_TOKEN||"").trim();
+      // Prefer the authenticated GitHub Contents API because it is the same
+      // API already used by Code Studio for diffs/commits. Fall back to raw
+      // GitHub if the Contents endpoint cannot serve this file.
+      let loaded=null;
+      try{
+        const fromApi=await githubFile(requested,token);
+        if(fromApi.exists)loaded={content:fromApi.content,mime:mimeFor(requested),is_binary:0,size:new TextEncoder().encode(fromApi.content).byteLength};
+      }catch{}
+      if(!loaded)loaded=await fetchGithubRaw(requested);
       await env.DB.prepare("UPDATE codebase_files SET content=?,mime=?,is_binary=?,size=?,updated_at=? WHERE path=?").bind(loaded.content,loaded.mime,loaded.is_binary,loaded.size,now(),requested).run();
       file={...file,...loaded};
     }
