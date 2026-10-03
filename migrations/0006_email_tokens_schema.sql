@@ -1,0 +1,9 @@
+ALTER TABLE email_tokens ADD COLUMN email TEXT NOT NULL DEFAULT '';
+ALTER TABLE email_tokens ADD COLUMN purpose TEXT NOT NULL DEFAULT 'signup';
+ALTER TABLE email_tokens ADD COLUMN code_hash TEXT;
+ALTER TABLE email_tokens ADD COLUMN token_hash TEXT;
+ALTER TABLE email_tokens ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_tokens ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_tokens ADD COLUMN used_at INTEGER;
+ALTER TABLE email_tokens ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE email_tokens ADD COLUMN user_id TEXT;
