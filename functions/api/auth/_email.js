@@ -187,10 +187,10 @@ export async function sendVerificationEmail(request, env, { email, name, code, t
     "Hi " + safeName + ",",
     "",
     purpose === "reset"
-      ? "Use the secure link below to reset your Cookie password:",
+      ? "Use the secure link below to reset your Cookie password:"
       : "Use this code to " + kind + ": " + code,
     purpose === "reset"
-      ? "The reset link expires in 10 minutes and can be used once.",
+      ? "The reset link expires in 10 minutes and can be used once."
       : "The code expires in 10 minutes and can be used once.",
     "",
     "Continue securely:",
