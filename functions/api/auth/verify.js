@@ -8,6 +8,7 @@ export async function onRequestPost({ request, env }) {
   const email = normalizeEmail(body?.email);
   const code = String(body?.code || "").trim();
   const now = Math.floor(Date.now() / 1000);
+  console.log("[Cookie verify] entered", { hasToken: Boolean(token), hasCode: Boolean(code), hasEmail: Boolean(email) });
   let row = null;
 
   if (token) {
@@ -16,6 +17,7 @@ export async function onRequestPost({ request, env }) {
   } else if (email && /^\d{6}$/.test(code)) {
     row = await env.DB.prepare("SELECT * FROM email_tokens WHERE email=? AND purpose='signup' AND used_at IS NULL AND expires_at>? ORDER BY created_at DESC LIMIT 1")
       .bind(email, now).first();
+    console.log("[Cookie verify] code lookup", { found: Boolean(row), attempts: row ? Number(row.attempts || 0) : null, hasCodeHash: Boolean(row?.code_hash), expiresIn: row ? Number(row.expires_at) - now : null });
     if (row && Number(row.attempts || 0) >= 5) row = null;
   }
 
@@ -23,12 +25,14 @@ export async function onRequestPost({ request, env }) {
 
   if (!token) {
     const ok = timingSafeEqual(await sha256(code), row.code_hash || "");
+    console.log("[Cookie verify] code comparison", { ok });
     if (!ok) {
       await env.DB.prepare(row.id ? "UPDATE email_tokens SET attempts=attempts+1 WHERE id=?" : "UPDATE email_tokens SET attempts=attempts+1 WHERE token_hash=?").bind(row.id || await sha256(token)).run();
       return json({ error: "That verification code is incorrect." }, 400);
     }
   }
 
+  console.log("[Cookie verify] token accepted");
   await env.DB.prepare(row.id ? "UPDATE email_tokens SET used_at=? WHERE id=?" : "UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now, row.id || await sha256(token)).run();
   await env.DB.prepare("UPDATE users SET email_verified=1,updated_at=? WHERE id=?").bind(now, row.user_id).run();
   const user = await env.DB.prepare("SELECT * FROM users WHERE id=?").bind(row.user_id).first();
