@@ -261,7 +261,7 @@ async function undoAudit(env,auditId,actorEmail){
   }else if(audit.action==="rename"){
     if(!revision)return {ok:false,error:"The saved rename snapshot is missing."};
     const from=String(meta.from||audit.path),to=String(meta.to||"");
-    await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=codebase_files.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
+    await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
       .bind(from,revision.content,revision.mime,0,new TextEncoder().encode(revision.content).byteLength,actorEmail,t,t).run();
     if(to)await env.DB.prepare("UPDATE codebase_files SET deleted=1,dirty=1,updated_by=?,updated_at=? WHERE path=?").bind(actorEmail,t,to).run();
   }else return {ok:false,error:"This action type cannot be undone yet."};
