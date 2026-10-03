@@ -1,5 +1,36 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS codebase_files (
+  path TEXT PRIMARY KEY,
+  content TEXT NOT NULL DEFAULT '',
+  mime TEXT NOT NULL DEFAULT 'text/plain',
+  is_binary INTEGER NOT NULL DEFAULT 0,
+  size INTEGER NOT NULL DEFAULT 0,
+  github_sha TEXT,
+  updated_by TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL DEFAULT 0,
+  deleted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS codebase_revisions (
+  id TEXT PRIMARY KEY,
+  path TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  mime TEXT NOT NULL DEFAULT 'text/plain',
+  editor_email TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS codebase_members (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL DEFAULT 'frontend-developer',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS codebase_reviews (
   id TEXT PRIMARY KEY,
   user_email TEXT NOT NULL,
@@ -23,6 +54,8 @@ CREATE TABLE IF NOT EXISTS codebase_settings (
   updated_at INTEGER NOT NULL
 );
 
+-- Older deployments may already have codebase_files without the deleted flag.
+-- Keep this migration compatible with those databases.
 ALTER TABLE codebase_files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
 
 INSERT OR IGNORE INTO codebase_settings (key,value,updated_at)
