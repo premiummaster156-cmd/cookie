@@ -50,6 +50,8 @@ export async function onRequestPost({ request, env }) {
 
 
     let user = await env.DB.prepare("SELECT * FROM users WHERE email=? LIMIT 1").bind(email).first();
+    const schemaCheck = await env.DB.prepare("PRAGMA table_info(users)").all();
+    console.log("[Cookie register] runtime users columns", (schemaCheck.results || []).map(column => String(column.name)));
     console.log("[Cookie register] database ready");
 
     if (user) {
