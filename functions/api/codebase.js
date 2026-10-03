@@ -285,7 +285,10 @@ async function handleGet({request,env}){
   if(requested){
     let file=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted,COALESCE(dirty,0) AS dirty FROM codebase_files WHERE path=? LIMIT 1").bind(requested).first();
     if(!file||file.deleted)return json({error:"File not found."},404);
-    if(!file.content&&Number(file.size||0)>0&&!Number(file.dirty||0)){
+    // Workspace seeding stores GitHub metadata only to stay under the free
+    // subrequest limit. Hydrate the real file on first open. Do not use size as
+    // the gate because GitHub tree metadata can omit it for some blobs.
+    if(!file.content&&!Number(file.dirty||0)&&file.github_sha){
       const loaded=await fetchGithubRaw(requested);
       await env.DB.prepare("UPDATE codebase_files SET content=?,mime=?,is_binary=?,size=?,updated_at=? WHERE path=?").bind(loaded.content,loaded.mime,loaded.is_binary,loaded.size,now(),requested).run();
       file={...file,...loaded};
