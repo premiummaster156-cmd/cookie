@@ -24,12 +24,12 @@ export async function onRequestPost({ request, env }) {
   if (!token) {
     const ok = timingSafeEqual(await sha256(code), row.code_hash || "");
     if (!ok) {
-      await env.DB.prepare("UPDATE email_tokens SET attempts=attempts+1 WHERE id=?").bind(row.id).run();
+      await env.DB.prepare(row.id ? "UPDATE email_tokens SET attempts=attempts+1 WHERE id=?" : "UPDATE email_tokens SET attempts=attempts+1 WHERE token_hash=?").bind(row.id || await sha256(token)).run();
       return json({ error: "That verification code is incorrect." }, 400);
     }
   }
 
-  await env.DB.prepare("UPDATE email_tokens SET used_at=? WHERE id=?").bind(now, row.id).run();
+  await env.DB.prepare(row.id ? "UPDATE email_tokens SET used_at=? WHERE id=?" : "UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now, row.id || await sha256(token)).run();
   await env.DB.prepare("UPDATE users SET email_verified=1,updated_at=? WHERE id=?").bind(now, row.user_id).run();
   const user = await env.DB.prepare("SELECT * FROM users WHERE id=?").bind(row.user_id).first();
   const response = json({ ok:true, user:publicUser(user) });
