@@ -6,6 +6,26 @@ export function verificationCode() {
 }
 
 export async function issueEmailToken(env, { userId, email, purpose }) {
+  // Repair legacy email_tokens schemas before the verification flow touches them.
+  const info = await env.DB.prepare("PRAGMA table_info(email_tokens)").all();
+  const existing = new Set((info.results || []).map(column => String(column.name)));
+  const missing = [
+    ["user_id", "TEXT"],
+    ["email", "TEXT NOT NULL DEFAULT ''"],
+    ["purpose", "TEXT NOT NULL DEFAULT 'signup'"],
+    ["code_hash", "TEXT"],
+    ["token_hash", "TEXT"],
+    ["attempts", "INTEGER NOT NULL DEFAULT 0"],
+    ["expires_at", "INTEGER NOT NULL DEFAULT 0"],
+    ["used_at", "INTEGER"],
+    ["created_at", "INTEGER NOT NULL DEFAULT 0"]
+  ];
+  for (const [name, definition] of missing) {
+    if (!existing.has(name)) {
+      await env.DB.prepare("ALTER TABLE email_tokens ADD COLUMN " + name + " " + definition).run();
+    }
+  }
+
   const code = verificationCode();
   const token = randomToken(32);
   const now = Math.floor(Date.now() / 1000);
