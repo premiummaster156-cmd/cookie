@@ -19,28 +19,41 @@ export async function onRequestPost({ request, env }) {
   if (password.length < 8) return json({ error: "Use a password with at least 8 characters." }, 400);
 
   const now = Math.floor(Date.now() / 1000);
-  let user = await env.DB.prepare("SELECT * FROM users WHERE email=? LIMIT 1").bind(email).first();
 
   try {
+    let user = await env.DB.prepare("SELECT * FROM users WHERE email=? LIMIT 1").bind(email).first();
     console.log("[Cookie register] database ready");
+
     if (user) {
       if (user.email_verified) return json({ error: "An account already exists for this email." }, 409);
+
       const hashed = await passwordHash(password);
-      await env.DB.prepare("UPDATE users SET name=?,password_hash=?,password_salt=?,updated_at=? WHERE id=?")
-        .bind(name || user.name, hashed.hash, hashed.salt, now, user.id).run();
+      await env.DB.prepare(
+        "UPDATE users SET name=?,password_hash=?,password_salt=?,updated_at=? WHERE id=?"
+      ).bind(name || user.name, hashed.hash, hashed.salt, now, user.id).run();
+
       user = await env.DB.prepare("SELECT * FROM users WHERE id=?").bind(user.id).first();
     } else {
       const username = await uniqueUsername(env, name || email);
       const hashed = await passwordHash(password);
       const id = randomToken(18);
+
       await env.DB.prepare(
         "INSERT INTO users (id,email,email_verified,name,username,avatar_url,password_hash,password_salt,plan,credits_remaining,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-      ).bind(id, email, 0, name, username, "", hashed.hash, hashed.salt, "free", 100, now, now).run();
+      ).bind(
+        id, email, 0, name, username, "", hashed.hash, hashed.salt, "free", 100, now, now
+      ).run();
+
       user = await env.DB.prepare("SELECT * FROM users WHERE id=?").bind(id).first();
     }
 
-    const issued = await issueEmailToken(env, { userId:user.id, email, purpose:"signup" });
-    if (!issued.ok) return json({ error: "Please wait " + issued.retryAfter + " seconds before requesting another code.", retryAfter: issued.retryAfter }, 429);
+    const issued = await issueEmailToken(env, { userId: user.id, email, purpose: "signup" });
+    if (!issued.ok) {
+      return json({
+        error: "Please wait " + issued.retryAfter + " seconds before requesting another code.",
+        retryAfter: issued.retryAfter
+      }, 429);
+    }
 
     console.log("[Cookie register] sending verification email");
     await sendVerificationEmail(request, env, {
@@ -52,22 +65,35 @@ export async function onRequestPost({ request, env }) {
     });
 
     console.log("[Cookie register] verification email sent");
-    return json({ ok:true, needsVerification:true, email });
+    return json({ ok: true, needsVerification: true, email });
   } catch (error) {
-    console.error("[Cookie register] email failure", {
+    console.error("[Cookie register] failure", {
       name: error?.name,
       code: error?.code,
       responseCode: error?.responseCode,
       message: error?.message
     });
+
+    const message = String(error?.message || "");
     const code = String(error?.code || "");
     const responseCode = Number(error?.responseCode || 0);
+
+    if (message.includes("no such column") || message.includes("SQLITE_ERROR") || code === "D1_ERROR") {
+      return json({
+        error: "Cookie database schema is out of date. Apply the latest D1 migrations, then try again."
+      }, 503);
+    }
+
     if (code === "EAUTH" || responseCode === 535) {
       return json({ error: "SMTP authentication failed. Check the SMTP password/app password." }, 502);
     }
+
     if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
       return json({ error: "SMTP host could not be resolved. Check SMTP_HOST." }, 502);
     }
-    return json({ error: "Email delivery failed. Check the Cloudflare Pages Function logs for the exact SMTP error." }, 502);
+
+    return json({
+      error: "Email delivery failed. Check the Cloudflare Pages Function logs for the exact error."
+    }, 502);
   }
 }
