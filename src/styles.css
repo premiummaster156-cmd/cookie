@@ -502,9 +502,9 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
 /* ===== Code Studio syntax-highlighted editor ===== */
 .cs-code-surface{position:relative;min-width:0;flex:1;min-height:100%;overflow:hidden;background:#0b0d10}
 .cs-highlight,.cs-code-input{position:absolute;inset:0;width:100%;height:100%;min-height:100%;margin:0;padding:12px 22px 80px 8px;border:0;box-sizing:border-box;font:12px/20px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;tab-size:2;white-space:pre;overflow:auto}
-.cs-highlight{z-index:1;color:#d5d9df;background:#0b0d10;pointer-events:none;scrollbar-width:none}
+.cs-highlight{z-index:2;color:#d5d9df;background:transparent;display:block;visibility:visible;opacity:1;pointer-events:none;scrollbar-width:none}
 .cs-highlight::-webkit-scrollbar{display:none}
-.cs-code-input{z-index:2;resize:none;outline:0;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#9fb5ff;overflow:auto}
+.cs-code-input{z-index:1;resize:none;outline:0;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#9fb5ff;overflow:auto}
 .cs-code-input::selection{background:rgba(92,122,190,.35);-webkit-text-fill-color:transparent}
 .tok-keyword{color:#c792ea}
 .tok-string{color:#ecc48d}
