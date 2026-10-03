@@ -151,6 +151,19 @@ async function aiReview(env,changes,checks){
   }
   return {ok:false,error:"AI review service did not return a valid review."};
 }
+async function deploymentState(sha){
+  if(!sha)return {status:"not_started",checks:[]};
+  try{
+    const data=await githubJson("https://api.github.com/repos/"+REPO+"/commits/"+sha+"/check-runs");
+    const checks=(data?.check_runs||[]).map(x=>({name:x.name,status:x.status,conclusion:x.conclusion,url:x.html_url||""}));
+    const relevant=checks.filter(x=>/cloudflare|pages|build|deploy/i.test(x.name));
+    const pool=relevant.length?relevant:checks;
+    if(pool.some(x=>x.status!=="completed"))return {status:"building",checks:pool};
+    if(pool.some(x=>x.conclusion==="failure"||x.conclusion==="cancelled"||x.conclusion==="timed_out"))return {status:"failed",checks:pool};
+    if(pool.length&&pool.every(x=>x.conclusion==="success"))return {status:"success",checks:pool};
+    return {status:"queued",checks:pool};
+  }catch(error){return {status:"unknown",checks:[],error:String(error?.message||"")}}
+}
 async function getBranch(token=""){
   return githubJson("https://api.github.com/repos/"+REPO+"/git/ref/heads/"+BRANCH,token);
 }
@@ -215,7 +228,7 @@ async function state(env){
   const reviews=await env.DB.prepare("SELECT * FROM codebase_reviews ORDER BY updated_at DESC LIMIT 8").all();
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
   const branch=await getBranch();
-  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null};
+  const latestReview=reviews.results?.[0]||null;\n  const deployment=await deploymentState(latestReview?.commit_sha||null);\n  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
 }
 export async function onRequestGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
