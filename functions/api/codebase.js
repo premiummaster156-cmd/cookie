@@ -207,8 +207,6 @@ async function commitApproved(env,user,reviewId){
   const freshChecks=deterministicChecks(changes);if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety check failed during commit."};
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
   const treeEntries=changes.map(c=>c.status==="deleted"?{path:c.path,mode:"100644",type:"blob",sha:null}:{path:c.path,mode:"100644",type:"blob",content:String(c.after||"")});
-  const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees",{});
-  void tree;
   const newTree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_tree:parent.tree.sha,tree:treeEntries})});
   const title=String(changes.length===1?changes[0].path:"multiple files").slice(0,70);
   const commit=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"feat(code-studio): "+title,tree:newTree.sha,parents:[currentSha]})});
@@ -228,7 +226,8 @@ async function state(env){
   const reviews=await env.DB.prepare("SELECT * FROM codebase_reviews ORDER BY updated_at DESC LIMIT 8").all();
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
   const branch=await getBranch();
-  const latestReview=reviews.results?.[0]||null;\n  const deployment=await deploymentState(latestReview?.commit_sha||null);\n  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
+  const latestReview=reviews.results?.[0]||null;
+  const deployment=await deploymentState(latestReview?.commit_sha||null);\n  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
 }
 export async function onRequestGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
