@@ -178,7 +178,10 @@ async function aiReview(env,changes,checks){
       const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.1,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only."},{role:"user",content:prompt}]})});
       const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
       if(!r.ok)continue;
-      let out=String(data?.message?.content||"").trim().replace(/^\x60\x60\x60(?:json)?/,"").replace(/\x60\x60\x60$/,"").trim();
+      let out=String(data?.message?.content||data?.response||"").trim();
+      out=out.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^\x60\x60\x60(?:json)?/i,"").replace(/\x60\x60\x60$/,"").trim();
+      const first=out.indexOf("{"),last=out.lastIndexOf("}");
+      if(first>0&&last>first)out=out.slice(first,last+1);
       const parsed=JSON.parse(out);
       if(["Approved","Needs changes","Blocked"].includes(parsed.status)){
         return {ok:true,model,status:parsed.status,risk:parsed.risk||"medium",summary:text(parsed.summary,4000),findings:Array.isArray(parsed.findings)?parsed.findings.slice(0,30):[],required_fixes:Array.isArray(parsed.required_fixes)?parsed.required_fixes.slice(0,30):[]};
