@@ -39,6 +39,43 @@ function CookieIcon({size=24}:{size?:number}) {
 function Avatar({size="sm"}:{size?:"sm"|"md"|"lg"}) {
   return <div className={"avatar avatar-"+size}><span>CR</span></div>;
 }
+
+function CookieBootLoader({failed,message,onRetry}:{failed:boolean;message:string;onRetry:()=>void}){
+  const [progress,setProgress]=useState(8);
+  useEffect(()=>{
+    if(failed){setProgress(100);return}
+    setProgress(12);
+    const timers=[
+      window.setTimeout(()=>setProgress(28),180),
+      window.setTimeout(()=>setProgress(46),420),
+      window.setTimeout(()=>setProgress(67),760),
+      window.setTimeout(()=>setProgress(82),1120),
+      window.setTimeout(()=>setProgress(91),1550)
+    ];
+    return()=>timers.forEach(window.clearTimeout);
+  },[failed]);
+  return <div className={"cookie-boot "+(failed?"failed":"")}>
+    <div className="cookie-boot-backdrop"/>
+    <div className="cookie-boot-card">
+      <div className="cookie-boot-brand">
+        <div className="cookie-boot-icon-wrap"><CookieIcon size={58}/><span className="cookie-boot-ring ring-a"/><span className="cookie-boot-ring ring-b"/></div>
+        <strong>{failed?"Cookie couldn't start":"Cookie AI"}</strong>
+        <span>{failed?"The app couldn't finish initializing.":"Preparing your workspace"}</span>
+      </div>
+      <div className="cookie-progress">
+        <div className="cookie-progress-track">
+          <div className="cookie-progress-fill" style={{width:progress+"%"}}><span/></div>
+          <div className="cookie-progress-glow" style={{left:progress+"%"}}/>
+        </div>
+        <div className="cookie-progress-meta"><span>{failed?"Startup failed":"Initializing Cookie AI"}</span><b>{failed?"ERROR":progress+"%"}</b></div>
+      </div>
+      {failed&&<div className="cookie-boot-error"><AlertCircle size={17}/><div><strong>Initialization error</strong><p>{message||"We couldn't connect to the account service."}</p></div></div>}
+      {failed&&<button className="cookie-boot-retry" onClick={onRetry}><RotateCcw size={15}/>Retry startup</button>}
+      {!failed&&<div className="cookie-boot-steps"><span className={progress>20?"done":""}>Secure session</span><i/> <span className={progress>55?"done":""}>Workspace</span><i/> <span className={progress>80?"done":""}>Ready</span></div>}
+    </div>
+  </div>;
+}
+
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
 function safeTextParts(text:string){ return [text]; }
 function Inline({text}:{text:string}){
@@ -326,21 +363,31 @@ export default function App(){
   const [authUser,setAuthUser]=useState<AuthUser|null>(null);
   const [authLoading,setAuthLoading]=useState(true);
   const [authError,setAuthError]=useState("");
+  const [authBootError,setAuthBootError]=useState("");
+  const [authAttempt,setAuthAttempt]=useState(0);
 
   const handleAuthenticated=useCallback((user:AuthUser)=>{
-    setAuthUser(user);setAuthError("");setAuthLoading(false);
+    setAuthUser(user);setAuthError("");setAuthBootError("");setAuthLoading(false);
     try{localStorage.setItem("cookie_profile",JSON.stringify({name:user.name,username:user.username,email:user.email}))}catch{}
   },[]);
 
   useEffect(()=>{
     let cancelled=false;
+    setAuthLoading(true);setAuthBootError("");
     fetch("/api/auth/me",{credentials:"same-origin",cache:"no-store"})
-      .then(async r=>{const d=await r.json().catch(()=>({}));if(cancelled)return;if(r.ok&&d?.authenticated&&d.user){handleAuthenticated(d.user)}else{setAuthLoading(false);if(r.status===503)setAuthError(d?.error||"Account service is not configured.")}})
-      .catch(()=>{if(!cancelled)setAuthLoading(false)});
+      .then(async r=>{
+        const d=await r.json().catch(()=>({}));
+        if(cancelled)return;
+        if(r.ok&&d?.authenticated&&d.user){handleAuthenticated(d.user);return}
+        setAuthLoading(false);
+        if(r.status===503)setAuthError(d?.error||"Account service is not configured.");
+        else if(![401,403].includes(r.status)&&!r.ok)setAuthBootError(d?.error||"The account service returned an unexpected response.");
+      })
+      .catch((e:any)=>{if(!cancelled){setAuthLoading(false);setAuthBootError(e?.message||"Couldn't reach Cookie's account service.")}});
     return()=>{cancelled=true};
-  },[handleAuthenticated]);
+  },[handleAuthenticated,authAttempt]);
 
-  if(authLoading) return <div className="auth-loading"><div className="auth-loading-orb"/><span>Loading Cookie…</span></div>;
+  if(authLoading||authBootError) return <CookieBootLoader failed={Boolean(authBootError)} message={authBootError} onRetry={()=>{setAuthBootError("");setAuthLoading(true);setAuthAttempt(v=>v+1)}}/>;
   if(!authUser) return <AuthPage onAuthenticated={handleAuthenticated} configError={authError}/>;
   return <AuthenticatedApp authUser={authUser} onLogout={()=>{setAuthUser(null);setAuthLoading(false)}}/>;
 }
