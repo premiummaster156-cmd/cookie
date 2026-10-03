@@ -227,7 +227,8 @@ async function state(env){
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
   const branch=await getBranch();
   const latestReview=reviews.results?.[0]||null;
-  const deployment=await deploymentState(latestReview?.commit_sha||null);\n  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
+  const deployment=await deploymentState(latestReview?.commit_sha||null);
+  return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
 }
 export async function onRequestGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
