@@ -17,7 +17,34 @@ const iconFor=(p:string)=>{const e=p.split(".").pop()?.toLowerCase()||"";if(["js
 const ext=(p:string)=>p.split(".").pop()?.toLowerCase()||"";
 function treeFor(files:CodeFile[]){const root:any={name:"COOKIE",children:{},file:null};for(const f of files.filter(x=>!x.deleted)){let n=root;const parts=f.path.split("/");parts.forEach((part,i)=>{n.children[part]??={name:part,children:{},file:null};n=n.children[part];if(i===parts.length-1)n.file=f.path})}return root}
 function Tree({node,prefix,onOpen,active,depth=0}:{node:any;prefix:string;onOpen:(p:string)=>void;active:string;depth?:number}){const [open,setOpen]=useState(depth<2);const items=Object.values(node.children||{}) as any[];items.sort((a,b)=>Number(Boolean(b.file))-Number(Boolean(a.file))||a.name.localeCompare(b.name));return <>{items.map(c=>{const full=prefix?prefix+"/"+c.name:c.name;if(c.file)return <button className={"cs-file "+(active===c.file?"active":"")} key={full} onClick={()=>onOpen(c.file)} style={{paddingLeft:10+depth*14}}>{iconFor(c.file)}<span>{c.name}</span></button>;return <div key={full}><button className="cs-folder" onClick={()=>setOpen(v=>!v)} style={{paddingLeft:10+depth*14}}>{open?<ChevronDown size={13}/>:<ChevronRight size={13}/>}<Folder size={14}/><span>{c.name}</span></button>{open&&<Tree node={c} prefix={full} onOpen={onOpen} active={active} depth={depth+1}/>}</div>})}</>}
-function languageLabel(p:string){const e=ext(p);return ({ts:"TypeScript",tsx:"TypeScript React",js:"JavaScript",jsx:"JavaScript React",json:"JSON",css:"CSS",html:"HTML",sql:"SQL",md:"Markdown",yml:"YAML",yaml:"YAML",sh:"Shell"} as any)[e]||e.toUpperCase()||"Plain Text"}async function parseApiResponse(r:Response){const raw=await r.text();if(!raw.trim())return {};try{return JSON.parse(raw)}catch{return {error:raw.slice(0,500)||("Request failed ("+r.status+").")}}}
+function languageLabel(p:string){const e=ext(p);return ({ts:"TypeScript",tsx:"TypeScript React",js:"JavaScript",jsx:"JavaScript React",json:"JSON",css:"CSS",html:"HTML",sql:"SQL",md:"Markdown",yml:"YAML",yaml:"YAML",sh:"Shell",py:"Python"} as any)[e]||e.toUpperCase()||"Plain Text"}
+function escapeHtml(v:string){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function highlightCode(source:string,path:string){
+  const e=ext(path);
+  const keywords=new Set(("const let var function return if else for while do switch case break continue throw try catch finally class extends new import from export default async await yield typeof instanceof in of interface type enum public private protected readonly abstract implements as satisfies declare namespace def elif except with lambda pass raise global nonlocal and or not is True False None SELECT FROM WHERE INSERT INTO UPDATE DELETE CREATE ALTER TABLE DROP VALUES JOIN LEFT RIGHT INNER OUTER ON AS AND OR NOT NULL TRUE FALSE BEGIN END").split(/\s+/));
+  const tokenRe=/(\/\*[\\s\\S]*?\*\/|\/\/[^\\n]*|#[^\\n]*|\`(?:\\\\.|[^\`\\\\])*\`|&quot;(?:\\\\.|[^&]|&(?!quot;))*?&quot;|'(?:\\\\.|[^'\\\\])*'|\\b\\d+(?:\\.\\d+)?\\b)/g;
+  let out="",last=0;
+  const plain=(raw:string)=>{
+    let s=escapeHtml(raw);
+    s=s.replace(/\\b([A-Za-z_$][\\w$]*)\\b/g,(m)=>keywords.has(m)?'<span class="tok-keyword">'+m+"</span>":m);
+    s=s.replace(/([A-Za-z_$][\\w$]*)(?=\\s*:)/g,'<span class="tok-property">$1</span>');
+    if(e==="css")s=s.replace(/(^|[{};\\s])(\\.[A-Za-z_-][\\w-]*|#[A-Za-z_-][\\w-]*)/g,'$1<span class="tok-selector">$2</span>');
+    if(e==="html"||e==="tsx"||e==="jsx")s=s.replace(/(&lt;\\/?)([A-Za-z][\\w:-]*)/g,'$1<span class="tok-tag">$2</span>');
+    return s;
+  };
+  let m;
+  while((m=tokenRe.exec(source))){
+    out+=plain(source.slice(last,m.index));
+    const token=m[0], escaped=escapeHtml(token);
+    if(token.startsWith("//")||token.startsWith("/*")||token.startsWith("#"))out+='<span class="tok-comment">'+escaped+"</span>";
+    else if(token.startsWith("`")||token.startsWith('"')||token.startsWith("'"))out+='<span class="tok-string">'+escaped+"</span>";
+    else out+='<span class="tok-number">'+escaped+"</span>";
+    last=m.index+token.length;
+  }
+  out+=plain(source.slice(last));
+  return out||" ";
+}
+async function parseApiResponse(r:Response){const raw=await r.text();if(!raw.trim())return {};try{return JSON.parse(raw)}catch{return {error:raw.slice(0,500)||("Request failed ("+r.status+").")}}}
 
 
 export default function CodeStudioPage(){
@@ -79,7 +106,7 @@ export default function CodeStudioPage(){
     <div className="cs-tabs">{tabs.map(p=><button key={p} className={selected===p?"active":""} onClick={()=>open(p)}><span className={dirty&&selected===p?"dirty-dot":""}>{iconFor(p)}</span><span>{p.split("/").pop()}</span>{selected===p&&dirty&&<CircleDot size={11}/>}<X size={13} onClick={e=>{e.stopPropagation();setTabs(t=>t.filter(x=>x!==p));if(selected===p){const next=tabs.find(x=>x!==p);if(next)open(next);else{setSelected("");setContent("");setSaved("")}}}}/></button>)}</div>
     <div className="cs-breadcrumb"><span>COOKIE</span><ChevronRight size={13}/>{selected?selected.split("/").map((p,i)=><React.Fragment key={i}><span className={i===selected.split("/").length-1?"current":""}>{p}</span>{i<selected.split("/").length-1&&<ChevronRight size={12}/>}</React.Fragment>):<span className="muted">No file selected</span>}<div className="cs-editor-tools"><span>{selected?languageLabel(selected):"Plain Text"}</span><span>Spaces: 2</span><span>UTF-8</span></div></div>
     <div className="cs-editor-wrap">
-      {!selected?<div className="cs-empty"><Code2 size={38}/><h2>Cookie Code Studio</h2><p>Open a file from Explorer, or use Quick Open.</p><div><button onClick={()=>setQuickOpen(true)}><Search size={15}/>Open File <kbd>⌘P</kbd></button><button onClick={()=>setCommandOpen(true)}><Keyboard size={15}/>Command Palette</button></div></div>:<div className="cs-code-editor"><div className="cs-gutter">{Array.from({length:lines},(_,i)=><span key={i}>{i+1}</span>)}</div><textarea ref={editorRef} spellCheck={false} value={content} readOnly={String(content).startsWith("[Binary file")} onChange={e=>scheduleSave(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==="s"){e.preventDefault();autosave()}if(e.key==="Tab"){e.preventDefault();const s=e.currentTarget.selectionStart;const v=e.currentTarget.value;e.currentTarget.value=v.slice(0,s)+"  "+v.slice(e.currentTarget.selectionEnd);e.currentTarget.selectionStart=e.currentTarget.selectionEnd=s+2;setContent(e.currentTarget.value)}}}/><div className="cs-minimap"><div className="mini-title">{selected.split("/").pop()}</div>{content.split("\n").slice(0,90).map((l,i)=><span key={i} style={{width:Math.min(100,Math.max(8,l.length/1.3))+"%"}}/>)}</div></div>}
+      {!selected?<div className="cs-empty"><Code2 size={38}/><h2>Cookie Code Studio</h2><p>Open a file from Explorer, or use Quick Open.</p><div><button onClick={()=>setQuickOpen(true)}><Search size={15}/>Open File <kbd>⌘P</kbd></button><button onClick={()=>setCommandOpen(true)}><Keyboard size={15}/>Command Palette</button></div></div>:<div className="cs-code-editor"><div className="cs-gutter">{Array.from({length:lines},(_,i)=><span key={i}>{i+1}</span>)}</div><div className="cs-code-surface"><pre className="cs-highlight" aria-hidden dangerouslySetInnerHTML={{__html:highlightCode(content,selected)}}/><textarea className="cs-code-input" ref={editorRef} spellCheck={false} value={content} readOnly={String(content).startsWith("[Binary file")} onScroll={e=>{const pre=e.currentTarget.previousElementSibling as HTMLElement|null;if(pre){pre.scrollTop=e.currentTarget.scrollTop;pre.scrollLeft=e.currentTarget.scrollLeft}}} onChange={e=>scheduleSave(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==="s"){e.preventDefault();autosave()}if(e.key==="Tab"){e.preventDefault();const s=e.currentTarget.selectionStart;const v=e.currentTarget.value;e.currentTarget.value=v.slice(0,s)+"  "+v.slice(e.currentTarget.selectionEnd);e.currentTarget.selectionStart=e.currentTarget.selectionEnd=s+2;setContent(e.currentTarget.value)}}}/></div><div className="cs-minimap"><div className="mini-title">{selected.split("/").pop()}</div>{content.split("\n").slice(0,90).map((l,i)=><span key={i} style={{width:Math.min(100,Math.max(8,l.length/1.3))+"%"}}/>)}</div></div>}
     </div>
     <div className="cs-statusbar"><span><GitBranch size={13}/>main</span><span className={"status-main "+(status.includes("Approved")||status==="Committed"?"good":"")}>{status}</span><span>{selected?"Ln 1, Col 1":"Ready"}</span><span className="spacer"/><span>{role||"developer"}</span><span>Cookie Code Studio</span></div>
     {panelOpen&&<section className="cs-bottom">
