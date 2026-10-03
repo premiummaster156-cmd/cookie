@@ -37,4 +37,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Build frontend assets"
-          git push
+          # A Code Studio commit can land while this build is running.
+          # Rebase the generated dist commit onto the latest main before pushing.
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
