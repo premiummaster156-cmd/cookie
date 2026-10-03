@@ -7,7 +7,7 @@ const REPO="premiummaster156-cmd/cookie";
 const BRANCH="main";
 const MAX_FILE_BYTES=1000000;
 const MAX_REVIEW_CHARS=140000;
-const PROTECTED_PATHS=new Set(["functions/api/codebase.js","src/CodeStudioPage.tsx","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
+const PROTECTED_PATHS=new Set(["functions/api/codebase.js","src/CodeStudioPage.tsx","src/App.tsx","src/main.tsx","src/styles.css","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
 function isHiddenPath(path){
   const p=cleanPath(path);
   if(!p)return true;
