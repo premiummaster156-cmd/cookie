@@ -17,7 +17,8 @@ async function ensureSchema(env){
   // Code Studio must be self-healing because Pages does not automatically run
   // D1 migrations for every deployment. Create the workspace tables if they
   // are missing, then repair the one additive column used by this version.
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_files (path TEXT PRIMARY KEY,content TEXT NOT NULL DEFAULT '',mime TEXT NOT NULL DEFAULT 'text/plain',is_binary INTEGER NOT NULL DEFAULT 0,size INTEGER NOT NULL DEFAULT 0,github_sha TEXT,updated_by TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0,deleted INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_files (path TEXT PRIMARY KEY,content TEXT NOT NULL DEFAULT '',mime TEXT NOT NULL DEFAULT 'text/plain',is_binary INTEGER NOT NULL DEFAULT 0,size INTEGER NOT NULL DEFAULT 0,github_sha TEXT,updated_by TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0,deleted INTEGER NOT NULL DEFAULT 0,dirty INTEGER NOT NULL DEFAULT 0)").run();
+  try{await env.DB.prepare("ALTER TABLE codebase_files ADD COLUMN dirty INTEGER NOT NULL DEFAULT 0").run()}catch{}
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_revisions (id TEXT PRIMARY KEY,path TEXT NOT NULL,content TEXT NOT NULL DEFAULT '',mime TEXT NOT NULL DEFAULT 'text/plain',editor_email TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_members (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,role TEXT NOT NULL DEFAULT 'frontend-developer',active INTEGER NOT NULL DEFAULT 1,created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_reviews (id TEXT PRIMARY KEY,user_email TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'needs_changes',risk TEXT NOT NULL DEFAULT 'unknown',summary TEXT NOT NULL DEFAULT '',findings_json TEXT NOT NULL DEFAULT '[]',checks_json TEXT NOT NULL DEFAULT '[]',diff_hash TEXT NOT NULL DEFAULT '',base_sha TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,commit_sha TEXT,deployment_status TEXT NOT NULL DEFAULT 'not_started')").run();
@@ -50,22 +51,33 @@ async function githubJson(url,token="",options={}){
 }
 async function seedFromGithub(env,actor){
   const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees/"+BRANCH+"?recursive=1",String(env.GITHUB_TOKEN||"").trim());
-  const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")).slice(0,500):[];
+  const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")).slice(0,1200):[];
+  if(!rows.length)return 0;
+  const t=now(),statements=[];
   for(const item of rows){
     const path=cleanPath(item.path);if(!path||Number(item.size||0)>MAX_FILE_BYTES)continue;
-    const r=await fetch("https://raw.githubusercontent.com/"+REPO+"/"+BRANCH+"/"+item.path,{headers:{"User-Agent":"Cookie-Code-Studio"}});
-    if(!r.ok)continue;
-    const buf=new Uint8Array(await r.arrayBuffer());if(buf.byteLength>MAX_FILE_BYTES)continue;
-    const mime=mimeFor(path);let content="";let binary=0;
-    if(/^image\//.test(mime)||/\.(ico|woff2?|ttf|eot|pdf|zip)$/i.test(path)){let x="";for(let i=0;i<buf.length;i+=0x8000)x+=String.fromCharCode(...buf.subarray(i,i+0x8000));content=btoa(x);binary=1}else content=new TextDecoder().decode(buf);
-    const t=now();
-    await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0").bind(path,content,mime,binary,buf.byteLength,item.sha,actor,t,t).run();
+    statements.push(env.DB.prepare("INSERT OR IGNORE INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,?,0)")
+      .bind(path,"",mimeFor(path),0,Number(item.size||0),item.sha||null,"github-sync",t,t));
   }
-  return rows.length;
+  if(statements.length)await env.DB.batch(statements);
+  return statements.length;
 }
 async function loadVirtual(env){
-  const r=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files ORDER BY path LIMIT 1200").all();
+  const r=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted,COALESCE(dirty,0) AS dirty FROM codebase_files ORDER BY path LIMIT 1200").all();
   return r.results||[];
+}
+async function fetchGithubRaw(path){
+  const url="https://raw.githubusercontent.com/"+REPO+"/"+BRANCH+"/"+path.split("/").map(encodeURIComponent).join("/");
+  const r=await fetch(url,{headers:{"User-Agent":"Cookie-Code-Studio"}});
+  if(!r.ok)throw new Error("GitHub file fetch failed: "+r.status);
+  const buf=new Uint8Array(await r.arrayBuffer());
+  if(buf.byteLength>MAX_FILE_BYTES)throw new Error("File is too large for Code Studio.");
+  const mime=mimeFor(path);let content="";let binary=0;
+  if(/^image\//.test(mime)||/\.(ico|woff2?|ttf|eot|pdf|zip)$/i.test(path)){
+    let x="";for(let i=0;i<buf.length;i+=0x8000)x+=String.fromCharCode(...buf.subarray(i,i+0x8000));
+    content=btoa(x);binary=1;
+  }else content=new TextDecoder().decode(buf);
+  return {content,mime,is_binary:binary,size:buf.byteLength};
 }
 async function githubFile(path,token=""){
   const encoded=path.split("/").map(encodeURIComponent).join("/");
@@ -208,7 +220,7 @@ async function commitApproved(env,user,reviewId){
     await env.DB.prepare("UPDATE codebase_reviews SET status='Blocked',summary=?,updated_at=? WHERE id=?").bind("GitHub changed after this review. Sync and review again.",now(),reviewId).run();
     return {ok:false,error:"GitHub changed after the review. Sync the workspace and review again."};
   }
-  const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
+  const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
   const changes=changedFiles(files,baseline);if(!changes.length)return {ok:false,error:"There are no changes to commit."};
   const freshChecks=deterministicChecks(changes);if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety check failed during commit."};
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
@@ -218,9 +230,9 @@ async function commitApproved(env,user,reviewId){
   const commit=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"feat(code-studio): "+title,tree:newTree.sha,parents:[currentSha]})});
   await githubJson("https://api.github.com/repos/"+REPO+"/git/refs/heads/"+BRANCH,token,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({sha:commit.sha,force:false})});
   for(const c of changes){
-    if(c.status==="deleted")await env.DB.prepare("UPDATE codebase_files SET deleted=1,github_sha=NULL,updated_by=?,updated_at=? WHERE path=?").bind(user.email,now(),c.path).run();
+    if(c.status==="deleted")await env.DB.prepare("UPDATE codebase_files SET deleted=1,github_sha=NULL,dirty=0,updated_by=?,updated_at=? WHERE path=?").bind(user.email,now(),c.path).run();
     else{
-      const entry=(newTree.tree||[]).find(x=>x.path===c.path);await env.DB.prepare("UPDATE codebase_files SET deleted=0,github_sha=?,updated_by=?,updated_at=? WHERE path=?").bind(entry?.sha||null,user.email,now(),c.path).run();
+      const entry=(newTree.tree||[]).find(x=>x.path===c.path);await env.DB.prepare("UPDATE codebase_files SET deleted=0,github_sha=?,dirty=0,updated_by=?,updated_at=? WHERE path=?").bind(entry?.sha||null,user.email,now(),c.path).run();
     }
   }
   await env.DB.prepare("UPDATE codebase_reviews SET commit_sha=?,deployment_status='queued',updated_at=? WHERE id=?").bind(commit.sha,now(),reviewId).run();
@@ -243,10 +255,19 @@ async function handleGet({request,env}){
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0)await seedFromGithub(env,a.user.email);
   if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
   if(action==="diff"){
-    const files=await loadVirtual(env),baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
+    const files=await loadVirtual(env),baseline=[];for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
     const changes=changedFiles(files,baseline);return json({ok:true,changes:changes.map(c=>({...c,diff:diffText(c.before,c.after)}))});
   }
-  if(requested){const file=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files WHERE path=? LIMIT 1").bind(requested).first();if(!file||file.deleted)return json({error:"File not found."},404);return json({ok:true,owner:a.owner,role:a.member.role,file})}
+  if(requested){
+    let file=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted,COALESCE(dirty,0) AS dirty FROM codebase_files WHERE path=? LIMIT 1").bind(requested).first();
+    if(!file||file.deleted)return json({error:"File not found."},404);
+    if(!file.content&&Number(file.size||0)>0&&!Number(file.dirty||0)){
+      const loaded=await fetchGithubRaw(requested);
+      await env.DB.prepare("UPDATE codebase_files SET content=?,mime=?,is_binary=?,size=?,updated_at=? WHERE path=?").bind(loaded.content,loaded.mime,loaded.is_binary,loaded.size,now(),requested).run();
+      file={...file,...loaded};
+    }
+    return json({ok:true,owner:a.owner,role:a.member.role,file})
+  }
   const files=await env.DB.prepare("SELECT path,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files WHERE COALESCE(deleted,0)=0 ORDER BY path LIMIT 1200").all();
   const members=await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all();
   return json({ok:true,owner:a.owner,role:a.member.role,files:files.results||[],members:members.results||[]})
@@ -257,7 +278,7 @@ async function handlePut({request,env}){
     const from=cleanPath(body?.from),to=cleanPath(body?.to);if(!from||!to)return json({error:"Both source and destination paths are required."},400);
     const src=await env.DB.prepare("SELECT * FROM codebase_files WHERE path=? LIMIT 1").bind(from).first();if(!src||src.deleted)return json({error:"Source file not found."},404);
     if(action==="rename")await env.DB.prepare("DELETE FROM codebase_files WHERE path=?").bind(to).run();
-    const t=now();await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0").bind(to,src.content,src.mime,src.is_binary,src.size,action==="duplicate"?null:src.github_sha,a.user.email,t,t).run();
+    const t=now();await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=excluded.is_binary,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1").bind(to,src.content,src.mime,src.is_binary,src.size,action==="duplicate"?null:src.github_sha,a.user.email,t,t).run();
     if(action==="rename")await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,from).run();
     return json({ok:true,path:to});
   }
@@ -266,7 +287,7 @@ async function handlePut({request,env}){
   const t=now(),previous=await env.DB.prepare("SELECT content,mime FROM codebase_files WHERE path=? LIMIT 1").bind(path).first();
   if(previous&&!Number(previous.deleted||0)&&String(previous.content)===content)return json({ok:true,unchanged:true});
   if(previous&&!Number(previous.deleted||0))await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(randomToken(16),path,previous.content,previous.mime,a.user.email,t).run();
-  await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0").bind(path,content,String(body?.mime||mimeFor(path)),0,size,previous?.github_sha||null,a.user.email,t,t).run();
+  await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted) VALUES (?,?,?,?,?,?,?,?,?,0) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1").bind(path,content,String(body?.mime||mimeFor(path)),0,size,previous?.github_sha||null,a.user.email,t,t).run();
   return json({ok:true,updatedAt:t});
 }
 async function handleDelete({request,env}){const a=await access(request,env);if(a.error)return a.error;const path=cleanPath(new URL(request.url).searchParams.get("path"));if(!path)return json({error:"File path is required."},400);const t=now();await env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_by=?,updated_at=? WHERE path=?").bind(a.user.email,t,path).run();return json({ok:true})}
