@@ -90,6 +90,8 @@ export async function getSessionUser(request, env) {
   return row ? { ...publicUser(row), _row: row } : null;
 }
 export async function createSession(env, userId, remember = true) {
+  // Keep session creation resilient on production databases that predate the auth workspace migration.
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)`).run();
   const raw = randomToken(32);
   const hash = await sha256(raw);
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 24;
