@@ -245,10 +245,10 @@ async function recordAudit(env,{action,path,beforeRevisionId=null,meta={},editor
     .bind(id,action,path,beforeRevisionId,JSON.stringify(meta),editorEmail,now()).run();
   return id;
 }
-async function undoAudit(env,auditId,actorEmail){
+async function undoAudit(env,auditId,actorEmail,isOwner=false){
   const audit=await env.DB.prepare("SELECT * FROM codebase_audit WHERE id=? LIMIT 1").bind(auditId).first();
   if(!audit||Number(audit.undone||0))return {ok:false,error:"That Code Studio action is already undone or no longer exists."};
-  if(normalizeEmail(audit.editor_email)!==normalizeEmail(actorEmail))return {ok:false,error:"Only the developer who made the change or the owner can undo it."};
+  if(!isOwner&&normalizeEmail(audit.editor_email)!==normalizeEmail(actorEmail))return {ok:false,error:"Only the developer who made the change or the owner can undo it."};
   let meta={};try{meta=JSON.parse(audit.meta_json||"{}")}catch{}
   const revision=audit.before_revision_id?await env.DB.prepare("SELECT * FROM codebase_revisions WHERE id=? LIMIT 1").bind(audit.before_revision_id).first():null;
   const t=now();
@@ -269,7 +269,7 @@ async function undoAudit(env,auditId,actorEmail){
   return {ok:true,auditId};
 }
 async function recentAudits(env){
-  const r=await env.DB.prepare("SELECT id,action,path,editor_email,created_at,undone FROM codebase_audit ORDER BY created_at DESC LIMIT 12").all();
+  const r=await env.DB.prepare("SELECT id,action,path,editor_email,created_at,undone FROM codebase_audit ORDER BY created_at DESC,id DESC LIMIT 12").all();
   return r.results||[];
 }
 async function saveReview(env,user,result){
@@ -402,8 +402,8 @@ async function handlePost({request,env}){
   if(action==="review"){const result=await reviewWorkspace(env,a.user);const id=await saveReview(env,a.user,result);return json({ok:true,reviewId:id,...result})}
   if(action==="undo"){
     const auditId=String(body?.auditId||"").trim();
-    const latest=auditId?null:await env.DB.prepare("SELECT id FROM codebase_audit WHERE editor_email=? AND undone=0 ORDER BY created_at DESC LIMIT 1").bind(a.user.email).first();
-    const result=await undoAudit(env,auditId||latest?.id||"",a.user.email);
+    const latest=auditId?null:await env.DB.prepare("SELECT id FROM codebase_audit WHERE editor_email=? AND undone=0 ORDER BY created_at DESC,id DESC LIMIT 1").bind(a.user.email).first();
+    const result=await undoAudit(env,auditId||latest?.id||"",a.user.email,a.owner);
     return json(result,result.ok?200:409);
   }
   if(action==="commit"){const reviewId=String(body?.reviewId||"");const result=await commitApproved(env,a.user,reviewId);return json(result,result.ok?200:409)}
