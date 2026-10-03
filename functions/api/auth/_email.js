@@ -28,7 +28,7 @@ async function readSmtpResponse(reader) {
     buffer = lines.pop() || "";
 
     for (const line of lines) {
-      if (!/^\\d{3}(?: |$)/.test(line)) continue;
+      if (!/^\d{3}(?: |$)/.test(line)) continue;
       const code = Number(line.slice(0, 3));
       if (code >= 400) {
         const error = new Error("SMTP " + code + ": " + line.slice(4));
