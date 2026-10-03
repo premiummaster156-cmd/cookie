@@ -14,6 +14,12 @@ function text(v,max=20000){return String(v??"").slice(0,max)}
 function now(){return Math.floor(Date.now()/1000)}
 async function hashText(value){const bytes=new TextEncoder().encode(String(value));const digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,"0")).join("")}
 async function ensureSchema(env){
+  // Code Studio must be self-healing because Pages does not automatically run
+  // D1 migrations for every deployment. Create the workspace tables if they
+  // are missing, then repair the one additive column used by this version.
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_files (path TEXT PRIMARY KEY,content TEXT NOT NULL DEFAULT '',mime TEXT NOT NULL DEFAULT 'text/plain',is_binary INTEGER NOT NULL DEFAULT 0,size INTEGER NOT NULL DEFAULT 0,github_sha TEXT,updated_by TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0,deleted INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_revisions (id TEXT PRIMARY KEY,path TEXT NOT NULL,content TEXT NOT NULL DEFAULT '',mime TEXT NOT NULL DEFAULT 'text/plain',editor_email TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_members (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,role TEXT NOT NULL DEFAULT 'frontend-developer',active INTEGER NOT NULL DEFAULT 1,created_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_reviews (id TEXT PRIMARY KEY,user_email TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'needs_changes',risk TEXT NOT NULL DEFAULT 'unknown',summary TEXT NOT NULL DEFAULT '',findings_json TEXT NOT NULL DEFAULT '[]',checks_json TEXT NOT NULL DEFAULT '[]',diff_hash TEXT NOT NULL DEFAULT '',base_sha TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,commit_sha TEXT,deployment_status TEXT NOT NULL DEFAULT 'not_started')").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_settings (key TEXT PRIMARY KEY,value TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)").run();
   try{await env.DB.prepare("ALTER TABLE codebase_files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0").run()}catch{}
@@ -43,7 +49,7 @@ async function githubJson(url,token="",options={}){
   return data;
 }
 async function seedFromGithub(env,actor){
-  const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees/"+BRANCH+"?recursive=1");
+  const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees/"+BRANCH+"?recursive=1",String(env.GITHUB_TOKEN||"").trim());
   const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")).slice(0,500):[];
   for(const item of rows){
     const path=cleanPath(item.path);if(!path||Number(item.size||0)>MAX_FILE_BYTES)continue;
@@ -61,10 +67,10 @@ async function loadVirtual(env){
   const r=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files ORDER BY path LIMIT 1200").all();
   return r.results||[];
 }
-async function githubFile(path){
+async function githubFile(path,token=""){
   const encoded=path.split("/").map(encodeURIComponent).join("/");
   try{
-    const d=await githubJson("https://api.github.com/repos/"+REPO+"/contents/"+encoded+"?ref="+BRANCH);
+    const d=await githubJson("https://api.github.com/repos/"+REPO+"/contents/"+encoded+"?ref="+BRANCH,token);
     if(d?.type!=="file")return {exists:false,content:"",sha:null};
     const raw=atob(String(d.content||"").replace(/\s/g,""));
     const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
@@ -151,10 +157,10 @@ async function aiReview(env,changes,checks){
   }
   return {ok:false,error:"AI review service did not return a valid review."};
 }
-async function deploymentState(sha){
+async function deploymentState(sha,token=""){
   if(!sha)return {status:"not_started",checks:[]};
   try{
-    const data=await githubJson("https://api.github.com/repos/"+REPO+"/commits/"+sha+"/check-runs");
+    const data=await githubJson("https://api.github.com/repos/"+REPO+"/commits/"+sha+"/check-runs",token);
     const checks=(data?.check_runs||[]).map(x=>({name:x.name,status:x.status,conclusion:x.conclusion,url:x.html_url||""}));
     const relevant=checks.filter(x=>/cloudflare|pages|build|deploy/i.test(x.name));
     const pool=relevant.length?relevant:checks;
@@ -170,10 +176,10 @@ async function getBranch(token=""){
 async function reviewWorkspace(env,user){
   const files=await loadVirtual(env);const baseline=[];
   for(const f of files.filter(x=>!x.deleted)){
-    const b=await githubFile(f.path);baseline.push({path:f.path,...b});
+    const b=await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim());baseline.push({path:f.path,...b});
   }
   const changes=changedFiles(files,baseline);const checks=deterministicChecks(changes);
-  const branch=await getBranch();const diff=makeDiff(changes);const diffHash=await hashText(JSON.stringify(changes));
+  const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim());const diff=makeDiff(changes);const diffHash=await hashText(JSON.stringify(changes));
   if(!changes.length){
     return {status:"Approved",risk:"low",summary:"No changes are pending.",findings:[],required_fixes:[],checks,changes,baseSha:branch?.object?.sha||null,diffHash};
   }
@@ -225,9 +231,9 @@ async function state(env){
   for(const f of files.filter(x=>!x.deleted))if(!f.github_sha)changed.push({...f,status:"added"});else changed.push({...f,status:"modified"});
   const reviews=await env.DB.prepare("SELECT * FROM codebase_reviews ORDER BY updated_at DESC LIMIT 8").all();
   const settings=await env.DB.prepare("SELECT key,value FROM codebase_settings").all();
-  const branch=await getBranch();
+  const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim()).catch(()=>null);
   const latestReview=reviews.results?.[0]||null;
-  const deployment=await deploymentState(latestReview?.commit_sha||null);
+  const deployment=await deploymentState(latestReview?.commit_sha||null,String(env.GITHUB_TOKEN||"").trim());
   return {files,members:(await env.DB.prepare("SELECT email,role,active,updated_at FROM codebase_members ORDER BY role,email").all()).results||[],reviews:reviews.results||[],settings:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value])),branchSha:branch?.object?.sha||null,deployment};
 }
 export async function onRequestGet({request,env}){
@@ -237,7 +243,7 @@ export async function onRequestGet({request,env}){
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0)await seedFromGithub(env,a.user.email);
   if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
   if(action==="diff"){
-    const files=await loadVirtual(env),baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path)});
+    const files=await loadVirtual(env),baseline=[];for(const f of files.filter(x=>!x.deleted))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
     const changes=changedFiles(files,baseline);return json({ok:true,changes:changes.map(c=>({...c,diff:diffText(c.before,c.after)}))});
   }
   if(requested){const file=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted FROM codebase_files WHERE path=? LIMIT 1").bind(requested).first();if(!file||file.deleted)return json({error:"File not found."},404);return json({ok:true,owner:a.owner,role:a.member.role,file})}
