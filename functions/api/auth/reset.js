@@ -15,7 +15,7 @@ export async function onRequestPost({ request, env }) {
   const hashed=await passwordHash(password);
   await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,login_failures=0,locked_until=0,updated_at=? WHERE id=?")
     .bind(hashed.hash,hashed.salt,now,row.user_id).run();
-  await env.DB.prepare("UPDATE email_tokens SET used_at=? WHERE id=?").bind(now,row.id).run();
+  await env.DB.prepare(row.id ? "UPDATE email_tokens SET used_at=? WHERE id=?" : "UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now,row.id || await sha256(token)).run();
   await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(row.user_id).run();
   return json({ok:true,message:"Your password has been reset. You can sign in now."});
 }
