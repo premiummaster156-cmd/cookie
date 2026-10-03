@@ -26,6 +26,9 @@ export async function onRequestPost({ request, env }) {
     const info = await env.DB.prepare("PRAGMA table_info(users)").all();
     const existing = new Set((info.results || []).map(column => String(column.name)));
     const missing = [
+      ["email", "TEXT DEFAULT ''"],
+      ["email_verified", "INTEGER NOT NULL DEFAULT 0"],
+      ["name", "TEXT NOT NULL DEFAULT ''"],
       ["username", "TEXT NOT NULL DEFAULT ''"],
       ["avatar_url", "TEXT NOT NULL DEFAULT ''"],
       ["password_hash", "TEXT"],
@@ -33,7 +36,9 @@ export async function onRequestPost({ request, env }) {
       ["plan", "TEXT NOT NULL DEFAULT 'free'"],
       ["credits_remaining", "INTEGER NOT NULL DEFAULT 100"],
       ["login_failures", "INTEGER NOT NULL DEFAULT 0"],
-      ["locked_until", "INTEGER NOT NULL DEFAULT 0"]
+      ["locked_until", "INTEGER NOT NULL DEFAULT 0"],
+      ["created_at", "INTEGER NOT NULL DEFAULT 0"],
+      ["updated_at", "INTEGER NOT NULL DEFAULT 0"]
     ];
     for (const [name, definition] of missing) {
       if (!existing.has(name)) {
