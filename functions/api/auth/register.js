@@ -21,6 +21,29 @@ export async function onRequestPost({ request, env }) {
   const now = Math.floor(Date.now() / 1000);
 
   try {
+    // Keep production D1 auth resilient when an older users table exists.
+    // Add only columns that are actually missing, then continue normally.
+    const info = await env.DB.prepare("PRAGMA table_info(users)").all();
+    const existing = new Set((info.results || []).map(column => String(column.name)));
+    const missing = [
+      ["username", "TEXT NOT NULL DEFAULT ''"],
+      ["avatar_url", "TEXT NOT NULL DEFAULT ''"],
+      ["password_hash", "TEXT"],
+      ["password_salt", "TEXT"],
+      ["plan", "TEXT NOT NULL DEFAULT 'free'"],
+      ["credits_remaining", "INTEGER NOT NULL DEFAULT 100"],
+      ["login_failures", "INTEGER NOT NULL DEFAULT 0"],
+      ["locked_until", "INTEGER NOT NULL DEFAULT 0"]
+    ];
+    for (const [name, definition] of missing) {
+      if (!existing.has(name)) {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN " + name + " " + definition).run();
+      }
+    }
+    await env.DB.prepare("UPDATE users SET username='user-' || substr(id,1,12) WHERE username='' OR username IS NULL").run();
+    await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)").run();
+
+
     let user = await env.DB.prepare("SELECT * FROM users WHERE email=? LIMIT 1").bind(email).first();
     console.log("[Cookie register] database ready");
 
