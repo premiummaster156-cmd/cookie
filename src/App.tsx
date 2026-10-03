@@ -134,7 +134,8 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
 
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser}){
   const tabs:[SettingsTab,string,React.ReactNode][]=[["general","General",<SettingsIcon size={17}/>],["personalization","Personalization",<Plus size={17}/>],["data","Data controls",<Library size={17}/>],["notifications","Notifications",<Bell size={17}/>],["voice","Voice",<Volume2 size={17}/>],["account","Account",<UserRound size={17}/>],["about","About",<Info size={17}/>]];
-  const [mobileHome,setMobileHome]=useState(true);
+  const [mobileHome,setMobileHome]=useState(tab==="general");
+  useEffect(()=>{if(tab!=="general")setMobileHome(false)},[tab]);
   const Toggle=({k}:{k:string})=><button className={"toggle "+(settings[k]?"on":"")} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
   const openTab=(id:SettingsTab)=>{setTab(id);setMobileHome(false)};
   const Row=({title,desc,children}:{title:string;desc:string;children:React.ReactNode})=><div className="set-row"><div><b>{title}</b><span>{desc}</span></div>{children}</div>;
