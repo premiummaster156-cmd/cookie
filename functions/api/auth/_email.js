@@ -1,19 +1,8 @@
-import nodemailer from "nodemailer";
-import dns from "node:dns";
+import { connect } from "cloudflare:sockets";
 import { originOf } from "./_auth.js";
 
-function installWorkersDnsLookup() {
-  if (dns.lookup && dns.lookup.name === "cookieWorkersLookup") return;
-  dns.lookup = function cookieWorkersLookup(hostname, options, callback) {
-    const opts = typeof options === "function" ? {} : (options || {});
-    const cb = typeof options === "function" ? options : callback;
-    dns.promises.resolve4(hostname).then(addresses => {
-      if (opts.all) cb(null, addresses.map(address => ({ address, family: 4 })));
-      else cb(null, addresses[0], 4);
-    }).catch(cb);
-  };
-}
-installWorkersDnsLookup();
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 function required(env, key) {
   const value = String(env?.[key] || "").trim();
@@ -21,22 +10,169 @@ function required(env, key) {
   return value;
 }
 
-function transporter(env) {
+function b64(value) {
+  let binary = "";
+  const bytes = encoder.encode(String(value));
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+async function readSmtpResponse(reader) {
+  let buffer = "";
+  for (;;) {
+    const chunk = await reader.read();
+    if (chunk.done) throw new Error("SMTP connection closed unexpectedly");
+    buffer += decoder.decode(chunk.value, { stream: true });
+
+    const lines = buffer.split("\r\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!/^\\d{3}(?: |$)/.test(line)) continue;
+      const code = Number(line.slice(0, 3));
+      if (code >= 400) {
+        const error = new Error("SMTP " + code + ": " + line.slice(4));
+        error.responseCode = code;
+        throw error;
+      }
+      return { code, line };
+    }
+  }
+}
+
+async function writeLine(writer, value) {
+  await writer.write(encoder.encode(String(value) + "\r\n"));
+}
+
+async function smtpSend(env, { from, to, subject, text, html }) {
+  const host = String(env.SMTP_HOST || "smtp.gmail.com").trim();
+  const port = Number(env.SMTP_PORT || 587);
   const user = required(env, "SMTP_USER");
   const pass = required(env, "SMTP_PASS");
-  const smtpUrl = String(env.SMTP_URL || "").trim();
-  if (smtpUrl) return nodemailer.createTransport(smtpUrl);
-  const host = String(env.SMTP_HOST || "smtp.gmail.com").trim();
-  const port = Number(env.SMTP_PORT || 465);
   const secure = String(env.SMTP_SECURE || (port === 465 ? "true" : "false")).toLowerCase() === "true";
-  const servername = String(env.SMTP_TLS_SERVERNAME || "").trim();
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    ...(servername ? { tls: { servername } } : {})
-  });
+
+  if (![465, 587].includes(port)) {
+    throw new Error("Unsupported SMTP port. Cookie supports Gmail SMTP on ports 465 and 587.");
+  }
+
+  const socket = connect({ hostname: host, port }, { secureTransport: secure ? "on" : "starttls" });
+  const reader = socket.readable.getReader();
+  const writer = socket.writable.getWriter();
+
+  try {
+    await readSmtpResponse(reader);
+    await writeLine(writer, "EHLO cookie.ai");
+    await readSmtpResponse(reader);
+
+    let activeReader = reader;
+
+    if (!secure) {
+      await writeLine(writer, "STARTTLS");
+      await readSmtpResponse(activeReader);
+      activeReader.releaseLock();
+      writer.releaseLock();
+
+      const tlsSocket = socket.startTls();
+      activeReader = tlsSocket.readable.getReader();
+      const tlsWriter = tlsSocket.writable.getWriter();
+
+      await writeLine(tlsWriter, "EHLO cookie.ai");
+      await readSmtpResponse(activeReader);
+
+      await writeLine(tlsWriter, "AUTH LOGIN");
+      await readSmtpResponse(activeReader);
+      await writeLine(tlsWriter, b64(user));
+      await readSmtpResponse(activeReader);
+      await writeLine(tlsWriter, b64(pass));
+      await readSmtpResponse(activeReader);
+
+      await writeLine(tlsWriter, "MAIL FROM:<" + from + ">");
+      await readSmtpResponse(activeReader);
+      await writeLine(tlsWriter, "RCPT TO:<" + to + ">");
+      await readSmtpResponse(activeReader);
+      await writeLine(tlsWriter, "DATA");
+      await readSmtpResponse(activeReader);
+
+      const message = [
+        "From: Cookie <" + from + ">",
+        "To: " + to,
+        "Subject: " + subject,
+        "MIME-Version: 1.0",
+        "Content-Type: multipart/alternative; boundary=\"cookie-boundary\"",
+        "",
+        "--cookie-boundary",
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit",
+        "",
+        text,
+        "",
+        "--cookie-boundary",
+        "Content-Type: text/html; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit",
+        "",
+        html,
+        "",
+        "--cookie-boundary--",
+        ""
+      ].join("\r\n").replace(/\n\./g, "\n..");
+
+      await writeLine(tlsWriter, message.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n"));
+      await writeLine(tlsWriter, ".");
+      await readSmtpResponse(activeReader);
+      await writeLine(tlsWriter, "QUIT");
+      try { await readSmtpResponse(activeReader); } catch {}
+      activeReader.releaseLock();
+      tlsWriter.releaseLock();
+      return;
+    }
+
+    await writeLine(writer, "AUTH LOGIN");
+    await readSmtpResponse(reader);
+    await writeLine(writer, b64(user));
+    await readSmtpResponse(reader);
+    await writeLine(writer, b64(pass));
+    await readSmtpResponse(reader);
+
+    await writeLine(writer, "MAIL FROM:<" + from + ">");
+    await readSmtpResponse(reader);
+    await writeLine(writer, "RCPT TO:<" + to + ">");
+    await readSmtpResponse(reader);
+    await writeLine(writer, "DATA");
+    await readSmtpResponse(reader);
+
+    const message = [
+      "From: Cookie <" + from + ">",
+      "To: " + to,
+      "Subject: " + subject,
+      "MIME-Version: 1.0",
+      "Content-Type: multipart/alternative; boundary=\"cookie-boundary\"",
+      "",
+      "--cookie-boundary",
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      text,
+      "",
+      "--cookie-boundary",
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      html,
+      "",
+      "--cookie-boundary--",
+      ""
+    ].join("\r\n").replace(/\n\./g, "\n..");
+
+    await writeLine(writer, message.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n"));
+    await writeLine(writer, ".");
+    await readSmtpResponse(reader);
+    await writeLine(writer, "QUIT");
+    try { await readSmtpResponse(reader); } catch {}
+  } finally {
+    try { reader.releaseLock(); } catch {}
+    try { writer.releaseLock(); } catch {}
+    try { socket.close(); } catch {}
+  }
 }
 
 export async function sendVerificationEmail(request, env, { email, name, code, token, purpose = "signup" }) {
@@ -71,11 +207,5 @@ export async function sendVerificationEmail(request, env, { email, name, code, t
   <a href="${link}" style="display:inline-block;margin-top:8px;padding:12px 18px;background:#fff;color:#111;text-decoration:none;border-radius:12px;font-weight:700">Continue securely</a>
   <p style="font-size:12px;color:#777;line-height:1.6;margin-top:24px">If you did not request this email, you can safely ignore it.</p>
 </div></body></html>`;
-  await transporter(env).sendMail({
-    from,
-    to: email,
-    subject,
-    text,
-    html
-  });
+  await smtpSend(env, { from, to: email, subject, text, html });
 }
