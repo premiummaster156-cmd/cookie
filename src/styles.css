@@ -446,3 +446,25 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
   .cs-explorer-foot{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
 }
 @media (min-width: 761px){.cs-pane-head .mobile-only{display:none!important}}
+
+/* Mobile tool popover: keep the menu inside the viewport instead of anchoring
+   it to the narrow wrench button. */
+@media (max-width: 760px){
+  .tools-menu{
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:calc(78px + env(safe-area-inset-bottom));
+    width:auto;
+    max-width:none;
+    max-height:min(52dvh,380px);
+    overflow:auto;
+    z-index:260;
+    border-radius:14px;
+    box-shadow:0 20px 60px rgba(0,0,0,.55);
+  }
+  .tools-menu button{
+    min-height:50px;
+    padding:10px 11px;
+  }
+}
