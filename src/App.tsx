@@ -6,7 +6,7 @@ import {
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain,
-  RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
+  AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
   Volume2, X, Zap
 } from "lucide-react";
 
