@@ -13,8 +13,6 @@ async function access(request,env){
  const email=normalizeEmail(user.email);
  const member=await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
  if(email!==OWNER_EMAIL&&!member?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
- const google=await env.DB.prepare("SELECT id FROM oauth_accounts WHERE user_id=? AND provider='google' LIMIT 1").bind(user.id).first();
- if(!google)return {error:json({error:"Continue with Google to verify this Code Studio identity.",code:"GOOGLE_REQUIRED"},403)};
  return {user,owner:email===OWNER_EMAIL,member:{...member,role:email===OWNER_EMAIL?"owner":member?.role||"developer"}}
 }
 async function githubJson(url){const r=await fetch(url,{headers:{Accept:"application/vnd.github+json","User-Agent":"Cookie-Code-Studio"}});if(!r.ok)throw new Error("GitHub request failed: "+r.status);return r.json()}
