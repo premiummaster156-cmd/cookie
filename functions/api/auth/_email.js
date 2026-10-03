@@ -1,5 +1,19 @@
 import nodemailer from "nodemailer";
+import dns from "node:dns";
 import { originOf } from "./_auth.js";
+
+function installWorkersDnsLookup() {
+  if (dns.lookup && dns.lookup.name === "cookieWorkersLookup") return;
+  dns.lookup = function cookieWorkersLookup(hostname, options, callback) {
+    const opts = typeof options === "function" ? {} : (options || {});
+    const cb = typeof options === "function" ? options : callback;
+    dns.promises.resolve4(hostname).then(addresses => {
+      if (opts.all) cb(null, addresses.map(address => ({ address, family: 4 })));
+      else cb(null, addresses[0], 4);
+    }).catch(cb);
+  };
+}
+installWorkersDnsLookup();
 
 function required(env, key) {
   const value = String(env?.[key] || "").trim();
