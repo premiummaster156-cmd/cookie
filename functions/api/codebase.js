@@ -53,14 +53,31 @@ async function seedFromGithub(env,actor){
   const tree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees/"+BRANCH+"?recursive=1",String(env.GITHUB_TOKEN||"").trim());
   const rows=Array.isArray(tree?.tree)?tree.tree.filter(x=>x?.type==="blob"&&x?.path&&!x.path.startsWith(".git/")).slice(0,1200):[];
   if(!rows.length)return 0;
-  const t=now(),statements=[];
+  const existingRows=(await env.DB.prepare("SELECT path,github_sha,dirty,deleted FROM codebase_files").all()).results||[];
+  const existing=new Map(existingRows.map(x=>[x.path,x]));
+  const seen=new Set(),t=now(),statements=[];
   for(const item of rows){
     const path=cleanPath(item.path);if(!path||Number(item.size||0)>MAX_FILE_BYTES)continue;
-    statements.push(env.DB.prepare("INSERT OR IGNORE INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,?,0)")
-      .bind(path,"",mimeFor(path),0,Number(item.size||0),item.sha||null,"github-sync",t,t));
+    seen.add(path);
+    const prev=existing.get(path);
+    if(!prev){
+      statements.push(env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,?,0)")
+        .bind(path,"",mimeFor(path),0,Number(item.size||0),item.sha||null,"github-sync",t,t));
+    }else if(Number(prev.dirty||0)){
+      statements.push(env.DB.prepare("UPDATE codebase_files SET mime=?,size=?,deleted=0 WHERE path=?")
+        .bind(mimeFor(path),Number(item.size||0),path));
+    }else{
+      statements.push(env.DB.prepare("UPDATE codebase_files SET mime=?,size=?,github_sha=?,deleted=0,content=CASE WHEN COALESCE(github_sha,'')<>? THEN '' ELSE content END,updated_at=? WHERE path=?")
+        .bind(mimeFor(path),Number(item.size||0),item.sha||null,item.sha||null,t,path));
+    }
   }
-  if(statements.length)await env.DB.batch(statements);
-  return statements.length;
+  for(const prev of existingRows){
+    if(!seen.has(prev.path)&&!Number(prev.dirty||0)&&!Number(prev.deleted||0)){
+      statements.push(env.DB.prepare("UPDATE codebase_files SET deleted=1,updated_at=? WHERE path=?").bind(t,prev.path));
+    }
+  }
+  for(let i=0;i<statements.length;i+=80)await env.DB.batch(statements.slice(i,i+80));
+  return rows.length;
 }
 async function loadVirtual(env){
   const r=await env.DB.prepare("SELECT path,content,mime,is_binary,size,github_sha,updated_by,updated_at,COALESCE(deleted,0) AS deleted,COALESCE(dirty,0) AS dirty FROM codebase_files ORDER BY path LIMIT 1200").all();
@@ -187,8 +204,10 @@ async function getBranch(token=""){
   return githubJson("https://api.github.com/repos/"+REPO+"/git/ref/heads/"+BRANCH,token);
 }
 async function reviewWorkspace(env,user){
-  const files=await loadVirtual(env);const baseline=[];
-  for(const f of files.filter(x=>!x.deleted)){
+  const files=await loadVirtual(env);
+  const candidates=files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha));
+  const baseline=[];
+  for(const f of candidates){
     const b=await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim());baseline.push({path:f.path,...b});
   }
   const changes=changedFiles(files,baseline);const checks=deterministicChecks(changes);
@@ -253,10 +272,11 @@ async function handleGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
   const url=new URL(request.url),requested=cleanPath(url.searchParams.get("path")),action=String(url.searchParams.get("action")||"");
   const t=now();await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("cookie-owner",OWNER_EMAIL,"owner",1,t,t).run();
-  const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0)await seedFromGithub(env,a.user.email);
+  const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0||action==="state")await seedFromGithub(env,a.user.email);
   if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
   if(action==="diff"){
-    const files=await loadVirtual(env),baseline=[];for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
+    const files=await loadVirtual(env),baseline=[],candidates=files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha));
+    for(const f of candidates)baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
     const changes=changedFiles(files,baseline);return json({ok:true,changes:changes.map(c=>({...c,diff:diffText(c.before,c.after)}))});
   }
   if(requested){
