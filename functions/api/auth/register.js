@@ -1,10 +1,15 @@
 import { json, readJson } from "../_lib.js";
-import { createSession, dbAvailable, normalizeEmail, passwordHash, publicUser, uniqueUsername, withCookies, randomToken } from "./_auth.js";
+import { dbAvailable, normalizeEmail, passwordHash, uniqueUsername, randomToken } from "./_auth.js";
 import { issueEmailToken } from "./_tokens.js";
 import { sendVerificationEmail } from "./_email.js";
 
 export async function onRequestPost({ request, env }) {
-  if (!dbAvailable(env)) return json({ error: "Cookie auth database is not connected. Bind a D1 database as DB in Pages." }, 503);
+  console.log("[Cookie register] entered");
+  if (!dbAvailable(env)) {
+    console.error("[Cookie register] DB binding unavailable");
+    return json({ error: "Cookie auth database is not connected. Bind a D1 database as DB in Pages." }, 503);
+  }
+
   const body = await readJson(request);
   const email = normalizeEmail(body?.email);
   const password = String(body?.password || "");
@@ -17,6 +22,7 @@ export async function onRequestPost({ request, env }) {
   let user = await env.DB.prepare("SELECT * FROM users WHERE email=? LIMIT 1").bind(email).first();
 
   try {
+    console.log("[Cookie register] database ready");
     if (user) {
       if (user.email_verified) return json({ error: "An account already exists for this email." }, 409);
       const hashed = await passwordHash(password);
@@ -35,6 +41,8 @@ export async function onRequestPost({ request, env }) {
 
     const issued = await issueEmailToken(env, { userId:user.id, email, purpose:"signup" });
     if (!issued.ok) return json({ error: "Please wait " + issued.retryAfter + " seconds before requesting another code.", retryAfter: issued.retryAfter }, 429);
+
+    console.log("[Cookie register] sending verification email");
     await sendVerificationEmail(request, env, {
       email,
       name: user.name,
@@ -42,9 +50,16 @@ export async function onRequestPost({ request, env }) {
       token: issued.token,
       purpose: "signup"
     });
+
+    console.log("[Cookie register] verification email sent");
     return json({ ok:true, needsVerification:true, email });
   } catch (error) {
-    console.error("[Cookie register]", error);
+    console.error("[Cookie register] email failure", {
+      name: error?.name,
+      code: error?.code,
+      responseCode: error?.responseCode,
+      message: error?.message
+    });
     const code = String(error?.code || "");
     const responseCode = Number(error?.responseCode || 0);
     if (code === "EAUTH" || responseCode === 535) {
