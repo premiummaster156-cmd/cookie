@@ -789,6 +789,13 @@ export class LiquidGlass {
   constructor(element: HTMLElement, options: LiquidGlassOptions = {}) {
     this.element = element;
     this.options = this.resolve(options);
+    // Web glass needs a real scene behind it so Safari can build the same
+    // displaced backdrop path used by the SVG lens. The app exposes a dedicated
+    // ambient scene sibling specifically for this purpose.
+    if (!this.options.backdropSource && typeof document !== 'undefined') {
+      const scene = document.querySelector<HTMLElement>('.cookie-ambient-scene');
+      if (scene) this.options.backdropSource = scene;
+    }
     this.quality = 'balanced';
     this.root = this.resolveRoot();
 
@@ -823,7 +830,7 @@ export class LiquidGlass {
     // The expensive map build is time-sliced (BuildQueue) so a page full of
     // glass doesn't freeze on load — the tint + edges show immediately and the
     // refraction/frost materializes within a few frames.
-    if (this.usesFallback && !this.reducedTransparency && this.tryInstallGpu()) {
+    if (this.usesFallback && !this.reducedTransparency && !(IS_MOBILE && NO_HOVER) && this.tryInstallGpu()) {
       this.usesGpu = true;
     } else if (this.usesFallback) {
       this.applyFallback();
@@ -1016,7 +1023,7 @@ export class LiquidGlass {
   resume(): void {
     if (!this.suspended || this.destroyed) return;
     this.suspended = false;
-    if (this.usesFallback && !this.reducedTransparency && this.tryInstallGpu()) {
+    if (this.usesFallback && !this.reducedTransparency && !(IS_MOBILE && NO_HOVER) && this.tryInstallGpu()) {
       this.usesGpu = true;
     } else if (this.usesFallback) {
       this.applyFallback();
