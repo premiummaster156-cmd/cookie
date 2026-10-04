@@ -2954,7 +2954,7 @@ html[data-theme="light"] .install-app-modal{background:rgba(249,249,250,.84);bor
   content:"";
   position:absolute;
   inset:-22%;
-  z-index:-2;
+  z-index:0;
   pointer-events:none;
   background:
     radial-gradient(42% 34% at 14% 16%,rgba(255,255,255,.13),transparent 62%),
@@ -2968,7 +2968,7 @@ html[data-theme="light"] .install-app-modal{background:rgba(249,249,250,.84);bor
 .cookie-ambient-scene{
   position:absolute;
   inset:0;
-  z-index:-1;
+  z-index:0;
   pointer-events:none;
   background:
     radial-gradient(28% 24% at 30% 28%,rgba(255,255,255,.055),transparent 70%),
@@ -2981,6 +2981,11 @@ html[data-theme="light"] .install-app-modal{background:rgba(249,249,250,.84);bor
   50%{transform:translate3d(1.5%,1%,0) scale(1.11)}
   100%{transform:translate3d(3%,-1.5%,0) scale(1.09)}
 }
+
+
+.cookie-app>.sidebar{z-index:40}
+.cookie-app>.main-shell{z-index:1}
+.cookie-app>.mobile-nav-launcher{z-index:60}
 
 .main-shell{
   background:transparent!important;
