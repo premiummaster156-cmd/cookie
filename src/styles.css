@@ -2074,3 +2074,228 @@ html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
 @media(prefers-reduced-transparency:reduce){
   .voice-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
+
+
+/* COOKIE LIQUID GLASS — interaction-first pass */
+:root{
+  --lg-clear:rgba(255,255,255,.055);
+  --lg-clear-strong:rgba(255,255,255,.085);
+  --lg-line:rgba(255,255,255,.11);
+  --lg-soft:rgba(255,255,255,.045);
+  --lg-shadow:0 24px 70px rgba(0,0,0,.34);
+}
+
+/* Kill the "every button is a card" look. Controls live on the glass plane. */
+.top-icon,.mobile-menu,.composer-icon,.mobile-nav-launcher,
+.sidebar .nav-item,.sidebar .chat-row,.sidebar .new-chat,
+.topbar button,.composer button{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.top-icon,.mobile-menu,.composer-icon{
+  position:relative;
+  overflow:visible;
+  transition:transform .24s cubic-bezier(.2,.8,.2,1),color .2s ease,filter .24s ease;
+}
+.top-icon::before,.mobile-menu::before,.composer-icon::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.14),rgba(255,255,255,0) 68%);
+  opacity:0;
+  transform:scale(.55);
+  transition:opacity .22s ease,transform .3s cubic-bezier(.16,1,.3,1);
+  pointer-events:none;
+}
+.top-icon:hover::before,.mobile-menu:hover::before,.composer-icon:hover::before,
+.top-icon:focus-visible::before,.mobile-menu:focus-visible::before,.composer-icon:focus-visible::before{
+  opacity:1;transform:scale(1);
+}
+.top-icon:active,.mobile-menu:active,.composer-icon:active{transform:scale(.86)}
+.top-icon:active::before,.mobile-menu:active::before,.composer-icon:active::before{
+  background:radial-gradient(circle,rgba(255,255,255,.3),transparent 66%);
+}
+
+/* Navigation becomes one quiet floating material plane. */
+.topbar{
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018))!important;
+  border-bottom:1px solid rgba(255,255,255,.06)!important;
+  box-shadow:0 12px 36px rgba(0,0,0,.08)!important;
+  isolation:isolate;
+}
+.topbar::after{
+  content:"";
+  position:absolute;
+  left:4%;
+  right:4%;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  opacity:.7;
+  pointer-events:none;
+}
+
+/* Sidebar: sheet, not a panel full of boxes. */
+.sidebar{
+  overflow:hidden!important;
+  background:linear-gradient(135deg,rgba(32,34,39,.76),rgba(16,17,20,.68))!important;
+  border:1px solid rgba(255,255,255,.105)!important;
+  box-shadow:32px 30px 100px rgba(0,0,0,.48),inset 1px 1px 0 rgba(255,255,255,.09),inset -1px 0 rgba(255,255,255,.035)!important;
+  -webkit-backdrop-filter:blur(42px) saturate(155%) contrast(105%)!important;
+  backdrop-filter:blur(42px) saturate(155%) contrast(105%)!important;
+}
+.sidebar::before{
+  content:"";
+  position:absolute;
+  inset:-30% -15%;
+  background:
+    radial-gradient(420px 260px at 8% 5%,rgba(255,255,255,.09),transparent 70%),
+    radial-gradient(360px 260px at 90% 88%,rgba(92,108,255,.055),transparent 72%);
+  animation:lg-ambient 11s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes lg-ambient{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(3%,2%,0) scale(1.05)}}
+.sidebar>*{position:relative;z-index:1}
+.sidebar .nav-item,.sidebar .chat-row,.sidebar .new-chat{
+  border-radius:13px!important;
+  transition:background .25s ease,transform .28s cubic-bezier(.2,.8,.2,1),color .2s ease!important;
+}
+.sidebar .nav-item:hover,.sidebar .chat-row:hover,.sidebar .new-chat:hover{
+  background:rgba(255,255,255,.055)!important;
+  transform:translateX(3px);
+}
+.sidebar .nav-item:active,.sidebar .chat-row:active,.sidebar .new-chat:active{transform:scale(.985)}
+.sidebar .nav-item.active{
+  background:linear-gradient(90deg,rgba(255,255,255,.085),rgba(255,255,255,.035))!important;
+  box-shadow:inset 2px 0 rgba(255,255,255,.4)!important;
+}
+
+/* Popovers materialize from their source instead of appearing as static rectangles. */
+.attach-menu,.tools-menu,.model-menu,.row-menu,.new-menu,.profile-menu{
+  transform-origin:var(--popover-origin, bottom left);
+  animation:lg-pop .32s cubic-bezier(.16,1,.3,1) both;
+  background:linear-gradient(145deg,rgba(42,44,49,.91),rgba(20,21,25,.87))!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 30px 100px rgba(0,0,0,.48),inset 1px 1px 0 rgba(255,255,255,.105),inset -1px -1px rgba(255,255,255,.025)!important;
+  -webkit-backdrop-filter:blur(40px) saturate(155%)!important;
+  backdrop-filter:blur(40px) saturate(155%)!important;
+}
+@keyframes lg-pop{
+  0%{opacity:0;transform:translateY(7px) scale(.88);filter:blur(5px)}
+  55%{opacity:1;transform:translateY(-1px) scale(1.012);filter:blur(0)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+}
+.attach-menu button,.tools-menu button{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  transition:background .2s ease,transform .22s cubic-bezier(.2,.8,.2,1)!important;
+}
+.attach-menu button:hover,.tools-menu button:hover{
+  background:rgba(255,255,255,.065)!important;
+  transform:translateX(2px);
+}
+.attach-menu button:active,.tools-menu button:active{transform:scale(.98)}
+
+/* Composer: one continuous piece of material; no mini-cards inside it. */
+.composer-wrap{isolation:isolate}
+.composer{
+  position:relative!important;
+  overflow:visible!important;
+  background:linear-gradient(145deg,rgba(48,50,55,.78),rgba(24,25,29,.72))!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 22px 65px rgba(0,0,0,.35),inset 1px 1px 0 rgba(255,255,255,.105),inset -1px -1px rgba(255,255,255,.025)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(150%)!important;
+  backdrop-filter:blur(32px) saturate(150%)!important;
+}
+.composer::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,.08) 48%,transparent 70%);
+  background-size:240% 100%;
+  animation:lg-sheen 6.5s ease-in-out infinite;
+  opacity:.35;
+  pointer-events:none;
+}
+@keyframes lg-sheen{
+  0%,55%{background-position:180% 0}
+  80%,100%{background-position:-60% 0}
+}
+.composer>*{position:relative;z-index:1}
+.composer textarea{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.composer-icon.active{
+  color:#fff!important;
+  filter:drop-shadow(0 0 10px rgba(150,160,255,.5));
+}
+
+/* Selected primary actions get the only real tint. */
+.send-button{
+  border:0!important;
+  background:rgba(255,255,255,.9)!important;
+  color:#111!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.9)!important;
+  transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s ease!important;
+}
+.send-button:hover{transform:scale(1.05);box-shadow:0 8px 24px rgba(0,0,0,.28)!important}
+.send-button:active{transform:scale(.88)}
+
+/* Voice: replace the generic glowing ball with a living glass waveform. */
+.voice-orb{
+  position:relative!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  animation:voice-breathe 2.8s ease-in-out infinite!important;
+}
+.voice-orb::before,.voice-orb::after{
+  content:"";
+  position:absolute;
+  inset:7%;
+  border-radius:50%;
+  border:1px solid rgba(177,187,255,.38);
+  box-shadow:inset 0 0 35px rgba(111,128,255,.12),0 0 50px rgba(80,95,255,.12);
+  animation:voice-ring 2.2s ease-out infinite;
+}
+.voice-orb::after{inset:19%;animation-delay:-1.1s;border-color:rgba(220,225,255,.28)}
+.voice-orb i{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:5px!important;
+  height:58px!important;
+  margin:-29px 0 0 -2.5px!important;
+  border-radius:999px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(122,137,255,.6))!important;
+  box-shadow:0 0 18px rgba(125,140,255,.45)!important;
+  transform-origin:50% 50%;
+  animation:voice-wave 1.05s ease-in-out infinite alternate!important;
+}
+.voice-orb i:nth-child(2){transform:rotate(120deg);animation-delay:-.35s}
+.voice-orb i:nth-child(3){transform:rotate(240deg);animation-delay:-.7s}
+@keyframes voice-breathe{50%{transform:scale(1.035)}}
+@keyframes voice-ring{0%{transform:scale(.76);opacity:.15}45%{opacity:.7}100%{transform:scale(1.12);opacity:0}}
+@keyframes voice-wave{0%{height:26px;opacity:.45}100%{height:72px;opacity:1}}
+.voice-overlay h2{font-weight:650!important}
+.voice-actions button{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.voice-actions button:first-child{
+  background:rgba(255,255,255,.92)!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.25)!important;
+}
+
+/* Touch feedback: light follows the pressed control. */
+@media (hover:none){
+  .top-icon:active::before,.mobile-menu:active::before,.composer-icon:active::before{opacity:1;transform:scale(1.15)}
+  .sidebar .nav-item:active,.sidebar .chat-row:active{background:rgba(255,255,255,.09)!important}
+}
+@media (prefers-reduced-motion:reduce){
+  .sidebar::before,.composer::before,.voice-orb,.voice-orb::before,.voice-orb::after,.voice-orb i{animation:none!important}
+  .attach-menu,.tools-menu,.model-menu,.row-menu,.new-menu,.profile-menu{animation:none!important}
+}
