@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { LiquidGlass, LiquidInteractive } from "./index";
 import type { LiquidGlassOptions } from "./core/types";
+import "./liquid-glass.css";
 
 type GlassRef<T extends HTMLElement> = (node: T | null) => void;
 
