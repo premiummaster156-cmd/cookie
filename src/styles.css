@@ -4050,3 +4050,188 @@ html[data-theme="light"] .cookie-liquid-glass-backdrop.liquid-glass::after{
       rgba(255,255,255,.78)
     ) border-box!important;
 }
+
+
+/* ==========================================================================
+   OPTICAL GLASS v3 — performance + hierarchy correction
+   The previous interaction layer created a giant purple circle and forced
+   repeated compositor work. Real Liquid Glass should stay quiet at rest and
+   flex locally under touch. The actual refraction is provided by the SVG
+   displacement filter; touch only moves a lightweight specular lens.
+   ========================================================================== */
+
+/* No giant synthetic blobs. Let the real page/environment be the backdrop. */
+.cookie-app::before{
+  background:
+    radial-gradient(34% 24% at 12% 8%,rgba(255,255,255,.075),transparent 72%),
+    radial-gradient(30% 28% at 90% 18%,rgba(90,125,220,.075),transparent 74%),
+    radial-gradient(34% 30% at 72% 82%,rgba(160,95,210,.055),transparent 76%)!important;
+  filter:blur(46px)!important;
+  opacity:.72!important;
+}
+.cookie-ambient-scene{
+  background:transparent!important;
+  filter:none!important;
+}
+
+/* Remove the "AI card" look: glass has no painted fill, only optical
+   separation, backdrop blur and a restrained specular edge. */
+.topbar-glass-layer,
+.sidebar-glass-layer,
+.composer-glass-layer{
+  background:transparent!important;
+  border:0!important;
+}
+.topbar-glass-layer{
+  -webkit-backdrop-filter:blur(18px) saturate(145%)!important;
+  backdrop-filter:blur(18px) saturate(145%)!important;
+  box-shadow:inset 0 -1px rgba(255,255,255,.075)!important;
+}
+.sidebar-glass-layer{
+  -webkit-backdrop-filter:blur(26px) saturate(150%)!important;
+  backdrop-filter:blur(26px) saturate(150%)!important;
+  box-shadow:inset -1px 0 rgba(255,255,255,.10)!important;
+}
+.composer-glass-layer{
+  -webkit-backdrop-filter:blur(24px) saturate(155%)!important;
+  backdrop-filter:blur(24px) saturate(155%)!important;
+}
+
+/* The sheet itself is floating; never draw a complete rectangle around it. */
+@media(max-width:900px){
+  .sidebar{
+    border:0!important;
+    border-right:1px solid rgba(255,255,255,.12)!important;
+    border-radius:0 30px 30px 0!important;
+    box-shadow:
+      22px 0 70px rgba(0,0,0,.34),
+      inset -1px 0 rgba(255,255,255,.09)!important;
+    background:transparent!important;
+  }
+  .sidebar-glass-layer{
+    border-radius:inherit!important;
+    background:rgba(18,19,23,.16)!important;
+  }
+}
+
+/* Resting material: subtle rim, no fake inner rectangle. */
+.cookie-liquid-glass-backdrop.liquid-glass{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.10),
+    inset 0 -1px rgba(0,0,0,.10),
+    0 12px 42px rgba(0,0,0,.12)!important;
+}
+
+/* The previous ::before was a clipped 80px+ circle. Replace it with a
+   small, localized ring. No backdrop-filter, no transform, no repaint-heavy
+   clip-path. PointerField updates only CSS variables at rAF frequency. */
+.cookie-liquid-glass-backdrop.liquid-glass::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+  z-index:8!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  background:
+    radial-gradient(
+      circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      rgba(255,255,255,.12) 0,
+      rgba(255,255,255,.055) 16px,
+      transparent 38px
+    ),
+    radial-gradient(
+      circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      transparent 0,
+      transparent 25px,
+      rgba(255,255,255,.16) 27px,
+      rgba(255,255,255,.04) 29px,
+      transparent 33px
+    )!important;
+  opacity:var(--lg-wave-energy,0)!important;
+  transform:none!important;
+  transition:none!important;
+  will-change:opacity,background-position!important;
+}
+
+/* Touch should flex the existing optical edge instead of becoming a glowing
+   purple orb. */
+@media(hover:none){
+  .cookie-liquid-glass-backdrop.liquid-glass:active::after,
+  .cookie-liquid-glass-backdrop.liquid-glass:focus-within::after{
+    opacity:.95!important;
+  }
+}
+
+/* Controls are intentionally nearly backgroundless. The material is the
+   surface; controls don't become little AI-generated cards. */
+.top-icon,
+.mobile-menu,
+.composer-icon,
+.chat-row-more{
+  background:transparent!important;
+  border-color:rgba(255,255,255,.08)!important;
+  box-shadow:none!important;
+}
+.top-icon:hover,
+.mobile-menu:hover,
+.composer-icon:hover,
+.chat-row-more:hover{
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.13)!important;
+}
+
+/* Model selector is a native-feeling toolbar control, not a pill card. */
+.model-picker{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  border-radius:14px!important;
+}
+.model-picker:hover{
+  background:rgba(255,255,255,.06)!important;
+}
+
+/* Popovers: one floating material, anchored to their source. */
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  background:rgba(22,23,27,.48)!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:20px!important;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.38),
+    inset 0 1px rgba(255,255,255,.12)!important;
+  -webkit-backdrop-filter:blur(26px) saturate(155%)!important;
+  backdrop-filter:blur(26px) saturate(155%)!important;
+}
+
+/* Keep the composer visually close to the iOS accessory style. */
+.composer{
+  background:rgba(255,255,255,.035)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:
+    0 14px 42px rgba(0,0,0,.20),
+    inset 0 1px rgba(255,255,255,.13)!important;
+}
+.composer-glass-layer{
+  border-radius:inherit!important;
+}
+
+/* Reduce expensive motion/compositor work on iPhone. */
+@media(max-width:900px){
+  .cookie-liquid-glass-backdrop.liquid-glass{
+    will-change:auto!important;
+  }
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    will-change:opacity,background-position!important;
+  }
+}
