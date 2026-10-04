@@ -116,7 +116,7 @@ function planRank(plan) {
 function safeCalculate(expression) {
   const normalized=String(expression||"").replace(/,/g,"").replace(/\^/g,"**").trim().slice(0,300);
   if(!normalized) return {ok:false,error:"Enter an arithmetic expression."};
-  if(!/^[0-9+\\-*/%().\\s*]+$/.test(normalized)) return {ok:false,error:"Calculator only accepts arithmetic expressions."};
+  if(!/^[0-9+*/%().\\s-]+$/.test(normalized)) return {ok:false,error:"Calculator only accepts arithmetic expressions."};
   try {
     const value=Function('"use strict";return ('+normalized+')')();
     if(typeof value!=="number" || !Number.isFinite(value)) return {ok:false,error:"The result is not a finite number."};
