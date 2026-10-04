@@ -643,6 +643,12 @@ function parseBgLuminance(color: string): number | null {
 
 type WebkitStyle = CSSStyleDeclaration & { webkitBackdropFilter?: string };
 
+function setBackdropStyle(element: HTMLElement, value: string): void {
+  element.style.backdropFilter = value;
+  (element.style as WebkitStyle).webkitBackdropFilter = value;
+  element.style.setProperty('--lg-backdrop-filter', value);
+}
+
 class LiquidGlass {
   private static readonly autoQualityInstances = new Set<LiquidGlass>();
   private static autoQualityRaf = 0;
@@ -690,7 +696,6 @@ class LiquidGlass {
   /** Primary GPU refraction (shared WebGL canvas) is active for this element. */
   private usesGpu = false;
   private gpuHandle: { destroy: () => void; refresh: () => void } | null = null;
-  private touchLensLastAt = 0;
   /** Tracks devicePixelRatio so a browser-zoom / monitor switch re-bakes maps. */
   private lastDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   /** Cancels a queued (time-sliced) initial build if it hasn't run yet. */
@@ -934,7 +939,7 @@ class LiquidGlass {
     this.removeScrollSafeTransitionLayer();
     this.removeFallbackFx();
     this.teardownGpu();
-    this.element.style.backdropFilter = 'none';
+    setBackdropStyle(this.element, 'none');
     (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
   }
 
@@ -948,7 +953,7 @@ class LiquidGlass {
       this.applyFallback();
     } else if (this.filter) {
       const css = this.filter.url;
-      this.element.style.backdropFilter = css;
+      setBackdropStyle(this.element, css);
       (this.element.style as WebkitStyle).webkitBackdropFilter = css;
     } else {
       this.installFilter();
@@ -986,9 +991,11 @@ class LiquidGlass {
     this.filter?.destroy();
     this.filter = null;
     unregisterPointerLight(this.element);
-    this.element.style.backdropFilter = '';
+    setBackdropStyle(this.element, '');
     (this.element.style as WebkitStyle).webkitBackdropFilter = '';
     if (this.options.edges) this.element.style.boxShadow = '';
+    this.element.style.removeProperty('--lg-shadow');
+    this.element.style.removeProperty('--lg-tint');
   }
 
   // ── internals ────────────────────────────────────────────────────────────
@@ -1140,7 +1147,7 @@ class LiquidGlass {
       this.removeScrollSafeTransitionLayer();
     }
     const css = this.scrollSafeCssForMode(mode);
-    this.element.style.backdropFilter = css;
+    setBackdropStyle(this.element, css);
     (this.element.style as WebkitStyle).webkitBackdropFilter = css;
   }
 
@@ -1238,7 +1245,7 @@ class LiquidGlass {
       this.options.fallbackFilter === DEFAULT_OPTIONS.fallbackFilter
         ? this.profiledFallbackFilter()
         : this.options.fallbackFilter;
-    this.element.style.backdropFilter = css;
+    setBackdropStyle(this.element, css);
     (this.element.style as WebkitStyle).webkitBackdropFilter = css;
     if (this.fallbackEnhanced()) this.scheduleBuild(() => this.installFallbackFx());
   }
@@ -1498,7 +1505,7 @@ class LiquidGlass {
   }
 
   private dropOwnBackdrop(): void {
-    this.element.style.backdropFilter = 'none';
+    setBackdropStyle(this.element, 'none');
     (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
   }
 
@@ -1544,7 +1551,7 @@ class LiquidGlass {
             this.scheduleBuild(() => this.installFilter());
           } else {
             const css = this.scrollSafeCssForMode(this.scrollSafeMode);
-            this.element.style.backdropFilter = css;
+            setBackdropStyle(this.element, css);
             (this.element.style as WebkitStyle).webkitBackdropFilter = css;
           }
         } else {
@@ -1552,7 +1559,7 @@ class LiquidGlass {
           // cost of any built one (keep it for a cheap re-attach on return).
           this.cancelPendingBuild();
           if (this.filter) {
-            this.element.style.backdropFilter = 'none';
+            setBackdropStyle(this.element, 'none');
             (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
           }
         }
@@ -1671,7 +1678,7 @@ class LiquidGlass {
     });
 
     const css = this.scrollSafeCssForMode(this.scrollSafeMode);
-    this.element.style.backdropFilter = css;
+    setBackdropStyle(this.element, css);
     (this.element.style as WebkitStyle).webkitBackdropFilter = css;
   }
 
@@ -1763,7 +1770,9 @@ class LiquidGlass {
     const tint = this.options.tint ?? this.variantTint();
     // On the GPU path the shader applies the tint; the element stays a
     // transparent window. Otherwise the element background carries the tint.
-    this.element.style.backgroundColor = this.usesGpu ? 'transparent' : tint;
+    const surfaceTint = this.usesGpu ? 'transparent' : tint;
+    this.element.style.backgroundColor = surfaceTint;
+    this.element.style.setProperty('--lg-tint', surfaceTint);
     this.element.dataset.scheme = this.resolveScheme();
     // Mark adaptive elements so the stylesheet can flip the label color to keep
     // it legible against the resolved appearance (dark text on light glass,
@@ -1803,7 +1812,9 @@ class LiquidGlass {
     const inset = dark
       ? 'inset 0 0 0 0.5px rgba(255,255,255,0.07), inset 0 1.5px 2px rgba(255,255,255,0.1), inset 0 -3px 6px rgba(0,0,0,0.16)'
       : 'inset 0 0 0 0.5px rgba(255,255,255,0.1), inset 0 1.5px 2px rgba(255,255,255,0.18), inset 0 -3px 6px rgba(0,0,0,0.06)';
-    this.element.style.boxShadow = `${inset}, ${float}`;
+    const shadow = `${inset}, ${float}`;
+    this.element.style.boxShadow = shadow;
+    this.element.style.setProperty('--lg-shadow', shadow);
   }
 
   /**
