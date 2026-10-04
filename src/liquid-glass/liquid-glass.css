@@ -1,0 +1,108 @@
+/**
+ * Liquid Glass helper styles vendored from Meapri/liquid-glass-web.
+ * The engine sets backdrop-filter/background/radius inline.
+ */
+.liquid-glass{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.22),0 0 6px rgba(0,0,0,.12);
+  border-radius:22px;
+  transition:transform 200ms ease,box-shadow 200ms ease;
+  --lg-pointer-x:.5;
+  --lg-pointer-y:.5;
+  --lg-glow:0;
+  --lg-illum:0;
+  --lg-illum-x:.5;
+  --lg-illum-y:.5;
+}
+.liquid-glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:var(--lg-illum,0);
+  background:radial-gradient(calc(34% + var(--lg-illum,0) * 85%) circle at calc(var(--lg-illum-x,.5) * 100%) calc(var(--lg-illum-y,.5) * 100%),rgba(255,255,255,.26),transparent 70%);
+  z-index:9;
+}
+.liquid-glass::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:var(--lg-glow,0);
+  transition:opacity 220ms ease;
+  border:1.5px solid transparent;
+  background:radial-gradient(220px circle at calc(var(--lg-pointer-x) * 100%) calc(var(--lg-pointer-y) * 100%),rgba(255,255,255,.95) 0%,rgba(255,255,255,.5) 18%,transparent 46%) border-box;
+  -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0) border-box;
+  -webkit-mask-composite:destination-out;
+  mask-composite:exclude;
+  z-index:10;
+}
+.lg-scroll-safe-layer{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  z-index:-1;
+  opacity:0;
+  background:var(--lg-scroll-safe-tint,transparent);
+  -webkit-backdrop-filter:var(--lg-scroll-safe-filter,none);
+  backdrop-filter:var(--lg-scroll-safe-filter,none);
+  transition:opacity var(--lg-scroll-safe-duration,180ms) ease;
+  will-change:opacity;
+}
+.liquid-glass[data-scheme="dark"]{
+  color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.42);
+}
+.liquid-glass[data-adaptive]{
+  transition:transform 200ms ease,box-shadow 460ms ease,background-color 460ms ease,color 460ms ease,text-shadow 460ms ease;
+}
+.liquid-glass[data-adaptive][data-scheme="light"]{
+  color:#1c1c22;
+  text-shadow:0 1px 1px rgba(255,255,255,.45);
+}
+.lg-interactive{
+  transition:transform 400ms cubic-bezier(.34,1.56,.64,1),box-shadow 400ms cubic-bezier(.34,1.56,.64,1),filter 400ms ease;
+  cursor:pointer;
+  --lg-pointer-x:.5;
+  --lg-pointer-y:.5;
+  --lg-tilt-x:0deg;
+  --lg-tilt-y:0deg;
+  transform:perspective(1200px) rotateX(var(--lg-tilt-x)) rotateY(var(--lg-tilt-y));
+  transform-style:preserve-3d;
+}
+.lg-interactive:hover{
+  transform:perspective(1200px) rotateX(var(--lg-tilt-x)) rotateY(var(--lg-tilt-y)) translateY(-2px) scale3d(1.02,1.02,1.02);
+  z-index:10;
+}
+.lg-interactive:active{
+  transform:perspective(1200px) rotateX(calc(var(--lg-tilt-x) * .5)) rotateY(calc(var(--lg-tilt-y) * .5)) translateY(2px) scale3d(1.03,.92,1);
+  transition:transform 300ms cubic-bezier(.4,0,.2,1.4),box-shadow 300ms cubic-bezier(.4,0,.2,1.4);
+}
+.lg-entrance,.lg-materialize{
+  animation:lg-spring-in 800ms cubic-bezier(.34,1.56,.64,1) forwards;
+  opacity:0;
+  transform:translateY(20px) scale(.95);
+}
+@keyframes lg-spring-in{0%{opacity:0;transform:translateY(20px) scale(.95)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.lg-dematerialize{
+  animation:lg-spring-out 380ms cubic-bezier(.4,0,1,1) forwards;
+  pointer-events:none;
+}
+@keyframes lg-spring-out{to{opacity:0;transform:translateY(10px) scale(.94)}}
+@media(prefers-reduced-motion:reduce){
+  .lg-interactive,.lg-interactive:hover,.lg-interactive:active{
+    transform:none!important;
+    transition:opacity 200ms ease,box-shadow 200ms ease;
+  }
+  .lg-entrance,.lg-materialize,.lg-dematerialize{
+    animation:none;
+    opacity:1;
+    transform:none;
+  }
+}
