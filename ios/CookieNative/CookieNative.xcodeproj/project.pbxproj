@@ -172,6 +172,8 @@
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				INFOPLIST_FILE = CookieNative/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cookie.ai.native;
+				PRODUCT_NAME = CookieNative;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
