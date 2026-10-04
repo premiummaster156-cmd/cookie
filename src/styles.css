@@ -551,3 +551,15 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
   .mobile-sidebar-trigger:active{transform:scale(.94)}
 }
 @media(min-width:901px){.mobile-sidebar-trigger{display:none!important}}
+
+.public-share{min-height:100dvh;overflow:auto;background:var(--bg);padding:28px 16px 60px}
+.public-share-card{width:min(900px,100%);margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.28)}
+.public-share-head{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.public-share-brand{display:flex;align-items:center;gap:10px}.public-share-brand>div{display:flex;flex-direction:column;gap:2px}.public-share-brand strong{font-size:14px}.public-share-brand span{font-size:10px;color:var(--muted)}
+.public-share-open{padding:8px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--hover);font-size:11px}.public-share-open:hover{background:var(--active)}
+.public-share-title{padding:24px 24px 8px;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.public-share-messages{padding:8px 24px 28px}.public-share-message{display:grid;grid-template-columns:30px minmax(0,1fr);gap:11px;padding:18px 0;border-bottom:1px solid var(--line)}.public-share-message:last-child{border-bottom:0}
+.public-share-avatar{display:flex;justify-content:center;padding-top:2px}.public-share-body{min-width:0}.public-share-author{font-size:11px;font-weight:700;margin-bottom:6px;color:#c9c9c9}.public-share-message .rich,.public-share-message .user-content{font-size:14px}
+.public-share-foot{padding:12px 24px;border-top:1px solid var(--line);font-size:9px;color:var(--faint);text-align:center}
+.public-share-error{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:var(--bg)}.public-share-error h1{font-size:24px;margin:16px 0 6px}.public-share-error p{max-width:440px;color:var(--muted);font-size:12px}.public-share-error button{margin-top:14px;padding:9px 14px;border-radius:9px;background:#eee;color:#222;font-size:11px}
+@media(max-width:560px){.public-share{padding:0}.public-share-card{border-radius:0;border-left:0;border-right:0;min-height:100dvh}.public-share-head{padding:0 12px}.public-share-title{padding:20px 14px 8px;font-size:18px}.public-share-messages{padding:6px 14px 24px}}
