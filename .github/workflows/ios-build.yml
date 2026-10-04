@@ -1,0 +1,32 @@
+name: Cookie Native iOS build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios/CookieNative
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build CookieNative for iOS
+        run: |
+          xcodebuild             -project CookieNative.xcodeproj             -scheme CookieNative             -configuration Debug             -sdk iphoneos             -destination "generic/platform=iOS"             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             build
