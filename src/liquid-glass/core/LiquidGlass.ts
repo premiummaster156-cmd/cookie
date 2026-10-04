@@ -1764,7 +1764,7 @@ export class LiquidGlass {
     this.removeScrollSafeTransitionLayer();
     this.teardownGpu();
     this.usesFallback = this.shouldFallback();
-    if (this.usesFallback && !this.reducedTransparency && !this.suspended && this.tryInstallGpu()) {
+    if (this.usesFallback && !this.reducedTransparency && !this.suspended && !(IS_MOBILE && NO_HOVER) && this.tryInstallGpu()) {
       this.usesGpu = true;
     } else if (this.usesFallback) {
       this.applyFallback();
