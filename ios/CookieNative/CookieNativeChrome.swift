@@ -5,6 +5,14 @@ struct CookieNativeTopBar: View {
     let onBack: () -> Void
     let onMenu: () -> Void
     let onNewChat: () -> Void
+    let modelName: String
+    let onModel: (String) -> Void
+
+    private let models: [(String, String)] = [
+        ("standard", "CPT-1"),
+        ("max", "CPT-2 MAX"),
+        ("ultra", "CPT-3 ULTRA")
+    ]
 
     var body: some View {
         GlassEffectContainer(spacing: 12) {
@@ -30,12 +38,33 @@ struct CookieNativeTopBar: View {
 
                 Spacer(minLength: 0)
 
-                Text("Cookie")
-                    .font(.system(size: 17, weight: .semibold))
-                    .frame(minWidth: 88)
+                Menu {
+                    ForEach(models, id: .0) { model in
+                        Button {
+                            onModel(model.0)
+                        } label: {
+                            HStack {
+                                Text(model.1)
+                                if model.0 == modelName {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    VStack(spacing: 1) {
+                        Text("Cookie")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text(models.first(where: { $0.0 == modelName })?.1 ?? "CPT-1")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minWidth: 96)
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
+                    .padding(.vertical, 7)
                     .glassEffect(.regular, in: Capsule())
+                }
+                .accessibilityLabel("Cookie model")
 
                 Spacer(minLength: 0)
 
