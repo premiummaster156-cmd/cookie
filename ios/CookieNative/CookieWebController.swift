@@ -48,4 +48,11 @@ final class CookieWebController: ObservableObject {
     func goBack() {
         webView?.goBack()
     }
+
+    func readModel(completion: @escaping (String) -> Void) {
+        webView?.evaluateJavaScript("localStorage.getItem('cookie_model') || 'standard'") { value, _ in
+            let model = (value as? String) ?? "standard"
+            Task { @MainActor in completion(model) }
+        }
+    }
 }
