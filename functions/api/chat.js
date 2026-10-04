@@ -223,7 +223,7 @@ async function executeImageTool(env, args, generatedImages) {
       form.append("height", "1024");
 
       const response = await fetch(
-        "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/ai/run/" + encodeURIComponent(model),
+        "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/ai/run/" + model,
         {
           method: "POST",
           headers: { Authorization: "Bearer " + token },
