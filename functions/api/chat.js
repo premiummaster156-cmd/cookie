@@ -1,5 +1,5 @@
 import { executeWebTool, researchWeb } from "./web.js";
-import { getSessionUser, randomToken } from "./auth/_auth.js";
+import { dbAvailable, getSessionUser, randomToken } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
 
 function limitResponse(text) {
@@ -208,23 +208,76 @@ function normalizeFiles(input) {
 async function executeImageTool(env, args, generatedImages) {
   const prompt = String(args?.prompt || "").trim().slice(0, 2048);
   if (!prompt) return {ok:false,error:"An image prompt is required."};
-  if (!env?.AI || typeof env.AI.run !== "function") {
-    return {ok:false,error:"Cookie image generation is not configured. Bind Cloudflare Workers AI as AI in the Pages project."};
-  }
+
+  const model = "@cf/black-forest-labs/flux-2-klein-4b";
+  const accountId = String(env?.CLOUDFLARE_ACCOUNT_ID || env?.CF_ACCOUNT_ID || "").trim();
+  const token = String(env?.CLOUDFLARE_AI_API_TOKEN || env?.CLOUDFLARE_API_TOKEN || "").trim();
+
   try {
-    const result = await env.AI.run("@cf/black-forest-labs/flux-2-klein-4b", {
-      prompt,
-      width: 1024,
-      height: 1024
-    });
-    const image = String(result?.image || "").trim();
-    if (!image) return {ok:false,error:"The image model returned no image."};
-    const dataUrl = image.startsWith("data:image/") ? image : "data:image/jpeg;base64," + image;
+    let image = "";
+
+    if (accountId && token) {
+      const form = new FormData();
+      form.append("prompt", prompt);
+      form.append("width", "1024");
+      form.append("height", "1024");
+
+      const response = await fetch(
+        "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/ai/run/" + encodeURIComponent(model),
+        {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+          body: form
+        }
+      );
+
+      const raw = await response.text();
+      let data = null;
+      try { data = raw ? JSON.parse(raw) : null; } catch {}
+
+      if (!response.ok) {
+        const detail = String(data?.errors?.[0]?.message || data?.error || raw || "Workers AI request failed").slice(0, 500);
+        throw new Error("Workers AI API (" + response.status + "): " + detail);
+      }
+
+      image = String(
+        data?.result?.image ||
+        data?.result?.output ||
+        data?.result?.data?.image ||
+        ""
+      ).trim();
+    } else if (env?.AI && typeof env.AI.run === "function") {
+      const form = new FormData();
+      form.append("prompt", prompt);
+      form.append("width", "1024");
+      form.append("height", "1024");
+      const formResponse = new Response(form);
+      const result = await env.AI.run(model, {
+        multipart: {
+          body: formResponse.body,
+          contentType: formResponse.headers.get("content-type")
+        }
+      });
+      image = String(result?.image || "").trim();
+    } else {
+      return {
+        ok:false,
+        error:"Workers AI image generation is not configured. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_API_TOKEN to Pages secrets."
+      };
+    }
+
+    if (!image) return {ok:false,error:"Workers AI returned no image data."};
+
+    const dataUrl = image.startsWith("data:image/")
+      ? image
+      : "data:image/png;base64," + image;
+
     generatedImages.push({
       dataUrl,
       prompt,
       model:"FLUX.2 [klein] 4B"
     });
+
     return {ok:true,prompt,model:"FLUX.2 [klein] 4B",index:generatedImages.length};
   } catch (error) {
     console.error("[Cookie image generation]", error);
@@ -337,7 +390,7 @@ const profiles = {
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env?.DB) return json({ error:"Cookie accounts are not configured yet. Bind the D1 database as DB in Cloudflare Pages." }, 503);
+    if (!dbAvailable(env)) return json({ error:"Cookie accounts are not configured yet. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
     const sessionUser = await getSessionUser(request, env);
     if (!sessionUser) return json({ error:"Please sign in to use Cookie AI." }, 401);
 
