@@ -205,6 +205,33 @@ function normalizeFiles(input) {
     .filter(f => f.path && !f.path.includes(".."));
 }
 
+async function executeImageTool(env, args, generatedImages) {
+  const prompt = String(args?.prompt || "").trim().slice(0, 2048);
+  if (!prompt) return {ok:false,error:"An image prompt is required."};
+  if (!env?.AI || typeof env.AI.run !== "function") {
+    return {ok:false,error:"Cookie image generation is not configured. Bind Cloudflare Workers AI as AI in the Pages project."};
+  }
+  try {
+    const result = await env.AI.run("@cf/black-forest-labs/flux-2-klein-4b", {
+      prompt,
+      width: 1024,
+      height: 1024
+    });
+    const image = String(result?.image || "").trim();
+    if (!image) return {ok:false,error:"The image model returned no image."};
+    const dataUrl = image.startsWith("data:image/") ? image : "data:image/jpeg;base64," + image;
+    generatedImages.push({
+      dataUrl,
+      prompt,
+      model:"FLUX.2 [klein] 4B"
+    });
+    return {ok:true,prompt,model:"FLUX.2 [klein] 4B",index:generatedImages.length};
+  } catch (error) {
+    console.error("[Cookie image generation]", error);
+    return {ok:false,error:String(error?.message || "Image generation failed.")};
+  }
+}
+
 function executeFileTool(files, name, args) {
   const a = args && typeof args === "object" ? args : {};
   const path = String(a.path || "").replace(/^\/+/, "");
@@ -397,7 +424,8 @@ export async function onRequestPost({ request, env }) {
 
     const system = [
       "Cookie is Cookie AI, an account-based AI assistant. Users can sign in with email/password or Google, GitHub, and Discord OAuth. Email accounts must verify ownership through a time-limited code or secure link.",
-      "Cookie supports persistent signed-in chat history, long-term memory, persistent project workspaces, live web research, file generation, image/file attachments, and internal tools. Describe only functionality actually available in this deployment.",
+      "Cookie supports persistent signed-in chat history, long-term memory, persistent project workspaces, live web research, file generation, image/file attachments, image generation, and internal tools. Describe only functionality actually available in this deployment.",
+      "IMAGE GENERATION: When the user asks to create/generate/draw/render/visualize an image, use the image_generate tool. The image generator is a separate Cloudflare Workers AI image model; the current Cookie text model orchestrates it. Never claim an image exists unless the tool returns success.",
       "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
       `COOKIE PLAN: The signed-in user is on the "${String(sessionUser.plan || "free")}" plan with ${Number(sessionUser.credits || 0)} remaining free credits. Do not claim paid access exists unless the account plan says so.`,
       "You have temporary file-generation tools. When the user asks you to build code, documents, configurations, or other files, create the actual files with file_create. You can use nested paths such as src/commands/ping.js; folders are implicit in file paths and are never uploaded by users. Use file_read/file_update to refine files during the same response. At the end, the created files are returned directly in the chat for one-tap download. Never claim a file was created or changed unless the file tool succeeded.",
@@ -556,7 +584,24 @@ export async function onRequestPost({ request, env }) {
         });
       }
     }
+    const imageTools = [
+      {
+        type:"function",
+        function:{
+          name:"image_generate",
+          description:"Generate an image from a user's request. Use this when the user asks to create, generate, draw, render, visualize, or make an image. Return the image through the tool; do not pretend an image was created without calling the tool.",
+          parameters:{
+            type:"object",
+            required:["prompt"],
+            properties:{
+              prompt:{type:"string",description:"A detailed visual prompt for the image generator. Preserve the user's requested subject, style, composition, mood, lighting, colors, and any exact text."}
+            }
+          }
+        }
+      }
+    ];
     const availableTools = [
+      ...imageTools,
       ...fileTools,
       ...(useWebSearch ? webTools : []),
       ...(memoryEnabled ? memoryTools : [])
@@ -578,11 +623,13 @@ export async function onRequestPost({ request, env }) {
           const liveMessages = agentMessages.slice();
           const liveSources = webSources.slice();
           let liveFiles = [];
+          let liveImages = [];
           let liveMessage = "";
           let usedModel = model;
           let completed = false;
 
           const statusForTool = name =>
+            name === "image_generate" ? "Creating image…" :
             name === "web_search" ? "Searching the web…" :
             name === "web_fetch" ? "Reading sources…" :
             name.startsWith("memory_") ? "Using memory…" :
@@ -696,7 +743,9 @@ export async function onRequestPost({ request, env }) {
                 if (!name) continue;
                 push({type:"status",status:statusForTool(name)});
                 let executed;
-                if (name === "web_search" || name === "web_fetch") {
+                if (name === "image_generate") {
+                  executed = {files:liveFiles,result:JSON.stringify(await executeImageTool(env,args,liveImages))};
+                } else if (name === "web_search" || name === "web_fetch") {
                   const webResult = await executeWebTool(name,args,apiKey);
                   appendWebSources(liveSources, webResult);
                   executed = {files:liveFiles,result:JSON.stringify(webResult)};
@@ -730,7 +779,7 @@ export async function onRequestPost({ request, env }) {
               message:limitResponse(output),
               model:profile.name,
               generatedFiles:liveFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
-              generatedImages:[],
+              generatedImages:liveImages,
               sources:liveSources.slice(0,10),
               creditsRemaining:plan === "free" ? Math.max(0, credits - 1) : null
             });
@@ -823,7 +872,9 @@ export async function onRequestPost({ request, env }) {
         let args=call?.function?.arguments;
         if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
         let executed;
-        if(name === "web_search" || name === "web_fetch") {
+        if(name === "image_generate") {
+          executed = {files:generatedFiles,result:JSON.stringify(await executeImageTool(env,args,generatedImages))};
+        } else if(name === "web_search" || name === "web_fetch") {
           const webResult = await executeWebTool(name,args,apiKey);
           appendWebSources(webSources, webResult);
           executed = {files:generatedFiles,result:JSON.stringify(webResult)};
