@@ -1069,3 +1069,377 @@ button:active:not(:disabled){
     -webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:#242528!important;
   }
 }
+
+
+/* ==========================================================================
+   COOKIE LIQUID GLASS — navigation/control material
+   Apple-inspired implementation for web.
+   Keep the material on the functional layer; content stays quiet.
+   ========================================================================== */
+
+:root{
+  --lg-surface:rgba(30,32,36,.58);
+  --lg-surface-strong:rgba(38,40,45,.72);
+  --lg-surface-soft:rgba(255,255,255,.055);
+  --lg-border:rgba(255,255,255,.13);
+  --lg-border-hi:rgba(255,255,255,.19);
+  --lg-highlight:rgba(255,255,255,.14);
+  --lg-shadow:0 14px 40px rgba(0,0,0,.22),0 2px 8px rgba(0,0,0,.16);
+  --lg-blur:24px;
+  --lg-sat:155%;
+}
+
+/* One material language for actual navigation planes. */
+.sidebar,
+.topbar,
+.gpts-nav,
+.gpt-chat-top{
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,0) 48%),
+    var(--lg-surface)!important;
+  border-color:var(--lg-border)!important;
+  box-shadow:var(--lg-shadow);
+}
+
+/* Optical rim + restrained specular highlight. */
+.sidebar::before,
+.topbar::before,
+.gpts-nav::before,
+.gpt-chat-top::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:
+    linear-gradient(115deg,rgba(255,255,255,.11),transparent 24%,transparent 72%,rgba(255,255,255,.035)),
+    linear-gradient(180deg,rgba(255,255,255,.055),transparent 18%);
+  opacity:.72;
+  mix-blend-mode:screen;
+}
+.sidebar{overflow:hidden}
+.topbar,.gpts-nav,.gpt-chat-top{isolation:isolate}
+
+/* Floating desktop sidebar: a distinct navigation plane above content. */
+@media(min-width:901px){
+  .sidebar{
+    height:calc(100% - 20px);
+    margin:10px 0 10px 10px;
+    border:1px solid var(--lg-border)!important;
+    border-radius:22px;
+  }
+  .sidebar-head{padding-left:12px;padding-right:12px}
+  .sidebar-scroll{padding-left:11px;padding-right:11px}
+  .sidebar-foot{margin:0 6px 6px;border-radius:16px}
+}
+
+/* Navigation controls behave like thin glass controls, not cards. */
+.brand,
+.side-icon,
+.top-icon,
+.mobile-menu,
+.switcher button,
+.nav-btn,
+.model-picker,
+.gpts-nav-icon,
+.gpts-nav-button,
+.gpt-back,
+.gpt-chat-new{
+  position:relative;
+  isolation:isolate;
+  border:1px solid transparent;
+  transition:
+    background .22s cubic-bezier(.22,1,.36,1),
+    border-color .22s cubic-bezier(.22,1,.36,1),
+    box-shadow .22s cubic-bezier(.22,1,.36,1),
+    transform .22s cubic-bezier(.22,1,.36,1);
+}
+
+.brand::before,
+.side-icon::before,
+.top-icon::before,
+.mobile-menu::before,
+.switcher button::before,
+.nav-btn::before,
+.model-picker::before,
+.gpts-nav-icon::before,
+.gpts-nav-button::before,
+.gpt-back::before,
+.gpt-chat-new::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(145deg,rgba(255,255,255,.095),transparent 48%);
+  opacity:0;
+  transition:opacity .22s ease;
+}
+
+.brand:hover,
+.side-icon:hover,
+.top-icon:hover,
+.mobile-menu:hover,
+.switcher button:hover,
+.nav-btn:hover,
+.model-picker:hover,
+.gpts-nav-button:hover,
+.gpt-back:hover,
+.gpt-chat-new:hover{
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.105);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 5px 18px rgba(0,0,0,.12);
+}
+
+.brand:hover::before,
+.side-icon:hover::before,
+.top-icon:hover::before,
+.mobile-menu:hover::before,
+.switcher button:hover::before,
+.nav-btn:hover::before,
+.model-picker:hover::before,
+.gpts-nav-button:hover::before,
+.gpt-back:hover::before,
+.gpt-chat-new:hover::before{
+  opacity:1;
+}
+
+.brand:active,
+.side-icon:active,
+.top-icon:active,
+.mobile-menu:active,
+.switcher button:active,
+.nav-btn:active,
+.model-picker:active,
+.gpts-nav-button:active,
+.gpt-back:active,
+.gpt-chat-new:active{
+  transform:scale(.97);
+}
+
+/* Selected navigation has depth, not a bright filled rectangle. */
+.nav-btn.active,
+.chat-row.active,
+.switcher button.active{
+  background:rgba(255,255,255,.095)!important;
+  border-color:rgba(255,255,255,.105);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.105),
+    inset 0 0 0 1px rgba(255,255,255,.025),
+    0 5px 20px rgba(0,0,0,.10);
+}
+
+/* Composer is a functional control plane: quiet, dense, tactile. */
+.composer{
+  position:relative;
+  isolation:isolate;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),transparent 42%),
+    rgba(35,37,41,.76)!important;
+  border:1px solid var(--lg-border-hi)!important;
+  border-radius:20px!important;
+  -webkit-backdrop-filter:blur(26px) saturate(150%);
+  backdrop-filter:blur(26px) saturate(150%);
+  box-shadow:
+    0 22px 60px rgba(0,0,0,.32),
+    0 4px 16px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+
+.composer::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:19px;
+  pointer-events:none;
+  background:linear-gradient(120deg,rgba(255,255,255,.075),transparent 28%,transparent 72%,rgba(255,255,255,.025));
+  opacity:.7;
+}
+
+.composer:focus-within{
+  border-color:rgba(255,255,255,.22)!important;
+  box-shadow:
+    0 24px 68px rgba(0,0,0,.34),
+    0 5px 18px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+
+.composer-icon,
+.send-button,
+.tool-button{
+  position:relative;
+  z-index:1;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.045);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.075);
+}
+.composer-icon:hover,
+.send-button:hover:not(.disabled),
+.tool-button:hover{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.13);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),0 5px 16px rgba(0,0,0,.13);
+}
+
+/* Menus expand from their source instead of appearing as unrelated cards. */
+.attach-menu,
+.row-menu,
+.new-menu,
+.profile-menu,
+.model-menu,
+.tools-menu{
+  -webkit-backdrop-filter:blur(28px) saturate(155%);
+  backdrop-filter:blur(28px) saturate(155%);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.015)),
+    rgba(30,32,36,.84)!important;
+  border:1px solid var(--lg-border-hi)!important;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.36),
+    inset 0 1px 0 rgba(255,255,255,.09);
+  border-radius:16px!important;
+  overflow:hidden;
+}
+
+/* No glass-on-glass: menu rows are transparent controls inside one plane. */
+.attach-menu button,
+.row-menu button,
+.new-menu button,
+.profile-menu button,
+.model-menu button,
+.tools-menu button{
+  background:transparent!important;
+  border:1px solid transparent;
+  border-radius:10px;
+}
+.attach-menu button:hover,
+.row-menu button:hover,
+.new-menu button:hover,
+.profile-menu button:hover,
+.model-menu button:hover,
+.tools-menu button:hover{
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.07);
+}
+
+/* Mobile navigation trigger becomes the same floating material. */
+.mobile-sidebar-trigger{
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025)),
+    rgba(27,29,33,.68)!important;
+  border:1px solid var(--lg-border)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(155%);
+  backdrop-filter:blur(24px) saturate(155%);
+  box-shadow:var(--lg-shadow),inset 0 1px 0 rgba(255,255,255,.09)!important;
+}
+.mobile-sidebar-trigger:active{transform:scale(.94)!important}
+
+/* Scroll-edge separation: the navigation plane lifts content underneath it. */
+.topbar::after,
+.gpts-nav::after,
+.gpt-chat-top::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-22px;
+  height:22px;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,9,11,.16),transparent);
+  opacity:.8;
+  z-index:-1;
+}
+
+/* GPTs: navigation is glass; discovery content is deliberately not. */
+.gpts-page,
+.gpt-chat-shell{
+  background:var(--bg)!important;
+}
+.gpts-content{background:transparent}
+.gpts-hero-icon,
+.gpts-eyebrow{
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(255,255,255,.09)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+.gpts-search{
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(255,255,255,.10)!important;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055);
+}
+.gpt-card{
+  background:rgba(255,255,255,.025)!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  box-shadow:none!important;
+  transition:
+    transform .25s cubic-bezier(.22,1,.36,1),
+    background .25s ease,
+    border-color .25s ease;
+}
+.gpt-card:hover{
+  transform:translateY(-2px);
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(255,255,255,.12)!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.14)!important;
+}
+
+/* Icons feel like dimensional controls without turning the whole UI into glass. */
+.gpt-card-icon,
+.gpt-chat-top .gpt-card-icon{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -1px 0 rgba(0,0,0,.18),
+    0 5px 16px rgba(0,0,0,.14);
+}
+
+/* Native motion/accessibility fallbacks. */
+@media(prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.001ms!important;
+  }
+}
+@media(prefers-reduced-transparency:reduce){
+  .sidebar,
+  .topbar,
+  .gpts-nav,
+  .gpt-chat-top,
+  .composer,
+  .mobile-sidebar-trigger,
+  .attach-menu,
+  .row-menu,
+  .new-menu,
+  .profile-menu,
+  .model-menu,
+  .tools-menu{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    background:#202226!important;
+  }
+}
+@media(max-width:900px){
+  .sidebar{
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.045),transparent 40%),
+      rgba(20,22,26,.86)!important;
+    -webkit-backdrop-filter:blur(28px) saturate(145%);
+    backdrop-filter:blur(28px) saturate(145%);
+  }
+  .topbar{
+    background:rgba(28,30,34,.72)!important;
+  }
+  .composer-wrap{
+    width:min(860px,calc(100% - 20px));
+  }
+  .composer{border-radius:18px!important}
+}
