@@ -1879,3 +1879,198 @@ button:active:not(:disabled){
   }
   .mobile-nav-launcher:active{transform:scale(.94)}
 }
+
+
+/* ===== Final iOS / Liquid Glass optimization =====
+   Navigation owns glass; conversation stays quiet and legible. */
+@media(max-width:900px){
+  /* One navigation plane — the real topbar owns the hamburger. */
+  .mobile-nav-launcher{display:none!important}
+  .topbar{
+    height:54px!important;
+    padding:0 10px 0 8px!important;
+    background:rgba(24,26,30,.76)!important;
+    -webkit-backdrop-filter:blur(28px) saturate(145%);
+    backdrop-filter:blur(28px) saturate(145%);
+    border-bottom:1px solid rgba(255,255,255,.07)!important;
+    box-shadow:0 8px 26px rgba(0,0,0,.12)!important;
+  }
+  .mobile-menu{
+    width:42px!important;height:42px!important;
+    border:1px solid rgba(255,255,255,.13)!important;
+    border-radius:14px!important;
+    background:rgba(255,255,255,.055)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10)!important;
+  }
+  .model-picker{font-weight:700!important}
+  .top-right{gap:2px!important}
+  .top-icon{width:38px!important;height:38px!important}
+  
+  /* Sidebar floats over content like a sheet, never participates in width. */
+  .sidebar{
+    width:min(78vw,320px)!important;
+    max-width:320px!important;
+    height:100dvh!important;
+    border:1px solid rgba(255,255,255,.13)!important;
+    border-left:0!important;
+    border-radius:0 26px 26px 0!important;
+    background:rgba(19,21,25,.91)!important;
+    -webkit-backdrop-filter:blur(34px) saturate(150%);
+    backdrop-filter:blur(34px) saturate(150%);
+    box-shadow:26px 0 90px rgba(0,0,0,.48),inset -1px 0 0 rgba(255,255,255,.07)!important;
+  }
+  .sidebar.open{
+    animation:sidebar-arrive-final 340ms cubic-bezier(.22,.82,.18,1) both!important;
+  }
+  @keyframes sidebar-arrive-final{
+    0%{transform:translate3d(-104%,0,0);opacity:.72}
+    70%{transform:translate3d(1%,0,0);opacity:1}
+    100%{transform:translate3d(0,0,0);opacity:1}
+  }
+  .sidebar-overlay{
+    background:rgba(0,0,0,.48)!important;
+    -webkit-backdrop-filter:blur(4px) saturate(110%);
+    backdrop-filter:blur(4px) saturate(110%);
+  }
+  
+  /* Menus need legibility; don't let conversation text bleed through them. */
+  .attach-menu,.tools-menu,.model-menu,.row-menu,.new-menu,.profile-menu{
+    background:rgba(25,27,31,.94)!important;
+    -webkit-backdrop-filter:blur(34px) saturate(145%);
+    backdrop-filter:blur(34px) saturate(145%);
+    border:1px solid rgba(255,255,255,.14)!important;
+    box-shadow:0 26px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.10)!important;
+  }
+  .attach-menu{
+    width:min(280px,calc(100vw - 32px))!important;
+    border-radius:20px!important;
+    padding:7px!important;
+  }
+  .attach-menu button{
+    min-height:48px!important;
+    font-size:15px!important;
+    padding:10px 12px!important;
+  }
+  .tools-menu{
+    width:min(330px,calc(100vw - 24px))!important;
+    max-height:min(72dvh,560px)!important;
+    overflow:auto!important;
+    border-radius:22px!important;
+    padding:8px!important;
+  }
+  .tools-menu button{
+    min-height:58px!important;
+    padding:9px 10px!important;
+  }
+  .tools-menu-head{
+    padding:8px 10px 10px!important;
+  }
+  
+  /* Composer stays clear of Safari's bottom controls and its note never overlaps. */
+  .composer-wrap{
+    left:10px!important;
+    right:10px!important;
+    width:auto!important;
+    bottom:max(14px,env(safe-area-inset-bottom))!important;
+    padding-bottom:4px!important;
+  }
+  .composer{
+    min-height:56px!important;
+    border-radius:21px!important;
+    background:rgba(43,45,49,.86)!important;
+    border-color:rgba(255,255,255,.13)!important;
+  }
+  .composer-note{
+    position:relative!important;
+    z-index:3!important;
+    display:block!important;
+    line-height:12px!important;
+    min-height:12px!important;
+    margin-top:6px!important;
+    padding:0 8px!important;
+    color:rgba(255,255,255,.48)!important;
+  }
+}
+
+/* Voice is a focused transient surface, not a decorative giant orb. */
+.voice-overlay{
+  background:rgba(7,8,10,.94)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(125%);
+  backdrop-filter:blur(28px) saturate(125%);
+}
+.voice-overlay::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(480px 360px at 50% 39%,rgba(95,112,255,.13),transparent 72%);
+}
+.voice-orb{
+  width:154px!important;height:154px!important;
+  filter:drop-shadow(0 24px 54px rgba(72,83,255,.18));
+}
+.voice-orb i{
+  background:
+    radial-gradient(circle at 34% 28%,#fff 0%,#aebcff 9%,#6f80ff 25%,#3845c7 58%,rgba(31,39,120,.05) 76%)!important;
+}
+.voice-overlay h2{
+  font-size:25px!important;
+  letter-spacing:-.025em;
+  margin-top:24px!important;
+}
+.voice-overlay p{
+  color:#9da1ad!important;
+}
+.voice-actions button{
+  border-radius:999px!important;
+  background:rgba(255,255,255,.075)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+}
+.voice-actions button:first-child{
+  background:#f3f4f6!important;
+  border:0!important;
+}
+
+/* Light mode: use the same hierarchy with adaptive regular glass. */
+html[data-theme="light"] .topbar{
+  background:rgba(250,250,252,.72)!important;
+  color:#17181b!important;
+  border-bottom-color:rgba(0,0,0,.08)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.08)!important;
+}
+html[data-theme="light"] .mobile-menu,
+html[data-theme="light"] .top-icon{
+  color:#17181b!important;
+  background:rgba(255,255,255,.72)!important;
+  border-color:rgba(0,0,0,.09)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85)!important;
+}
+html[data-theme="light"] .sidebar{
+  background:rgba(248,248,250,.88)!important;
+  border-color:rgba(0,0,0,.10)!important;
+  box-shadow:22px 0 80px rgba(0,0,0,.16)!important;
+}
+html[data-theme="light"] .attach-menu,
+html[data-theme="light"] .tools-menu,
+html[data-theme="light"] .model-menu,
+html[data-theme="light"] .row-menu,
+html[data-theme="light"] .new-menu,
+html[data-theme="light"] .profile-menu{
+  background:rgba(250,250,252,.94)!important;
+  color:#17181b!important;
+  border-color:rgba(0,0,0,.11)!important;
+  box-shadow:0 26px 80px rgba(0,0,0,.18)!important;
+}
+html[data-theme="light"] .composer{
+  background:rgba(248,248,250,.88)!important;
+  border-color:rgba(0,0,0,.11)!important;
+  box-shadow:0 18px 58px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+html[data-theme="light"] .composer textarea{color:#17181b!important}
+html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
+
+@media(prefers-reduced-transparency:reduce){
+  .voice-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
