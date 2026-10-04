@@ -1851,3 +1851,29 @@ button:active:not(:disabled){
     right:8px!important;
   }
 }
+
+
+/* Mobile navigation must remain independent of the topbar. */
+.mobile-nav-launcher{
+  display:none;
+}
+@media(max-width:900px){
+  .mobile-nav-launcher{
+    display:grid!important;
+    place-items:center;
+    position:fixed!important;
+    left:max(10px,env(safe-area-inset-left));
+    top:max(10px,env(safe-area-inset-top));
+    width:40px;
+    height:40px;
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:14px;
+    background:rgba(28,30,34,.78);
+    color:#eee;
+    -webkit-backdrop-filter:blur(20px) saturate(145%);
+    backdrop-filter:blur(20px) saturate(145%);
+    box-shadow:0 8px 28px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.12);
+    z-index:500!important;
+  }
+  .mobile-nav-launcher:active{transform:scale(.94)}
+}
