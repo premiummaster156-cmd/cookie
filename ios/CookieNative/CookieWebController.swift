@@ -6,9 +6,8 @@ final class CookieWebController: ObservableObject {
     weak var webView: WKWebView?
 
     func send(text: String) {
-        let data = (try? JSONSerialization.data(withJSONObject: [text])) ?? Data("[""]".utf8)
-        let jsonArray = String(data: data, encoding: .utf8) ?? "[\"\"]"
-        let value = String(jsonArray.dropFirst().dropLast())
+        let value = (try? JSONSerialization.data(withJSONObject: text, options: [.fragmentsAllowed]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
 
         let script = """
         (() => {
@@ -31,8 +30,8 @@ final class CookieWebController: ObservableObject {
     }
 
     func command(_ command: String) {
-        let data = (try? JSONSerialization.data(withJSONObject: command)) ?? Data("""".utf8)
-        let json = String(data: data, encoding: .utf8) ?? """"
+        let json = (try? JSONSerialization.data(withJSONObject: command, options: [.fragmentsAllowed]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
 
         let script = """
         window.dispatchEvent(new CustomEvent('cookie:native-command', { detail: (json) }));
