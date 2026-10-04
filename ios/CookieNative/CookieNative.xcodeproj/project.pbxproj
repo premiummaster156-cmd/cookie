@@ -171,7 +171,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
-				INFOPLIST_FILE = CookieNative/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookie.ai.native;
 				PRODUCT_NAME = CookieNative;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -194,7 +194,9 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				INFOPLIST_FILE = CookieNative/Info.plist;
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cookie.ai.native;
+				PRODUCT_NAME = CookieNative;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
