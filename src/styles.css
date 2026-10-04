@@ -4248,3 +4248,17 @@ html[data-theme="light"] .cookie-liquid-glass-backdrop.liquid-glass::after{
     display:none!important;
   }
 }
+
+/* ==========================================================================
+   APPLE MATERIAL HIERARCHY — settings/content stay in the content layer
+   ========================================================================== */
+.settings-material-card{
+  position:relative!important;
+  overflow:hidden!important;
+  background:rgba(255,255,255,.035)!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.045)!important;
+}
+.settings-material-card::before{
+  content:none!important;
+}
