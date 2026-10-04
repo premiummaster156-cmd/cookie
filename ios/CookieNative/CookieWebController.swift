@@ -15,7 +15,7 @@ final class CookieWebController: ObservableObject {
           if (!ta) return false;
           const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
           if (!setter) return false;
-          setter.call(ta, (value));
+          setter.call(ta, \(value));
           ta.dispatchEvent(new Event('input', { bubbles: true }));
           requestAnimationFrame(() => {
             const send = document.querySelector('.composer .send-button:not([disabled])');
@@ -34,7 +34,7 @@ final class CookieWebController: ObservableObject {
             .flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
 
         let script = """
-        window.dispatchEvent(new CustomEvent('cookie:native-command', { detail: (json) }));
+        window.dispatchEvent(new CustomEvent('cookie:native-command', { detail: \(json) }));
         true;
         """
 
