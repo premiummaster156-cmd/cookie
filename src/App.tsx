@@ -9,7 +9,7 @@ import {
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
-  Volume2, X, Zap
+  Volume2, X, Zap, AppWindow, Smartphone, Monitor
 } from "lucide-react";
 
 type Role = "user" | "assistant";
@@ -562,6 +562,124 @@ function VoiceOverlay({onClose}:{onClose:()=>void}){
   return <div className="voice-overlay"><button className="voice-close" onClick={onClose}><X/></button><div className={"voice-orb "+(on?"on":"")}><i/><i/><i/></div><h2>{on?"Listening…":"Voice with Cookie"}</h2><p>{text||"Talk naturally with Cookie."}</p><div className="voice-actions"><button onClick={toggle}>{on?<Square size={18}/>:<Volume2 size={20}/>}</button><button onClick={onClose}>Done</button></div></div>;
 }
 
+
+type InstallPromptEvent = Event & {
+  prompt:()=>Promise<{outcome:"accepted"|"dismissed"}>;
+};
+
+function isCookieAppInstalled(){
+  return window.matchMedia?.("(display-mode: standalone)").matches === true
+    || window.matchMedia?.("(display-mode: window-controls-overlay)").matches === true
+    || Boolean((navigator as any).standalone);
+}
+
+function InstallAppExperience({authUser}:{authUser:AuthUser}){
+  const [deferredPrompt,setDeferredPrompt]=useState<InstallPromptEvent|null>(null);
+  const [installed,setInstalled]=useState(false);
+  const [open,setOpen]=useState(false);
+  const [showSteps,setShowSteps]=useState(false);
+  const [ios,setIos]=useState(false);
+
+  useEffect(()=>{
+    setInstalled(isCookieAppInstalled());
+    const ua=navigator.userAgent||"";
+    setIos(/iPhone|iPad|iPod/i.test(ua));
+    const before=(event:Event)=>{
+      event.preventDefault();
+      setDeferredPrompt(event as InstallPromptEvent);
+    };
+    const installedHandler=()=>{
+      setInstalled(true);
+      setDeferredPrompt(null);
+      setOpen(false);
+      try{localStorage.setItem("cookie_install_installed","1")}catch{}
+    };
+    const openHandler=()=>setOpen(true);
+    window.addEventListener("beforeinstallprompt",before as EventListener);
+    window.addEventListener("appinstalled",installedHandler);
+    window.addEventListener("cookie:open-install-app",openHandler);
+    const remembered=Number(localStorage.getItem("cookie_install_snooze_until")||"0");
+    const explicitlyInstalled=localStorage.getItem("cookie_install_installed")==="1";
+    const timer=window.setTimeout(()=>{
+      if(!isCookieAppInstalled()&&!explicitlyInstalled&&remembered<Date.now())setOpen(true);
+    },650);
+    return()=>{
+      window.clearTimeout(timer);
+      window.removeEventListener("beforeinstallprompt",before as EventListener);
+      window.removeEventListener("appinstalled",installedHandler);
+      window.removeEventListener("cookie:open-install-app",openHandler);
+    };
+  },[]);
+
+  const closeAndRemindLater=()=>{
+    setOpen(false);
+    setShowSteps(false);
+    try{localStorage.setItem("cookie_install_snooze_until",String(Date.now()+14*24*60*60*1000))}catch{}
+  };
+
+  const install=async()=>{
+    if(isCookieAppInstalled()){setInstalled(true);setOpen(false);return}
+    if(deferredPrompt){
+      try{
+        const result=await deferredPrompt.prompt();
+        if(result?.outcome==="accepted"){
+          setInstalled(true);
+          try{localStorage.setItem("cookie_install_installed","1")}catch{}
+          setOpen(false);
+        }
+      }catch{}
+      setDeferredPrompt(null);
+      return;
+    }
+    setShowSteps(true);
+  };
+
+  const primaryLabel=deferredPrompt?"Install Cookie app":ios?"Add to Home Screen":"View install steps";
+
+  if(installed)return null;
+
+  return <div className={"install-app-layer "+(open?"open":"")} aria-hidden={!open}>
+    {open&&<div className="install-app-scrim" onClick={closeAndRemindLater}/>}
+    {open&&<section className="install-app-modal" role="dialog" aria-modal="true" aria-labelledby="cookie-install-title">
+      <div className="install-app-glow" aria-hidden="true"/>
+      <div className="install-app-top">
+        <div className="install-app-mark"><CookieIcon size={44}/><span className="install-app-pulse"/></div>
+        <button className="install-app-close" onClick={closeAndRemindLater} aria-label="Close install prompt"><X size={18}/></button>
+      </div>
+      <div className="install-app-copy">
+        <div className="install-app-badge"><AppWindow size={13}/> Cookie app</div>
+        <h2 id="cookie-install-title">{authUser.name ? "Welcome back, "+authUser.name+"." : "Welcome back."}</h2>
+        <p>Use Cookie like a real app — open it from your home screen, desktop, or taskbar without hunting for the browser tab.</p>
+      </div>
+
+      <div className="install-app-benefits">
+        <div><AppWindow size={17}/><span><b>Its own app window</b><small>Cleaner, focused workspace.</small></span></div>
+        <div><Smartphone size={17}/><span><b>Phone + desktop</b><small>Use the same Cookie account anywhere.</small></span></div>
+        <div><Zap size={17}/><span><b>One-tap access</b><small>Launch Cookie straight from your device.</small></span></div>
+      </div>
+
+      {!showSteps&&<div className="install-app-actions">
+        <button className="install-app-primary" onClick={install}><Download size={17}/>{primaryLabel}</button>
+        <button className="install-app-secondary" onClick={closeAndRemindLater}>Remind me later</button>
+      </div>}
+
+      {showSteps&&<div className="install-app-steps">
+        <div className="install-app-step">
+          <span>1</span>
+          <div><b>{ios?"On iPhone or iPad":"On this device"}</b><p>{ios?"Open Cookie in Safari, tap Share, then choose “Add to Home Screen” and tap Add.":"Use your browser's Install / Add to Home Screen option. Chromium browsers can show an install icon in the address bar or browser menu."}</p></div>
+        </div>
+        <div className="install-app-step">
+          <span>2</span>
+          <div><b>No app store required</b><p>Cookie can be installed directly from the web as a standalone app. There is no Google Play or App Store download involved.</p></div>
+        </div>
+        <button className="install-app-secondary" onClick={closeAndRemindLater}>Got it</button>
+      </div>}
+
+      <div className="install-app-foot"><Monitor size={14}/> Install once, then launch Cookie like an app.</div>
+    </section>}
+  </div>;
+}
+
 function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>void}){
   const initial=readJSON<Chat[]>("cookie_chats",[]);
   const [chats,setChats]=useState<Chat[]>(initial);
@@ -658,7 +776,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       <LiquidGlassBackdrop className="sidebar-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:24}}/>
       <div className="sidebar-head"><button className="brand" onClick={()=>{setView("chat");setSidebar(false)}}><CookieIcon size={23}/><span>Cookie</span></button><div><button className="side-icon hide-mobile" onClick={()=>setSidebar(false)}><PanelLeft size={18}/></button><button className="side-icon" onClick={()=>createChat(false)}><MessageSquarePlus size={18}/></button></div></div>
       <div className="switcher"><button className={view==="chat"?"active":""} onClick={()=>{setView("chat");setSidebar(false)}}><MessageSquare size={16}/>Chat</button><button className={view==="work"?"active":""} onClick={()=>{setView("work");setSidebar(false)}}><Zap size={16}/>Work</button></div>
-      <div className="sidebar-scroll"><button className="nav-btn" onClick={()=>{setView("search");setSidebar(false)}}><Search size={18}/><span>Search</span><kbd>⌘K</kbd></button><button className="nav-btn" onClick={()=>{setView("library");setSidebar(false)}}><Library size={18}/><span>Library</span></button><button className="nav-btn" onClick={()=>{setView("projects");setSidebar(false)}}><FolderKanban size={18}/><span>Projects</span></button><button className={"nav-btn "+(String(view)==="code"?"active":"")} onClick={()=>{setView("code");setSidebar(false)}}><Code2 size={18}/><span>Code Studio</span></button><button className="nav-btn" onClick={()=>{setView("gpts");setSidebar(false)}}><Code2 size={18}/><span>GPTs</span></button><div className="side-label">Recent</div>{recent.map(c=><ChatRow key={c.id} chat={c} active={c.id===activeId} onOpen={()=>{setActiveId(c.id);setTemporary(!!c.temporary);setView("chat");setSidebar(false)}} onAction={a=>a==="pin"?updateChat(c.id,x=>({...x,pinned:!x.pinned})):a==="archive"?updateChat(c.id,x=>({...x,archived:true})):(!settings.confirmDelete||window.confirm("Delete this chat?"))&&setChats(p=>p.filter(x=>x.id!==c.id))}/>)}</div>
+      <div className="sidebar-scroll"><button className="nav-btn" onClick={()=>{setView("search");setSidebar(false)}}><Search size={18}/><span>Search</span><kbd>⌘K</kbd></button><button className="nav-btn" onClick={()=>{setView("library");setSidebar(false)}}><Library size={18}/><span>Library</span></button><button className="nav-btn" onClick={()=>{setView("projects");setSidebar(false)}}><FolderKanban size={18}/><span>Projects</span></button><button className={"nav-btn "+(String(view)==="code"?"active":"")} onClick={()=>{setView("code");setSidebar(false)}}><Code2 size={18}/><span>Code Studio</span></button><button className="nav-btn" onClick={()=>{setView("gpts");setSidebar(false)}}><Code2 size={18}/><span>GPTs</span></button><button className="nav-btn install-app-nav" onClick={()=>{window.dispatchEvent(new Event("cookie:open-install-app"));setSidebar(false)}}><Download size={18}/><span>Install app</span><small>Better app experience</small></button><div className="side-label">Recent</div>{recent.map(c=><ChatRow key={c.id} chat={c} active={c.id===activeId} onOpen={()=>{setActiveId(c.id);setTemporary(!!c.temporary);setView("chat");setSidebar(false)}} onAction={a=>a==="pin"?updateChat(c.id,x=>({...x,pinned:!x.pinned})):a==="archive"?updateChat(c.id,x=>({...x,archived:true})):(!settings.confirmDelete||window.confirm("Delete this chat?"))&&setChats(p=>p.filter(x=>x.id!==c.id))}/>)}</div>
       <div className="sidebar-foot"><button className="nav-btn" onClick={()=>setNewOpen(v=>!v)}><Plus size={18}/><span>Try something new</span><ChevronDown size={15}/></button>{newOpen&&<div className="new-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/><button onClick={()=>createChat(true)}><Clock3 size={17}/><span><b>Temporary chat</b><small>Don't save this chat to history.</small></span></button><button onClick={()=>{setView("work");setNewOpen(false);setSidebar(false)}}><Zap size={17}/><span><b>Work</b><small>Structured tasks.</small></span></button></div>}<button className={"account "+(view==="settings"&&settingsTab==="account"?"active":"")} aria-label="Open account settings" onClick={()=>{setSettingsTab("account");setView("settings");setProfileOpen(false);setSidebar(false)}}><Avatar/><span><b>{profile.name||"Cookie user"}</b><small>{profile.username?("@"+profile.username):"Cookie account"}</small></span><MoreHorizontal size={17}/></button></div>
     </aside>
     <main className="main-shell">
@@ -666,7 +784,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify}/></div>}
       {view!=="chat"&&main}
     </main>
-    {voice&&<VoiceOverlay onClose={()=>setVoice(false)}/>} {toast&&<div className="toast" role="status">{toast}</div>}
+    {voice&&<VoiceOverlay onClose={()=>setVoice(false)}/>}<InstallAppExperience authUser={authUser}/>{toast&&<div className="toast" role="status">{toast}</div>}
   </div>;
 }
 
