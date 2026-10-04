@@ -579,6 +579,7 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
   const [installed,setInstalled]=useState(false);
   const [open,setOpen]=useState(false);
   const [showSteps,setShowSteps]=useState(false);
+  const [installing,setInstalling]=useState(false);
   const [ios,setIos]=useState(false);
 
   useEffect(()=>{
@@ -620,6 +621,14 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
 
   const install=async()=>{
     if(isCookieAppInstalled()){setInstalled(true);setOpen(false);return}
+    if(ios){
+      // iOS intentionally has no programmatic PWA install prompt. Safari owns
+      // the Add to Home Screen action, so give the user an unmistakable guide.
+      setInstalling(true);
+      setShowSteps(true);
+      setOpen(true);
+      return;
+    }
     if(deferredPrompt){
       try{
         const result=await deferredPrompt.prompt();
@@ -635,7 +644,7 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
     setShowSteps(true);
   };
 
-  const primaryLabel=deferredPrompt?"Install Cookie app":ios?"Add to Home Screen":"View install steps";
+  const primaryLabel=deferredPrompt?"Install Cookie app":ios?"Show iPhone install guide":"View install steps";
 
   if(installed)return null;
 
@@ -673,10 +682,10 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
           <span>2</span>
           <div><b>No app store required</b><p>Cookie can be installed directly from the web as a standalone app. There is no Google Play or App Store download involved.</p></div>
         </div>
-        <button className="install-app-secondary" onClick={closeAndRemindLater}>Got it</button>
+        <button className="install-app-primary" onClick={closeAndRemindLater}>{ios?"Done — I’ll add Cookie from Safari":"Got it"}</button>
       </div>}
 
-      <div className="install-app-foot"><Monitor size={14}/> Install once, then launch Cookie like an app.</div>
+      <div className="install-app-foot">{installing&&ios?<><Smartphone size={14}/> Safari controls the final Add to Home Screen step.</>:<><Monitor size={14}/> Install once, then launch Cookie like an app.</>}</div>
     </section>}
   </div>;
 }
