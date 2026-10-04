@@ -940,7 +940,6 @@ class LiquidGlass {
     this.removeFallbackFx();
     this.teardownGpu();
     setBackdropStyle(this.element, 'none');
-    (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
   }
 
   /** Re-attach the previously built filter. No pixel work if size is unchanged. */
@@ -954,7 +953,6 @@ class LiquidGlass {
     } else if (this.filter) {
       const css = this.filter.url;
       setBackdropStyle(this.element, css);
-      (this.element.style as WebkitStyle).webkitBackdropFilter = css;
     } else {
       this.installFilter();
     }
@@ -1148,7 +1146,6 @@ class LiquidGlass {
     }
     const css = this.scrollSafeCssForMode(mode);
     setBackdropStyle(this.element, css);
-    (this.element.style as WebkitStyle).webkitBackdropFilter = css;
   }
 
   private startScrollSafeTransitionLayer(filterCss: string): void {
@@ -1246,7 +1243,6 @@ class LiquidGlass {
         ? this.profiledFallbackFilter()
         : this.options.fallbackFilter;
     setBackdropStyle(this.element, css);
-    (this.element.style as WebkitStyle).webkitBackdropFilter = css;
     if (this.fallbackEnhanced()) this.scheduleBuild(() => this.installFallbackFx());
   }
 
@@ -1506,7 +1502,6 @@ class LiquidGlass {
 
   private dropOwnBackdrop(): void {
     setBackdropStyle(this.element, 'none');
-    (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
   }
 
   private removeFallbackFx(): void {
@@ -1552,7 +1547,6 @@ class LiquidGlass {
           } else {
             const css = this.scrollSafeCssForMode(this.scrollSafeMode);
             setBackdropStyle(this.element, css);
-            (this.element.style as WebkitStyle).webkitBackdropFilter = css;
           }
         } else {
           // Off-screen: don't build a filter we won't show, and drop the GPU
@@ -1560,7 +1554,6 @@ class LiquidGlass {
           this.cancelPendingBuild();
           if (this.filter) {
             setBackdropStyle(this.element, 'none');
-            (this.element.style as WebkitStyle).webkitBackdropFilter = 'none';
           }
         }
       },
@@ -1679,7 +1672,6 @@ class LiquidGlass {
 
     const css = this.scrollSafeCssForMode(this.scrollSafeMode);
     setBackdropStyle(this.element, css);
-    (this.element.style as WebkitStyle).webkitBackdropFilter = css;
   }
 
   private rebuild(): void {
