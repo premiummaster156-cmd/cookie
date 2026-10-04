@@ -643,75 +643,7 @@ function parseBgLuminance(color: string): number | null {
 
 type WebkitStyle = CSSStyleDeclaration & { webkitBackdropFilter?: string };
 
-const NEUTRAL_TOUCH_MAP = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
-
-const touchLensCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-const touchLensSize = 72;
-
-function createTouchLensMap(x: number, y: number, radiusPx: number, energy: number): string {
-  if (energy <= 0.003) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
-  if (!touchLensCanvas) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
-  touchLensCanvas.width = touchLensSize;
-  touchLensCanvas.height = touchLensSize;
-  const ctx = touchLensCanvas.getContext('2d');
-  if (!ctx) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
-  const image = ctx.createImageData(touchLensSize, touchLensSize);
-  const data = image.data;
-  const cx = Math.max(0, Math.min(1, x));
-  const cy = Math.max(0, Math.min(1, y));
-  const radius = Math.max(0.08, Math.min(0.9, radiusPx / Math.max(24, Math.min(360, Math.max(1, Math.min(window.innerWidth, window.innerHeight))))));
-  const strength = Math.min(0.46, 0.20 + energy * 0.30);
-  for (let py = 0; py < touchLensSize; py++) {
-    for (let px = 0; px < touchLensSize; px++) {
-      const nx = px / (touchLensSize - 1);
-      const ny = py / (touchLensSize - 1);
-      const dx = nx - cx;
-      const dy = ny - cy;
-      const d = Math.hypot(dx, dy);
-      const t = Math.min(1, d / radius);
-      const falloff = t >= 1 ? 0 : (1 - t) * (1 - t) * (0.72 + 0.28 * Math.sin(t * Math.PI));
-      const len = d > 0.0001 ? d : 1;
-      const vx = (dx / len) * falloff * strength;
-      const vy = (dy / len) * falloff * strength;
-      const i = (py * touchLensSize + px) * 4;
-      data[i] = Math.max(0, Math.min(255, Math.round(128 + vx * 255)));
-      data[i + 1] = Math.max(0, Math.min(255, Math.round(128 + vy * 255)));
-      data[i + 2] = 128;
-      data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  return touchLensCanvas.toDataURL('image/png');
-}
-
-function roundCss(value: number): string {
-  return String(Math.round(value * 1000) / 1000);
-}
-
-/** Parse a CSS rgb/rgba color to [r,g,b,a] in 0..1 (for the GPU tint uniform). */
-function parseRgba(color: string): [number, number, number, number] {
-  const m = color.match(/rgba?\(([^)]+)\)/);
-  if (!m) return [1, 1, 1, 0];
-  const p = m[1].split(',').map((s) => parseFloat(s));
-  return [(p[0] || 0) / 255, (p[1] || 0) / 255, (p[2] || 0) / 255, p[3] == null ? 1 : p[3]];
-}
-
-/** Ensure the scene element has an id so `-moz-element(#id)` can reference it. */
-function ensureSceneId(el: HTMLElement): string {
-  if (!el.id) el.id = `lg-scene-${++sceneIdCounter}`;
-  return el.id;
-}
-
-/** Make a DOM clone inert, invisible to a11y, and id-free (no duplicate ids). */
-function stripCloneInteractivity(clone: HTMLElement): void {
-  clone.removeAttribute('id');
-  clone.setAttribute('aria-hidden', 'true');
-  clone.setAttribute('inert', '');
-  clone.style.pointerEvents = 'none';
-  clone.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
-}
-
-export class LiquidGlass {
+class LiquidGlass {
   private static readonly autoQualityInstances = new Set<LiquidGlass>();
   private static autoQualityRaf = 0;
 
