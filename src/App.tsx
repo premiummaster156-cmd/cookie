@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AuthPage, { type AuthUser } from "./Auth";
 import CodeStudioPage from "./CodeStudioPage";
 import { LiquidGlassBackdrop } from "./liquid-glass/React";
