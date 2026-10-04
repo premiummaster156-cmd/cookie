@@ -2530,3 +2530,35 @@ html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
     opacity:.96;
   }
 }
+
+
+/* Extend the optical material to the secondary navigation surfaces. */
+.gpts-nav,
+.gpt-chat-top,
+.work-input{
+  isolation:isolate;
+}
+.gpts-nav > .cookie-liquid-glass-backdrop,
+.gpt-chat-top > .cookie-liquid-glass-backdrop,
+.work-input > .cookie-liquid-glass-backdrop{
+  display:block;
+  border-radius:inherit;
+}
+.gpts-nav > :not(.cookie-liquid-glass-backdrop),
+.gpt-chat-top > :not(.cookie-liquid-glass-backdrop),
+.work-input > :not(.cookie-liquid-glass-backdrop){
+  position:relative;
+  z-index:2;
+}
+.gpts-nav,
+.gpt-chat-top,
+.work-input{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.work-input textarea,
+.work-input>button{
+  position:relative;
+  z-index:3;
+}
