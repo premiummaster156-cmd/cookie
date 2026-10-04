@@ -1,14 +1,21 @@
 {
   "name":"Cookie AI",
   "short_name":"Cookie",
-  "description":"Cookie AI — a fast, focused AI assistant.",
+  "description":"Cookie AI — a focused AI workspace for chat, files, coding and everyday questions.",
+  "id":"/",
   "start_url":"/",
+  "scope":"/",
   "display":"standalone",
-  "background_color":"#0b0b0a",
-  "theme_color":"#0b0b0a",
-  "orientation":"portrait-primary",
+  "display_override":["window-controls-overlay","standalone"],
+  "background_color":"#151515",
+  "theme_color":"#151515",
+  "orientation":"any",
+  "lang":"en",
+  "dir":"ltr",
+  "categories":["productivity","utilities","education"],
+  "prefer_related_applications":false,
   "icons":[
-    {"src":"https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png","sizes":"192x192","type":"image/png"},
-    {"src":"https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png","sizes":"512x512","type":"image/png"}
+    {"src":"/icons/cookie-192.svg","sizes":"192x192","type":"image/svg+xml","purpose":"any"},
+    {"src":"/icons/cookie-512.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any"}
   ]
 }
