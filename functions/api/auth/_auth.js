@@ -1,3 +1,4 @@
+import { createNeonD1Compat } from "../_db.js";
 const encoder = new TextEncoder();
 function bytesToB64(bytes) {
   let binary = "";
@@ -60,6 +61,13 @@ export function withCookies(response, cookies = []) {
   return new Response(response.body, { status: response.status, headers });
 }
 export function dbAvailable(env) {
+  const neonUrl = String(env?.NEON_DATABASE_URL || env?.DATABASE_URL || "").trim();
+  if (neonUrl) {
+    if (!env.DB || !env.DB.__cookieNeon || env.DB.__cookieNeonUrl !== neonUrl) {
+      env.DB = createNeonD1Compat(env);
+    }
+    return Boolean(env.DB);
+  }
   return Boolean(env?.DB && typeof env.DB.prepare === "function");
 }
 export function publicUser(row) {
