@@ -172,7 +172,6 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     {id:"data-analysis",name:"Data analysis",detail:"Tables, CSVs, trends, and metrics",plan:"pro",icon:<BarChart3 size={18}/>},
     {id:"url-fetch",name:"Read a URL",detail:"Fetch and inspect a public webpage",plan:"pro",icon:<Link2 size={18}/>},
     {id:"code-analysis",name:"Code analysis",detail:"Deep code review and debugging",plan:"pro",icon:<Code2 size={18}/>},
-    ,
     {id:"deep-research",name:"Deep research",detail:"Broader multi-source research",plan:"max",icon:<Sparkles size={18}/>}
   ];
   useEffect(()=>{const t=textRef.current;if(t){t.style.height="0px";t.style.height=Math.min(220,Math.max(52,t.scrollHeight))+"px"}},[value]);
