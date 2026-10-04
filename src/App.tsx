@@ -276,26 +276,66 @@ function GPTsPage({onOpen,plan}:{onOpen:(id:string)=>void;plan:string}){
   const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
   const filtered=GPTS.filter(g=>!q||g.name.toLowerCase().includes(q.toLowerCase())||g.description.toLowerCase().includes(q.toLowerCase())||g.category.toLowerCase().includes(q.toLowerCase()));
   return <div className="gpts-page">
-    <div className="gpts-topbar"><div><button className="gpts-mini-brand"><CookieIcon size={24}/><span>Cookie</span></button></div><div className="gpts-top-right"><span>Explore GPTs</span><span className="gpts-model-pill">Cookie AI</span></div></div>
-    <div className="gpts-content">
-      <section className="gpts-hero"><span className="gpts-eyebrow"><Sparkles size={14}/>GPTs</span><h1>Explore GPTs</h1><p>Purpose-built Cookie assistants. Open one in a fresh chat instead of inserting a scripted prompt.</p><div className="gpts-search"><Search size={18}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search GPTs"/></div></section>
-      <div className="gpts-section-head"><h2>Featured</h2><span>{filtered.length} available</span></div>
-      <div className="gpt-cards">{filtered.map(g=>{const locked=rank<(g.plan==="max"?2:g.plan==="pro"?1:0);return <button className={"gpt-card "+(locked?"locked":"")} key={g.id} onClick={()=>onOpen(g.id)}>
-        <div className={"gpt-card-icon "+g.icon}><GPTIcon kind={g.icon} size={22}/></div>
-        <div className="gpt-card-body"><div className="gpt-card-title"><strong>{g.name}</strong>{g.plan!=="free"&&<span className={"gpt-plan "+g.plan}>{g.plan.toUpperCase()}</span>}</div><p>{g.description}</p><small>{g.category}</small></div>
-        <div className="gpt-card-arrow">{locked?<LockKeyhole size={16}/>:<ChevronRight size={18}/>}</div>
-      </button>})}</div>
-    </div>
+    <header className="gpts-nav">
+      <div className="gpts-nav-group">
+        <button className="gpts-nav-icon" aria-label="Cookie home"><CookieIcon size={22}/></button>
+        <div className="gpts-nav-title"><strong>GPTs</strong><span>Cookie AI</span></div>
+      </div>
+      <div className="gpts-nav-actions">
+        <button className="gpts-nav-button" onClick={()=>document.querySelector<HTMLInputElement>(".gpts-search input")?.focus()}><Search size={17}/><span>Search</span></button>
+      </div>
+    </header>
+    <main className="gpts-content">
+      <section className="gpts-hero">
+        <div className="gpts-hero-icon"><Sparkles size={22}/></div>
+        <h1>Explore GPTs</h1>
+        <p>Purpose-built Cookie assistants. Each one starts a clean conversation with its own instructions.</p>
+        <label className="gpts-search">
+          <Search size={18}/>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search GPTs" aria-label="Search GPTs"/>
+          {q&&<button type="button" aria-label="Clear search" onClick={()=>setQ("")}><X size={15}/></button>}
+        </label>
+      </section>
+      <section className="gpts-featured">
+        <div className="gpts-section-head"><div><h2>Featured</h2><span>Choose an assistant to start a fresh chat.</span></div><b>{filtered.length}</b></div>
+        <div className="gpt-cards">
+          {filtered.map(g=>{
+            const locked=rank<(g.plan==="max"?2:g.plan==="pro"?1:0);
+            return <button className={"gpt-card "+(locked?"locked":"")} key={g.id} onClick={()=>onOpen(g.id)} aria-label={locked?g.name+" requires "+g.plan+" plan":g.name}>
+              <div className={"gpt-card-icon "+g.icon}><GPTIcon kind={g.icon} size={21}/></div>
+              <div className="gpt-card-body">
+                <div className="gpt-card-title"><strong>{g.name}</strong>{g.plan!=="free"&&<span className={"gpt-plan "+g.plan}>{g.plan.toUpperCase()}</span>}</div>
+                <p>{g.description}</p>
+                <span className="gpt-card-category">{g.category}</span>
+              </div>
+              <span className="gpt-card-arrow">{locked?<LockKeyhole size={15}/>:<ChevronRight size={17}/>}</span>
+            </button>;
+          })}
+        </div>
+        {!filtered.length&&<div className="gpts-empty"><Search size={20}/><strong>No GPTs found</strong><span>Try a different search.</span></div>}
+      </section>
+    </main>
   </div>;
 }
 
 function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onDownload,sendOnEnter,value,setValue,attachments,setAttachments,webSearch,setWebSearch}:{chat:Chat;gpt:GPTDefinition;onBack:()=>void;onNewChat:()=>void;onSend:()=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onDownload:(f:GeneratedFile)=>void;sendOnEnter:boolean;value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;webSearch:boolean;setWebSearch:(v:boolean)=>void}){
   return <div className="gpt-chat-shell">
-    <header className="gpt-chat-top"><button className="gpt-back" onClick={onBack}><ArrowLeft size={17}/><span>GPTs</span></button><div className="gpt-chat-identity"><div className={"gpt-card-icon "+gpt.icon}><GPTIcon kind={gpt.icon} size={18}/></div><div><strong>{gpt.name}</strong><small>{gpt.category} · Cookie AI</small></div></div><button className="gpt-chat-new" onClick={onNewChat}><MessageSquarePlus size={17}/><span>New chat</span></button></header>
-    <main className="gpt-chat-main"><ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload}/><div className="gpt-chat-composer"><Composer value={value} setValue={setValue} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={false} setMemoryEnabled={()=>{}} onImagePrompt={()=>{}} toolMode={null} setToolMode={()=>{}} plan="free" hideTools hideWebSearch onToolNotice={()=>{}}/></div></main>
+    <header className="gpt-chat-top">
+      <button className="gpt-back" onClick={onBack} aria-label="Back to GPTs"><ArrowLeft size={17}/><span>GPTs</span></button>
+      <div className="gpt-chat-identity">
+        <div className={"gpt-card-icon "+gpt.icon}><GPTIcon kind={gpt.icon} size={18}/></div>
+        <div><strong>{gpt.name}</strong><small>{gpt.category}</small></div>
+      </div>
+      <button className="gpt-chat-new" onClick={onNewChat}><MessageSquarePlus size={17}/><span>New chat</span></button>
+    </header>
+    <main className="gpt-chat-main">
+      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload}/>
+      <div className="gpt-chat-composer">
+        <Composer value={value} setValue={setValue} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={false} setMemoryEnabled={()=>{}} onImagePrompt={()=>{}} toolMode={null} setToolMode={()=>{}} plan="free" hideTools hideWebSearch onToolNotice={()=>{}}/>
+      </div>
+    </main>
   </div>;
 }
-
 function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[]}){
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
