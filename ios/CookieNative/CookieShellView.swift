@@ -5,6 +5,8 @@ struct CookieShellView: View {
     @State private var draft = ""
     @State private var isLoading = true
     @State private var canGoBack = false
+    @State private var isAuthenticated = false
+    @State private var modelName = "standard"
     @State private var showNavigation = false
     @State private var showAttachmentNotice = false
     @State private var isSending = false
@@ -15,7 +17,8 @@ struct CookieShellView: View {
                 url: CookieConfiguration.webURL,
                 controller: webController,
                 isLoading: $isLoading,
-                canGoBack: $canGoBack
+                canGoBack: $canGoBack,
+                isAuthenticated: $isAuthenticated
             )
             .ignoresSafeArea()
 
@@ -29,20 +32,29 @@ struct CookieShellView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            CookieNativeTopBar(
-                canGoBack: canGoBack,
-                onBack: { webController.goBack() },
-                onMenu: { showNavigation = true },
-                onNewChat: { webController.command("new-chat") }
-            )
+            if isAuthenticated {
+                CookieNativeTopBar(
+                    canGoBack: canGoBack,
+                    onBack: { webController.goBack() },
+                    onMenu: { showNavigation = true },
+                    onNewChat: { webController.command("new-chat") },
+                    modelName: modelName,
+                    onModel: { id in
+                        modelName = id
+                        webController.command("model:\(id)")
+                    }
+                )
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            CookieNativeComposer(
-                text: $draft,
-                isSending: isSending,
-                onSend: sendDraft,
-                onPlus: { showAttachmentNotice = true }
-            )
+            if isAuthenticated {
+                CookieNativeComposer(
+                    text: $draft,
+                    isSending: isSending,
+                    onSend: sendDraft,
+                    onPlus: { showAttachmentNotice = true }
+                )
+            }
         }
         .sheet(isPresented: $showNavigation) {
             CookieNavigationSheet { command in
@@ -62,6 +74,11 @@ struct CookieShellView: View {
         .onChange(of: isLoading) { _, loading in
             if !loading {
                 isSending = false
+                if isAuthenticated {
+                    webController.readModel { id in
+                        modelName = id
+                    }
+                }
             }
         }
     }
