@@ -20,7 +20,8 @@
     "perfect-scrollbar": "latest",
     "three": "latest",
     "animate.css": "^4.1.1",
-    "nodemailer": "^10.0.13"
+    "nodemailer": "^10.0.13",
+    "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
