@@ -649,7 +649,40 @@ function setBackdropStyle(element: HTMLElement, value: string): void {
   element.style.setProperty('--lg-backdrop-filter', value);
 }
 
-class LiquidGlass {
+function roundCss(value: number): string {
+  return String(Math.round(value * 1000) / 1000);
+}
+
+/** Parse a CSS rgb/rgba color to [r,g,b,a] in 0..1 (for the GPU tint uniform). */
+function parseRgba(color: string): [number, number, number, number] {
+  const m = color.match(/rgba?\(([^)]+)\)/);
+  if (!m) return [1, 1, 1, 0];
+  const p = m[1].split(',').map((s) => parseFloat(s));
+  return [
+    (p[0] || 0) / 255,
+    (p[1] || 0) / 255,
+    (p[2] || 0) / 255,
+    p[3] == null ? 1 : p[3],
+  ];
+}
+
+/** Ensure the scene element has an id so -moz-element(#id) can reference it. */
+function ensureSceneId(el: HTMLElement): string {
+  if (!el.id) el.id = `lg-scene-${++sceneIdCounter}`;
+  return el.id;
+}
+
+/** Make a DOM clone inert, invisible to a11y, and id-free (no duplicate ids). */
+function stripCloneInteractivity(clone: HTMLElement): void {
+  clone.removeAttribute('id');
+  clone.setAttribute('aria-hidden', 'true');
+  clone.setAttribute('inert', '');
+  clone.style.pointerEvents = 'none';
+  clone.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+}
+
+
+export class LiquidGlass {
   private static readonly autoQualityInstances = new Set<LiquidGlass>();
   private static autoQualityRaf = 0;
 
