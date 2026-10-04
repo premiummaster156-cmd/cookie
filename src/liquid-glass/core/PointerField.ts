@@ -290,8 +290,8 @@ function pressTick(): void {
         if (pressTarget) {
           const elapsed = Math.max(0, now - pressWaveStartedAt);
           const breath = 0.5 - 0.5 * Math.cos((elapsed / 620) * Math.PI * 2);
-          pressWaveRadius = 17 + breath * 11;
-          const energy = Math.min(0.72, pressEnergy * (0.65 + breath * 0.25));
+          pressWaveRadius = 12 + breath * 8;
+          const energy = Math.min(0.58, pressEnergy * (0.58 + breath * 0.18));
 
           el.style.setProperty('--lg-touch-x', ix.toFixed(4));
           el.style.setProperty('--lg-touch-y', iy.toFixed(4));
@@ -299,7 +299,7 @@ function pressTick(): void {
           el.style.setProperty('--lg-touch-energy', energy.toFixed(4));
         } else {
           const releaseT = Math.min(1, Math.max(0, (now - pressReleasedAt) / 420));
-          pressWaveRadius = 19 + releaseT * 54;
+          pressWaveRadius = 14 + releaseT * 34;
           const energy = pressEnergy * (1 - releaseT) * (1 - releaseT);
 
           el.style.setProperty('--lg-touch-x', ix.toFixed(4));
