@@ -2299,3 +2299,122 @@ html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
   .sidebar::before,.composer::before,.voice-orb,.voice-orb::before,.voice-orb::after,.voice-orb i{animation:none!important}
   .attach-menu,.tools-menu,.model-menu,.row-menu,.new-menu,.profile-menu{animation:none!important}
 }
+
+
+/* Final interaction correction: controls are not cards; Work is an input-first mode. */
+.composer textarea{
+  height:52px;
+  min-height:52px;
+  max-height:220px;
+  overflow-y:auto;
+  transition:height .18s cubic-bezier(.2,.8,.2,1);
+  transform:none!important;
+}
+.composer:focus-within{transform:none!important}
+.work-page{
+  position:relative;
+  height:100%;
+  width:min(760px,100%);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  text-align:left;
+  padding:28px 22px 120px;
+}
+.work-intro{
+  display:flex;
+  align-items:flex-start;
+  gap:15px;
+  margin-bottom:22px;
+}
+.work-mark{
+  width:40px;height:40px;flex:none;
+  display:grid;place-items:center;
+  color:#f2f2f2;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.18),rgba(255,255,255,.035) 58%,transparent 72%);
+  box-shadow:inset 0 1px rgba(255,255,255,.16),0 10px 30px rgba(0,0,0,.2);
+}
+.work-intro h1{
+  margin:0 0 7px!important;
+  font-size:30px!important;
+  line-height:1.08;
+  letter-spacing:-.035em;
+}
+.work-intro p{
+  margin:0!important;
+  max-width:560px;
+  color:#92959d;
+  font-size:14px;
+  line-height:1.55;
+}
+.work-input{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  padding:10px 10px 10px 15px;
+  border-radius:24px;
+  background:linear-gradient(145deg,rgba(43,45,50,.78),rgba(21,22,26,.68));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 26px 80px rgba(0,0,0,.30),inset 1px 1px rgba(255,255,255,.09);
+  -webkit-backdrop-filter:blur(34px) saturate(150%);
+  backdrop-filter:blur(34px) saturate(150%);
+  transition:border-color .22s ease,box-shadow .28s ease,transform .28s cubic-bezier(.2,.8,.2,1);
+}
+.work-input:focus-within{
+  border-color:rgba(255,255,255,.22);
+  box-shadow:0 30px 90px rgba(0,0,0,.36),inset 1px 1px rgba(255,255,255,.12),0 0 0 4px rgba(255,255,255,.018);
+  transform:translateY(-1px);
+}
+.work-input textarea{
+  flex:1;
+  min-width:0;
+  height:56px;
+  min-height:56px;
+  max-height:220px;
+  resize:none;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#f2f2f2;
+  padding:8px 2px;
+  line-height:1.5;
+  overflow-y:auto;
+  transition:height .18s cubic-bezier(.2,.8,.2,1);
+}
+.work-input textarea::placeholder{color:#777b84}
+.work-input>button{
+  width:40px;height:40px;flex:none;
+  display:grid;place-items:center;
+  border-radius:50%;
+  color:#4c4d51;
+  background:rgba(255,255,255,.15);
+  transition:transform .22s cubic-bezier(.16,1,.3,1),background .22s ease,color .22s ease,box-shadow .22s ease;
+}
+.work-input>button.ready{
+  color:#111;
+  background:rgba(245,245,247,.95);
+  box-shadow:0 7px 22px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.95);
+}
+.work-input>button.ready:hover{transform:scale(1.06)}
+.work-input>button.ready:active{transform:scale(.87)}
+.work-hint{
+  margin:9px 4px 0;
+  color:#646871;
+  font-size:11px;
+}
+@media(max-width:700px){
+  .work-page{padding:22px 14px 90px}
+  .work-intro h1{font-size:27px!important}
+  .work-input{border-radius:22px}
+}
+
+/* Chat-row menus are a single transient surface, never stacked cards. */
+.row-menu{
+  z-index:90!important;
+  transform-origin:top right;
+}
+.row-menu button{background:transparent!important;border:0!important;box-shadow:none!important}
+.row-menu button:hover{background:rgba(255,255,255,.06)!important}
