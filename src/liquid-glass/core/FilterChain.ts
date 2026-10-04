@@ -72,8 +72,6 @@ export class FilterChain {
   private readonly defs: SVGDefsElement;
   private readonly feImageDisp: SVGFEImageElement;
   private readonly feImageSpec: SVGFEImageElement | null;
-  private readonly feImageTouch: SVGFEImageElement;
-  private readonly feTouchDisp: SVGFEDisplacementMapElement;
   private readonly feBlur: SVGFEGaussianBlurElement;
   private readonly feDispR: SVGFEDisplacementMapElement | null;
   private readonly feDispG: SVGFEDisplacementMapElement;
@@ -266,15 +264,6 @@ export class FilterChain {
     this.feImageSpec.setAttribute('height', String(height));
   }
 
-  updateTouchLens(dataUrl: string, width: number, height: number, padding: number, scale: number): void {
-    this.feImageTouch.setAttribute('href', dataUrl);
-    this.feImageTouch.setAttribute('x', String(-padding));
-    this.feImageTouch.setAttribute('y', String(-padding));
-    this.feImageTouch.setAttribute('width', String(width + padding * 2));
-    this.feImageTouch.setAttribute('height', String(height + padding * 2));
-    this.feTouchDisp.setAttribute('scale', String(scale));
-  }
-
   updateRefraction(refraction: number): void {
     if (this.chromaticEnabled && this.feDispR && this.feDispB) {
       const base = 2 * refraction;
@@ -299,8 +288,6 @@ export class FilterChain {
     this.filter.remove();
   }
 }
-
-const NEUTRAL_TOUCH_MAP = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
 
 function disp(
   ns: string,
