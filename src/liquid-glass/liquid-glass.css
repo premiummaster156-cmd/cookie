@@ -16,6 +16,13 @@
   --lg-illum:0;
   --lg-illum-x:.5;
   --lg-illum-y:.5;
+  --lg-touch-x:.5;
+  --lg-touch-y:.5;
+  --lg-touch-radius:18px;
+  --lg-touch-energy:0;
+  --lg-tint:transparent;
+  --lg-backdrop-filter:none;
+  --lg-shadow:none;
 }
 .liquid-glass::before{
   content:"";
