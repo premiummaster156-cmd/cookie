@@ -234,26 +234,75 @@ function executeFileTool(files, name, args) {
   }
   return {files,result:JSON.stringify({ok:false,error:"Unknown file tool: "+name})};
 }
+function inferModel({mode, text, attachments, gptProfile, requestedTool}) {
+  const q = String(text || "").toLowerCase();
+  const hasImages = Array.isArray(attachments) && attachments.some(a => a && a.kind === "image");
+  const codeLike = /\b(code|coding|program|programming|debug|bug|stack trace|typescript|javascript|react|next\.js|python|java|swift|kotlin|rust|go|sql|api|sdk|git|github|css|html|regex|function|class|component|repository|repo|pull request|commit)\b/i.test(q);
+  const researchLike = requestedTool === "deep-research" || /\b(research|sources?|cite|citation|latest|current|today|news|compare evidence|look up|investigate)\b/i.test(q);
+  if (hasImages) return "kimi-k2.6:cloud";
+  if (gptProfile?.id === "code-expert" || codeLike) return "qwen3-coder:480b-cloud";
+  if (mode === "ultra") return "kimi-k2.6:cloud";
+  if (mode === "max" || researchLike) return "gpt-oss:120b-cloud";
+  return "deepseek-v4-flash:cloud";
+}
+
+function modelContext(model) {
+  if (/deepseek-v4-flash/i.test(model)) return 262144;
+  if (/qwen3-coder|kimi-k2\.6/i.test(model)) return 262144;
+  if (/gpt-oss/i.test(model)) return 131072;
+  return 131072;
+}
+
+function thinkingFor(mode, reasoning, model) {
+  if (reasoning === "fast") return false;
+  if (reasoning === "deep") return true;
+  if (/deepseek-v4-flash/i.test(model)) return mode !== "standard";
+  return Boolean(mode !== "standard");
+}
+
+function appendWebSources(target, result) {
+  const rows = Array.isArray(result?.pages)
+    ? result.pages
+    : Array.isArray(result?.results)
+      ? result.results
+      : result?.url
+        ? [result]
+        : [];
+  for (const item of rows.slice(0, 12)) {
+    const url = String(item?.url || "").trim();
+    if (!/^https?:\/\//i.test(url)) continue;
+    if (target.some(x => x.url === url)) continue;
+    let domain = "";
+    try { domain = new URL(url).hostname.replace(/^www\./i, ""); } catch {}
+    target.push({
+      title: String(item?.title || "Web source").replace(/\s+/g, " ").trim().slice(0, 180),
+      url,
+      domain,
+      snippet: String(item?.content || "").replace(/\s+/g, " ").trim().slice(0, 260)
+    });
+  }
+}
+
 const profiles = {
   standard: {
     name: "CPT-1",
-    model: "gpt-oss:20b-cloud",
-    temperature: 0.55,
-    instructions: "Be clear, practical, natural, concise when the task is simple, and detailed when the task needs it.",
-    thinking: false
+    model: "deepseek-v4-flash:cloud",
+    temperature: 0.48,
+    instructions: "Be fast, clear, practical, natural, and accurate. Spend reasoning effort where it materially improves the answer; do not over-explain simple tasks.",
+    thinking: true
   },
   max: {
     name: "CPT-2 MAX",
-    model: "qwen3-coder:480b-cloud",
-    temperature: 0.7,
-    instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, creative work, planning, analysis, and multi-step engineering tasks with extra care. For code, inspect dependencies and edge cases, preserve conventions, and prefer complete production-quality solutions.",
+    model: "gpt-oss:120b-cloud",
+    temperature: 0.56,
+    instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, planning, analysis, and multi-step engineering tasks with extra care. Prefer verification, explicit assumptions, robust edge-case handling, and complete production-quality solutions.",
     thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "deepseek-v4-pro:cloud",
-    temperature: 0.68,
-    instructions: "Operate as Cookie's highest-capability multimodal coding and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Review code for correctness, security, maintainability, edge cases, and integration issues. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
+    model: "kimi-k2.6:cloud",
+    temperature: 0.58,
+    instructions: "Operate as Cookie's highest-capability multimodal and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Use long-horizon planning, strong code/design judgment, tool use, and rigorous self-review. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
   }
 };
@@ -321,6 +370,7 @@ export async function onRequestPost({ request, env }) {
     const customInstructions = typeof preferences.instructions === "string" ? preferences.instructions.slice(0,6000).trim() : "";
     const useWebSearch = preferences.webSearch === true;
     const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
+    const streamRequested = new URL(request.url).searchParams.get("stream") === "1";
     const requestedTool = String(preferences.tool || "").trim();
     const requiredPlan = Object.prototype.hasOwnProperty.call(TOOL_REQUIREMENTS,requestedTool) ? Number(TOOL_REQUIREMENTS[requestedTool]) : 0;
     if(requiredPlan>planRank(sessionUser.plan)){
@@ -336,6 +386,13 @@ export async function onRequestPost({ request, env }) {
       return json({error:gptProfile.name+" requires a "+required+" plan."},402);
     }
     const gptMode = Boolean(gptProfile);
+    model = inferModel({
+      mode,
+      text: requestedWebQuery,
+      attachments,
+      gptProfile: requestedGptId ? {...gptProfile, id:requestedGptId} : null,
+      requestedTool
+    });
 
     const system = [
       "Cookie is Cookie AI, an account-based AI assistant. Users can sign in with email/password or Google, GitHub, and Discord OAuth. Email accounts must verify ownership through a time-limited code or secure link.",
@@ -368,6 +425,10 @@ export async function onRequestPost({ request, env }) {
       "For coding, inspect the request carefully, provide production-quality code, preserve existing conventions when known, and explain important changes briefly.",
       "For complex tasks, reason carefully internally and give the user the useful result, assumptions, and conclusions without exposing private chain-of-thought.",
       "Do not invent facts, files, tool results, tests, or actions you did not actually perform.",
+      "Do not restate the user's request unless a tiny confirmation removes ambiguity. Start with the useful answer or next action.",
+      "For current information, prefer live evidence when web research is enabled; distinguish verified facts from inference.",
+      "For coding, inspect every supplied file and dependency context that matters, preserve existing conventions, and avoid placeholder code unless the user asks for a sketch.",
+      "For long tasks, keep working through the problem instead of stopping after the first plausible idea. Re-check integration points and edge cases before finalizing.",
       "Use Markdown when it improves readability. Avoid unnecessary headings, filler, and repeated conclusions.",
       "Response limits: keep ordinary non-code text to at most 1,000 lines. Code inside fenced code blocks may use up to 10,000 lines per code block when the task genuinely requires it. Prefer complete, useful code rather than shortening code unnecessarily. Do not split code into many tiny blocks just to bypass the limit.",
       profile.instructions,
@@ -460,16 +521,18 @@ export async function onRequestPost({ request, env }) {
 
     const agentMessages = apiMessages.slice();
     const modelFallbacks = [
-      "deepseek-v4-pro:cloud",
+      "deepseek-v4-flash:cloud",
+      "gpt-oss:120b-cloud",
       "qwen3-coder:480b-cloud",
-      "minimax-m3:cloud",
-      "gpt-oss:120b-cloud"
+      "kimi-k2.6:cloud"
     ];
 
     // When web search is enabled, research public pages directly. This does not
     // depend on the Ollama API key, so OpenRouter deployments work correctly too.
+    const webSources = [];
     if (useWebSearch && requestedWebQuery) {
       const directWeb = await researchWeb(requestedWebQuery, apiKey);
+      appendWebSources(webSources, directWeb);
       if (directWeb?.ok && (directWeb.content || directWeb.pages?.length || directWeb.results?.length)) {
         let webContext = "";
         if (Array.isArray(directWeb.pages)) {
@@ -483,7 +546,7 @@ export async function onRequestPost({ request, env }) {
         }
         agentMessages.push({
           role:"system",
-          content:"MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n"+webContext+"\n\nUse these actual live results to answer the user. Do not claim anything not supported by the supplied pages. When useful, include source URLs as Markdown links. Do not create files unless the user explicitly asks for a downloadable file or code artifact."
+          content:"MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n"+webContext+"\n\nUse these actual live results to answer the user. Do not claim anything not supported by the supplied pages. When useful, include source URLs as Markdown links. Avoid redundant searches unless the existing sources are insufficient. Do not create files unless the user explicitly asks for a downloadable file or code artifact."
         });
       } else {
         agentMessages.push({
@@ -497,9 +560,197 @@ export async function onRequestPost({ request, env }) {
       ...(useWebSearch ? webTools : []),
       ...(memoryEnabled ? memoryTools : [])
     ];
-    const think = mode === "standard" || reasoning === "fast" ? false : true;
+    const think = thinkingFor(mode, reasoning, model);
+    const numCtx = modelContext(model);
     let finalMessage = "";
     let lastData = null;
+
+    // Token streaming path. The non-streaming path below remains available for
+    // older clients and keeps the same tool loop/response contract.
+    if (streamRequested) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const push = payload => {
+            try { controller.enqueue(encoder.encode("data: " + JSON.stringify(payload) + "\n\n")); } catch {}
+          };
+          const liveMessages = agentMessages.slice();
+          const liveSources = webSources.slice();
+          let liveFiles = [];
+          let liveMessage = "";
+          let usedModel = model;
+          let completed = false;
+
+          const statusForTool = name =>
+            name === "web_search" ? "Searching the web…" :
+            name === "web_fetch" ? "Reading sources…" :
+            name.startsWith("memory_") ? "Using memory…" :
+            name.startsWith("file_") ? "Preparing files…" :
+            "Working…";
+
+          try {
+            for (let turn = 0; turn < 12; turn++) {
+              push({type:"status",status:"Thinking…"});
+              let upstream = null;
+              let data = null;
+              let assistantMessage = null;
+
+              for (const candidate of [model, ...modelFallbacks.filter(x => x !== model)]) {
+                try {
+                  const requestBody = {
+                    model: candidate,
+                    stream: true,
+                    messages: liveMessages,
+                    tools: availableTools,
+                    think,
+                    options: {
+                      temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
+                      top_p: 0.95,
+                      top_k: 64,
+                      num_ctx: numCtx
+                    }
+                  };
+                  upstream = await fetch(ollamaUrl, {
+                    method:"POST",
+                    headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiKey},
+                    body:JSON.stringify(requestBody),
+                    signal:request.signal
+                  });
+
+                  if (!upstream.ok) {
+                    const raw = await upstream.text();
+                    let errorData = null;
+                    try { errorData = raw ? JSON.parse(raw) : null; } catch {}
+                    console.error("[Cookie stream "+candidate+"]", upstream.status, errorData?.error || raw?.slice(0,300));
+                    continue;
+                  }
+
+                  if (!upstream.body) throw new Error("Ollama returned no stream body.");
+                  const reader = upstream.body.getReader();
+                  const decoder = new TextDecoder();
+                  let buffer = "";
+                  const callMap = new Map();
+                  const parts = [];
+                  let role = "assistant";
+
+                  const consumeLine = line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return;
+                    let chunk = null;
+                    try { chunk = JSON.parse(trimmed); } catch { return; }
+                    const msg = chunk?.message;
+                    if (!msg || typeof msg !== "object") return;
+                    if (typeof msg.role === "string") role = msg.role;
+                    if (typeof msg.content === "string" && msg.content) {
+                      parts.push(msg.content);
+                      push({type:"delta",delta:msg.content});
+                    }
+                    if (Array.isArray(msg.tool_calls)) {
+                      msg.tool_calls.forEach((call, index) => {
+                        const key = String(call?.index ?? index);
+                        const previous = callMap.get(key);
+                        callMap.set(key, previous ? {...previous, ...call} : call);
+                      });
+                    }
+                  };
+
+                  while (true) {
+                    const chunk = await reader.read();
+                    if (chunk.done) break;
+                    buffer += decoder.decode(chunk.value, {stream:true});
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() || "";
+                    for (const line of lines) consumeLine(line);
+                  }
+                  buffer += decoder.decode();
+                  if (buffer.trim()) consumeLine(buffer);
+
+                  assistantMessage = {role, content:parts.join("")};
+                  const toolCalls = Array.from(callMap.values()).filter(Boolean);
+                  if (toolCalls.length) assistantMessage.tool_calls = toolCalls;
+                  data = {message:assistantMessage};
+                  usedModel = candidate;
+                  break;
+                } catch (streamError) {
+                  console.error("[Cookie stream fetch]", streamError);
+                }
+              }
+
+              if (!upstream?.ok || !assistantMessage) {
+                throw new Error("Cookie could not reach the AI provider.");
+              }
+
+              liveMessages.push(assistantMessage);
+              const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
+              if (!toolCalls.length) {
+                liveMessage = String(assistantMessage.content || "");
+                completed = true;
+                break;
+              }
+
+              for (const call of toolCalls.slice(0,8)) {
+                const name = call?.function?.name;
+                let args = call?.function?.arguments;
+                if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
+                if (!name) continue;
+                push({type:"status",status:statusForTool(name)});
+                let executed;
+                if (name === "web_search" || name === "web_fetch") {
+                  const webResult = await executeWebTool(name,args,apiKey);
+                  appendWebSources(liveSources, webResult);
+                  executed = {files:liveFiles,result:JSON.stringify(webResult)};
+                } else if (name === "memory_search" || name === "memory_save" || name === "memory_delete") {
+                  executed = {files:liveFiles,result:JSON.stringify(await executeMemoryTool(env, sessionUser.id, name, args))};
+                } else {
+                  executed = executeFileTool(liveFiles,name,args);
+                }
+                liveFiles = executed.files;
+                liveMessages.push({role:"tool",tool_name:name,content:executed.result});
+              }
+            }
+
+            if (!completed) throw new Error("The AI agent did not finish within its tool-step budget.");
+            push({type:"status",status:"Finishing…"});
+            const output = String(liveMessage || "").trim() || "I couldn't produce a response. Please try again.";
+
+            if (plan === "free") {
+              try {
+                await env.DB.batch([
+                  env.DB.prepare("UPDATE users SET credits_remaining=MAX(credits_remaining-1,0),updated_at=? WHERE id=?").bind(Math.floor(Date.now()/1000), sessionUser.id),
+                  env.DB.prepare("INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)").bind(randomToken(16),sessionUser.id,"chat",usedModel,1,Math.floor(Date.now()/1000))
+                ]);
+              } catch (creditError) {
+                console.error("[Cookie stream credit accounting]", creditError);
+              }
+            }
+
+            push({
+              type:"done",
+              message:limitResponse(output),
+              model:profile.name,
+              generatedFiles:liveFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
+              generatedImages:[],
+              sources:liveSources.slice(0,10),
+              creditsRemaining:plan === "free" ? Math.max(0, credits - 1) : null
+            });
+            controller.close();
+          } catch (error) {
+            console.error("[Cookie stream]", error);
+            push({type:"error",error:String(error?.message||"Cookie could not answer right now.")});
+            controller.close();
+          }
+        }
+      });
+      return new Response(stream, {
+        status:200,
+        headers:{
+          "Content-Type":"text/event-stream; charset=utf-8",
+          "Cache-Control":"no-cache, no-transform",
+          "Connection":"keep-alive",
+          "X-Accel-Buffering":"no"
+        }
+      });
+    }
 
     for (let turn = 0; turn < 12; turn++) {
       let upstream = null;
@@ -516,10 +767,10 @@ export async function onRequestPost({ request, env }) {
             tools: availableTools,
             think,
             options: {
-              temperature: Math.min(1, profile.temperature * 0.65 + creativity * 0.35),
+              temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
               top_p:0.95,
               top_k:64,
-              num_ctx:64000
+              num_ctx:numCtx
             }
           };
 
@@ -573,6 +824,7 @@ export async function onRequestPost({ request, env }) {
         let executed;
         if(name === "web_search" || name === "web_fetch") {
           const webResult = await executeWebTool(name,args,apiKey);
+          appendWebSources(webSources, webResult);
           executed = {files:generatedFiles,result:JSON.stringify(webResult)};
         } else if(name === "memory_search" || name === "memory_save" || name === "memory_delete") {
           executed = {files:generatedFiles,result:JSON.stringify(await executeMemoryTool(env, sessionUser.id, name, args))};
