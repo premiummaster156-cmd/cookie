@@ -256,6 +256,7 @@ function modelContext(model) {
 function thinkingFor(mode, reasoning, model) {
   if (reasoning === "fast") return false;
   if (reasoning === "deep") return true;
+  if (/qwen3-coder|kimi-k2\.6|gpt-oss/i.test(model)) return true;
   if (/deepseek-v4-flash/i.test(model)) return mode !== "standard";
   return Boolean(mode !== "standard");
 }
@@ -607,7 +608,7 @@ export async function onRequestPost({ request, env }) {
                       temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
                       top_p: 0.95,
                       top_k: 64,
-                      num_ctx: numCtx
+                      num_ctx: modelContext(candidate)
                     }
                   };
                   upstream = await fetch(ollamaUrl, {
@@ -770,7 +771,7 @@ export async function onRequestPost({ request, env }) {
               temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
               top_p:0.95,
               top_k:64,
-              num_ctx:numCtx
+              num_ctx:modelContext(candidate)
             }
           };
 
