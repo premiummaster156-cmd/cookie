@@ -649,11 +649,11 @@ const touchLensCanvas = typeof document !== 'undefined' ? document.createElement
 const touchLensSize = 72;
 
 function createTouchLensMap(x: number, y: number, radiusPx: number, energy: number): string {
-  if (!touchLensCanvas) return NEUTRAL_TOUCH_MAP;
+  if (!touchLensCanvas) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
   touchLensCanvas.width = touchLensSize;
   touchLensCanvas.height = touchLensSize;
   const ctx = touchLensCanvas.getContext('2d');
-  if (!ctx) return NEUTRAL_TOUCH_MAP;
+  if (!ctx) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
   const image = ctx.createImageData(touchLensSize, touchLensSize);
   const data = image.data;
   const cx = Math.max(0, Math.min(1, x));
@@ -882,7 +882,7 @@ export class LiquidGlass {
     if (now - this.touchLensLastAt < 42) return;
     this.touchLensLastAt = now;
     const dataUrl = createTouchLensMap(x, y, radius, energy);
-    const padding = Math.max(1, this.displacementPadding());
+    const padding = Math.max(8, Math.min(48, this.effectiveRefraction() * 0.35));
     this.filter.updateTouchLens(dataUrl, this.currentWidth, this.currentHeight, padding, Math.min(58, 34 + energy * 34));
   };
 
