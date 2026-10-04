@@ -252,7 +252,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
   const Toggle=({k}:{k:string})=><button type="button" className={"toggle "+(settings[k]?"on":"")} aria-pressed={!!settings[k]} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
   const openTab=(id:SettingsTab)=>{setTab(id);setMobileHome(false)};
   const Row=({title,desc,children,icon}:{title:string;desc:string;children:React.ReactNode;icon?:React.ReactNode})=><div className="set-row"><div className="set-row-copy">{icon&&<span className="set-row-icon">{icon}</span>}<div><b>{title}</b><span>{desc}</span></div></div><div className="set-row-control">{children}</div></div>;
-  const GlassCard=({children,className=""}:{children:React.ReactNode;className?:string})=><div className={"settings-card settings-glass-card "+className}><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"balanced",scheme:"adaptive",radius:20,quality:"auto",backdropSource:".cookie-ambient-scene"}}/>{children}</div>;
+  const GlassCard=({children,className=""}:{children:React.ReactNode;className?:string})=><div className={"settings-card settings-material-card "+className}>{children}</div>;
   const downloadData=()=>{
     try{
       const payload={exportedAt:new Date().toISOString(),profile,settings,chats:readJSON("cookie_chats",[])};
@@ -341,7 +341,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
           </GlassCard>
         </div>
         <div className="settings-group settings-danger-group"><div className="settings-group-title">Delete data</div>
-          <div className="danger-zone settings-danger-card"><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"subtle",scheme:"adaptive",radius:20,quality:"auto"}}/><div><b>Delete all chats</b><span>Remove locally saved conversations from this browser.</span></div><button onClick={confirmDelete}>Delete all</button></div>
+          <div className="danger-zone settings-danger-card"><div><b>Delete all chats</b><span>Remove locally saved conversations from this browser.</span></div><button onClick={confirmDelete}>Delete all</button></div>
         </div>
       </section>}
 
@@ -368,7 +368,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
       {tab==="account"&&<section>
         <h1>Account</h1>
         <div className="settings-group"><div className="settings-group-title">Profile</div>
-          <div className="account-card settings-glass-card"><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"balanced",scheme:"adaptive",radius:20,quality:"auto"}}/><Avatar size="lg"/><div className="account-identity"><b>{profile.name||"Cookie user"}</b><span>@{profile.username||"cookie-user"}</span><small>{profile.email||"No email saved"}</small></div><div className="account-meta"><span>{authUser.plan==="free"?"Free plan":authUser.plan}</span><b>{authUser.credits} credits</b></div></div>
+          <div className="account-card settings-material-card"><Avatar size="lg"/><div className="account-identity"><b>{profile.name||"Cookie user"}</b><span>@{profile.username||"cookie-user"}</span><small>{profile.email||"No email saved"}</small></div><div className="account-meta"><span>{authUser.plan==="free"?"Free plan":authUser.plan}</span><b>{authUser.credits} credits</b></div></div>
         </div>
         <div className="settings-group"><div className="settings-group-title">Profile details</div>
           <GlassCard className="fields settings-fields-card">
@@ -383,7 +383,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
       {tab==="about"&&<section>
         <h1>About</h1>
         <div className="settings-group">
-          <div className="about-card settings-glass-card"><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"balanced",scheme:"adaptive",radius:20,quality:"auto"}}/><CookieIcon size={52}/><div><b>Cookie AI</b><span>AI workspace for chat, files, coding and everyday questions.</span><small>Cookie Preview • v4</small></div></div>
+          <div className="about-card settings-material-card"><CookieIcon size={52}/><div><b>Cookie AI</b><span>AI workspace for chat, files, coding and everyday questions.</span><small>Cookie Preview • v4</small></div></div>
         </div>
         <div className="settings-group"><div className="settings-group-title">Support</div>
           <GlassCard>
