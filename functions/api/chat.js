@@ -863,6 +863,8 @@ export async function onRequestPost({ request, env }) {
       demo: true,
       demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo.",
       generatedFiles: generatedFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
+      generatedImages: generatedImages,
+      sources: webSources.slice(0,10),
       creditsRemaining: plan === "free" ? Math.max(0, credits - 1) : null
     });
   } catch (error) {
