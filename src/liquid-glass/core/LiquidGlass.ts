@@ -643,6 +643,46 @@ function parseBgLuminance(color: string): number | null {
 
 type WebkitStyle = CSSStyleDeclaration & { webkitBackdropFilter?: string };
 
+const NEUTRAL_TOUCH_MAP = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
+
+const touchLensCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+const touchLensSize = 72;
+
+function createTouchLensMap(x: number, y: number, radiusPx: number, energy: number): string {
+  if (!touchLensCanvas) return NEUTRAL_TOUCH_MAP;
+  touchLensCanvas.width = touchLensSize;
+  touchLensCanvas.height = touchLensSize;
+  const ctx = touchLensCanvas.getContext('2d');
+  if (!ctx) return NEUTRAL_TOUCH_MAP;
+  const image = ctx.createImageData(touchLensSize, touchLensSize);
+  const data = image.data;
+  const cx = Math.max(0, Math.min(1, x));
+  const cy = Math.max(0, Math.min(1, y));
+  const radius = Math.max(0.08, Math.min(0.9, radiusPx / Math.max(24, Math.min(360, Math.max(1, Math.min(window.innerWidth, window.innerHeight))))));
+  const strength = Math.min(0.46, 0.20 + energy * 0.30);
+  for (let py = 0; py < touchLensSize; py++) {
+    for (let px = 0; px < touchLensSize; px++) {
+      const nx = px / (touchLensSize - 1);
+      const ny = py / (touchLensSize - 1);
+      const dx = nx - cx;
+      const dy = ny - cy;
+      const d = Math.hypot(dx, dy);
+      const t = Math.min(1, d / radius);
+      const falloff = t >= 1 ? 0 : (1 - t) * (1 - t) * (0.72 + 0.28 * Math.sin(t * Math.PI));
+      const len = d > 0.0001 ? d : 1;
+      const vx = (dx / len) * falloff * strength;
+      const vy = (dy / len) * falloff * strength;
+      const i = (py * touchLensSize + px) * 4;
+      data[i] = Math.max(0, Math.min(255, Math.round(128 + vx * 255)));
+      data[i + 1] = Math.max(0, Math.min(255, Math.round(128 + vy * 255)));
+      data[i + 2] = 128;
+      data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  return touchLensCanvas.toDataURL('image/png');
+}
+
 function roundCss(value: number): string {
   return String(Math.round(value * 1000) / 1000);
 }
@@ -717,6 +757,7 @@ export class LiquidGlass {
   /** Primary GPU refraction (shared WebGL canvas) is active for this element. */
   private usesGpu = false;
   private gpuHandle: { destroy: () => void; refresh: () => void } | null = null;
+  private touchLensLastAt = 0;
   /** Tracks devicePixelRatio so a browser-zoom / monitor switch re-bakes maps. */
   private lastDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   /** Cancels a queued (time-sliced) initial build if it hasn't run yet. */
@@ -817,7 +858,7 @@ export class LiquidGlass {
     // CSS/JS, so it works on the Safari/Firefox fallback too. Skipped on
     // hover-less touch devices: it gains nothing there and updating it during a
     // touch-scroll only costs style recalcs.
-    if (!this.reducedTransparency && !NO_HOVER) registerPointerLight(this.element);
+    if (!this.reducedTransparency) registerPointerLight(this.element, this.onTouchLens);
 
     // Sample the backdrop once laid out (content-aware shadow + adaptive scheme).
     // Also runs on the fallback path: luminance sampling is plain DOM, so Safari
@@ -831,6 +872,19 @@ export class LiquidGlass {
     // attaching an elementsFromPoint/getComputedStyle loop to scroll.
     this.refreshBackdropSamplingSubscription();
   }
+
+  private onTouchLens = (x: number, y: number, energy: number, radius: number): void => {
+    // The browser's backdrop compositor already does the live scene sampling.
+    // This transient second displacement pass adds the missing physical-lens
+    // behavior: a small vector field centered exactly under the finger.
+    if (this.destroyed || this.suspended || !this.filter || energy <= 0.003) return;
+    const now = nowMs();
+    if (now - this.touchLensLastAt < 42) return;
+    this.touchLensLastAt = now;
+    const dataUrl = createTouchLensMap(x, y, radius, energy);
+    const padding = Math.max(1, this.displacementPadding());
+    this.filter.updateTouchLens(dataUrl, this.currentWidth, this.currentHeight, padding, Math.min(58, 34 + energy * 34));
+  };
 
   update(partial: LiquidGlassOptions): void {
     const prev = this.options;
