@@ -3372,3 +3372,408 @@ html[data-theme="light"] .install-app-modal{background:rgba(249,249,250,.84);bor
     box-shadow:0 10px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.35)!important;
   }
 }
+
+
+/* ==========================================================================
+   COOKIE 2026 OPTICAL / CONTROL PASS
+   - controls are circle/capsule-first instead of boxed rectangles
+   - neutral white/silver control treatment
+   - touch-following Liquid Glass lens wave, driven by PointerField.ts
+   - cleaner composer/menu hierarchy inspired by modern ChatGPT ergonomics
+   ========================================================================== */
+
+:root{
+  --cookie-glass-white:rgba(255,255,255,.92);
+  --cookie-glass-soft:rgba(255,255,255,.12);
+  --cookie-glass-line:rgba(255,255,255,.20);
+}
+
+/* The optical wave is the important interaction layer. It starts at the
+   actual pointer/finger coordinate, follows it while held, and continuously
+   breathes instead of firing a generic "pressed" flash. */
+.cookie-liquid-glass-backdrop.liquid-glass{
+  --lg-wave-x:.5;
+  --lg-wave-y:.5;
+  --lg-wave-radius:22px;
+  --lg-wave-energy:0;
+}
+
+.cookie-liquid-glass-backdrop.liquid-glass::before{
+  opacity:max(var(--lg-illum,0),var(--lg-wave-energy,0))!important;
+  background:
+    radial-gradient(
+      circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      rgba(255,255,255,.30) 0,
+      rgba(255,255,255,.17) calc(var(--lg-wave-radius,22px) * .20),
+      rgba(255,255,255,0) calc(var(--lg-wave-radius,22px) * .48)
+    ),
+    radial-gradient(
+      circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      transparent max(0px,calc(var(--lg-wave-radius,22px) - 7px)),
+      rgba(255,255,255,.28) calc(var(--lg-wave-radius,22px) - 4px),
+      rgba(255,255,255,.08) calc(var(--lg-wave-radius,22px) + 1px),
+      transparent calc(var(--lg-wave-radius,22px) + 9px)
+    ),
+    radial-gradient(
+      calc(34% + var(--lg-illum,0) * 85%) circle at
+      calc(var(--lg-illum-x,.5) * 100%) calc(var(--lg-illum-y,.5) * 100%),
+      rgba(255,255,255,.24),transparent 70%
+    )!important;
+  mix-blend-mode:screen;
+  transition:none!important;
+  will-change:background,opacity;
+}
+
+/* A real press should feel like glass flexing, not a button changing color. */
+.cookie-liquid-glass-backdrop.liquid-glass::after{
+  transition:none!important;
+}
+
+/* Icon-only controls: true circular hit targets, no little rectangular cards. */
+.top-icon,
+.mobile-menu,
+.mobile-nav-launcher,
+.side-icon,
+.composer-icon,
+.send-button,
+.chat-row-more,
+.message-tools button,
+.attachment-card>button,
+.install-app-close,
+.voice-close,
+.gpts-nav-icon,
+.gpts-search>button,
+.project-back,
+.project-delete{
+  border-radius:50%!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  background:rgba(255,255,255,.055)!important;
+  color:rgba(255,255,255,.92)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    0 4px 18px rgba(0,0,0,.10)!important;
+}
+
+.top-icon,
+.mobile-menu,
+.side-icon,
+.composer-icon,
+.send-button,
+.chat-row-more,
+.message-tools button,
+.attachment-card>button{
+  transition:
+    transform 180ms cubic-bezier(.2,.8,.2,1),
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease!important;
+}
+
+.top-icon:hover,
+.mobile-menu:hover,
+.side-icon:hover,
+.composer-icon:hover,
+.send-button:hover:not(.disabled),
+.chat-row-more:hover,
+.message-tools button:hover,
+.attachment-card>button:hover{
+  background:rgba(255,255,255,.15)!important;
+  border-color:rgba(255,255,255,.26)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    0 7px 24px rgba(0,0,0,.16)!important;
+}
+
+.top-icon:active,
+.mobile-menu:active,
+.side-icon:active,
+.composer-icon:active,
+.send-button:active:not(.disabled),
+.chat-row-more:active{
+  transform:scale(.90)!important;
+}
+
+/* Text + icon controls use Apple-style capsules. */
+.model-picker,
+.switcher button,
+.temporary-chip,
+.tool-chip,
+.search-chip,
+.generating-pill,
+.settings-action-button,
+.settings-primary-button,
+.gpt-chat-new,
+.project-create button,
+.work-grid button,
+.voice-actions button,
+.install-app-primary,
+.install-app-secondary{
+  border-radius:999px!important;
+}
+
+.model-picker,
+.switcher button,
+.nav-btn,
+.chat-row,
+.settings-page>aside button,
+.settings-home-list button,
+.gpt-chat-new,
+.project-create button,
+.project-back,
+.project-delete,
+.work-grid button{
+  border:1px solid transparent!important;
+}
+
+.model-picker{
+  min-height:38px!important;
+  padding:0 13px!important;
+  background:rgba(255,255,255,.055)!important;
+  color:rgba(255,255,255,.95)!important;
+}
+
+.model-picker:hover{
+  background:rgba(255,255,255,.11)!important;
+  border-color:rgba(255,255,255,.16)!important;
+}
+
+.switcher{
+  padding-left:10px!important;
+  padding-right:10px!important;
+  gap:5px!important;
+  background:transparent!important;
+}
+
+.switcher button{
+  min-height:36px!important;
+  background:transparent!important;
+  color:rgba(255,255,255,.62)!important;
+}
+
+.switcher button.active{
+  background:rgba(255,255,255,.12)!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13)!important;
+}
+
+/* Sidebar navigation is a single hierarchy, not a stack of cards. */
+.sidebar .nav-btn{
+  min-height:42px!important;
+  margin:2px 0!important;
+  border-radius:14px!important;
+  padding-left:12px!important;
+  background:transparent!important;
+}
+
+.sidebar .nav-btn:hover{
+  background:rgba(255,255,255,.075)!important;
+}
+
+.sidebar .nav-btn.active{
+  background:rgba(255,255,255,.11)!important;
+  color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+
+.sidebar .chat-row{
+  min-height:42px!important;
+  margin:2px 0!important;
+  border-radius:14px!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+}
+
+.sidebar .chat-row:hover,
+.sidebar .chat-row.active{
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.06)!important;
+}
+
+.chat-row-main{
+  border-radius:inherit!important;
+  background:transparent!important;
+}
+
+.chat-row-more{
+  width:32px!important;
+  height:32px!important;
+  margin-right:5px!important;
+}
+
+/* Menus should read as one glass sheet with capsule rows, not nested boxes. */
+.attach-menu,
+.tools-menu,
+.model-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  border-radius:22px!important;
+  padding:7px!important;
+  background:rgba(28,29,32,.68)!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  box-shadow:
+    0 24px 80px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.16)!important;
+  backdrop-filter:blur(30px) saturate(175%)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(175%)!important;
+}
+
+.attach-menu button,
+.tools-menu button,
+.model-menu button,
+.row-menu button,
+.new-menu button,
+.profile-menu button{
+  min-height:42px!important;
+  border-radius:14px!important;
+  border:1px solid transparent!important;
+  background:transparent!important;
+}
+
+.attach-menu button:hover,
+.tools-menu button:hover,
+.model-menu button:hover,
+.row-menu button:hover,
+.new-menu button:hover,
+.profile-menu button:hover{
+  background:rgba(255,255,255,.09)!important;
+  border-color:rgba(255,255,255,.07)!important;
+}
+
+/* Composer: one clean capsule with circular actions at either end. */
+.composer{
+  min-height:58px!important;
+  border-radius:29px!important;
+  border:1px solid rgba(255,255,255,.17)!important;
+  background:rgba(255,255,255,.045)!important;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -1px 0 rgba(0,0,0,.10)!important;
+}
+
+.composer textarea{
+  padding-left:9px!important;
+  padding-right:9px!important;
+  color:rgba(255,255,255,.96)!important;
+}
+
+.composer textarea::placeholder{
+  color:rgba(255,255,255,.46)!important;
+}
+
+.composer-icon,
+.send-button{
+  width:40px!important;
+  height:40px!important;
+  flex:none!important;
+}
+
+.send-button{
+  background:rgba(255,255,255,.94)!important;
+  color:#161719!important;
+  border-color:rgba(255,255,255,.96)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,1),
+    0 5px 20px rgba(0,0,0,.20)!important;
+}
+
+.send-button.disabled{
+  background:rgba(255,255,255,.18)!important;
+  color:rgba(255,255,255,.45)!important;
+  border-color:rgba(255,255,255,.10)!important;
+}
+
+/* Chat transcript: reduce visual boxes and let content breathe. */
+.message-tools button{
+  width:29px!important;
+  height:29px!important;
+}
+
+.inline-code{
+  border-radius:999px!important;
+}
+
+.code-block{
+  border-radius:18px!important;
+  border-color:rgba(255,255,255,.13)!important;
+}
+
+.user-content{
+  border-radius:22px!important;
+  background:rgba(255,255,255,.075)!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+
+/* Light appearance: clean white ChatGPT-like canvas with neutral controls. */
+html[data-theme="light"] .topbar{
+  background:rgba(255,255,255,.70)!important;
+  border-bottom-color:rgba(0,0,0,.07)!important;
+}
+
+html[data-theme="light"] .composer{
+  background:rgba(255,255,255,.72)!important;
+  border-color:rgba(0,0,0,.12)!important;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.10),
+    inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+
+html[data-theme="light"] .composer textarea{
+  color:#202123!important;
+}
+
+html[data-theme="light"] .composer textarea::placeholder{
+  color:rgba(32,33,35,.46)!important;
+}
+
+html[data-theme="light"] .top-icon,
+html[data-theme="light"] .mobile-menu,
+html[data-theme="light"] .side-icon,
+html[data-theme="light"] .composer-icon{
+  color:#202123!important;
+  background:rgba(0,0,0,.035)!important;
+  border-color:rgba(0,0,0,.08)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+
+html[data-theme="light"] .send-button{
+  background:#17181a!important;
+  color:#fff!important;
+  border-color:#17181a!important;
+}
+
+html[data-theme="light"] .sidebar .nav-btn:hover,
+html[data-theme="light"] .sidebar .chat-row:hover,
+html[data-theme="light"] .sidebar .chat-row.active{
+  background:rgba(0,0,0,.055)!important;
+  border-color:rgba(0,0,0,.04)!important;
+}
+
+html[data-theme="light"] .user-content{
+  background:rgba(0,0,0,.045)!important;
+  border-color:rgba(0,0,0,.07)!important;
+}
+
+@media(max-width:900px){
+  .composer{
+    min-height:56px!important;
+    border-radius:28px!important;
+  }
+  .top-icon,.mobile-menu,.composer-icon,.send-button{
+    width:38px!important;
+    height:38px!important;
+  }
+  .sidebar{
+    border-radius:0 30px 30px 0!important;
+  }
+}
+
+/* Reduced motion keeps the optical material but removes the breathing animation. */
+@media(prefers-reduced-motion:reduce){
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    transition:none!important;
+  }
+}
