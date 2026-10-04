@@ -31,6 +31,11 @@ let rectsDirty = true;
 
 /** Distance (px) beyond an element's box at which the edge light fades to zero. */
 const FALLOFF = 220;
+/** Touch devices use the platform interaction renderer; never synthesize a web ripple. */
+const TOUCH_ONLY =
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 /** Distance (px) over which a press illuminates *nearby* glass (the spread). */
 const SPREAD = 280;
 
@@ -249,7 +254,7 @@ function pressTick(): void {
 }
 
 export function registerPointerLight(el: HTMLElement): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || TOUCH_ONLY) return;
   elements.add(el);
   markRectsDirty();
   const io = ensureObserver();
