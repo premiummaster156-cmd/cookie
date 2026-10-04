@@ -2418,3 +2418,115 @@ html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
 }
 .row-menu button{background:transparent!important;border:0!important;box-shadow:none!important}
 .row-menu button:hover{background:rgba(255,255,255,.06)!important}
+
+
+/* Cookie Liquid Glass integration.
+   The optical engine lives on dedicated backdrop layers; app content stays plain. */
+.cookie-liquid-glass-backdrop{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  border-radius:inherit;
+}
+.topbar,
+.sidebar,
+.composer,
+.attach-menu,
+.tools-menu,
+.model-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  isolation:isolate;
+}
+.topbar > .cookie-liquid-glass-backdrop,
+.sidebar > .cookie-liquid-glass-backdrop,
+.composer > .cookie-liquid-glass-backdrop,
+.attach-menu > .cookie-liquid-glass-backdrop,
+.tools-menu > .cookie-liquid-glass-backdrop,
+.model-menu > .cookie-liquid-glass-backdrop,
+.row-menu > .cookie-liquid-glass-backdrop,
+.new-menu > .cookie-liquid-glass-backdrop,
+.profile-menu > .cookie-liquid-glass-backdrop{
+  display:block;
+}
+.topbar > :not(.cookie-liquid-glass-backdrop),
+.sidebar > :not(.cookie-liquid-glass-backdrop),
+.composer > :not(.cookie-liquid-glass-backdrop),
+.attach-menu > :not(.cookie-liquid-glass-backdrop),
+.tools-menu > :not(.cookie-liquid-glass-backdrop),
+.model-menu > :not(.cookie-liquid-glass-backdrop),
+.row-menu > :not(.cookie-liquid-glass-backdrop),
+.new-menu > :not(.cookie-liquid-glass-backdrop),
+.profile-menu > :not(.cookie-liquid-glass-backdrop){
+  position:relative;
+  z-index:2;
+}
+
+/* Let the engine paint the material rather than stacking a second opaque card. */
+.topbar,
+.sidebar,
+.composer,
+.attach-menu,
+.tools-menu,
+.model-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  background:transparent!important;
+}
+.composer,
+.attach-menu,
+.tools-menu,
+.model-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  box-shadow:none!important;
+  border-color:transparent!important;
+}
+
+/* The glass material owns the optical edge. Keep the old container geometry. */
+.topbar{border-bottom-color:transparent!important}
+.sidebar{box-shadow:none!important}
+.composer{border-color:transparent!important}
+
+/* Menu content sits above the optical layer without becoming glass-on-glass. */
+.attach-menu button,
+.tools-menu button,
+.model-menu button,
+.row-menu button,
+.new-menu button,
+.profile-menu button{
+  background:transparent;
+}
+.attach-menu button:hover,
+.tools-menu button:hover,
+.model-menu button:hover,
+.row-menu button:hover,
+.new-menu button:hover,
+.profile-menu button:hover{
+  background:rgba(255,255,255,.06);
+}
+
+@media(max-width:900px){
+  .cookie-liquid-glass-backdrop{
+    border-radius:inherit;
+  }
+  .topbar{
+    background:transparent!important;
+  }
+  .sidebar{
+    background:transparent!important;
+    border-right-color:transparent!important;
+  }
+  .composer{
+    background:transparent!important;
+  }
+}
+@media(prefers-reduced-transparency:reduce){
+  .cookie-liquid-glass-backdrop{
+    opacity:.96;
+  }
+}
