@@ -1533,7 +1533,7 @@ button:active:not(:disabled){
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent);
   pointer-events:none;
 }
-.sidebar{position:relative}
+/* Mobile override below owns sidebar positioning; keep desktop sidebar in normal flow. */
 .nav-btn,.chat-row,.switcher button,.brand,.account{
   transition:background 180ms ease,box-shadow 180ms ease,transform 180ms ease;
 }
