@@ -28,6 +28,55 @@ function domainOf(value) {
   return m?.[1]?.toLowerCase()||"";
 }
 
+async function searchPublic(query, maxResults = 6) {
+  const q = String(query || "").trim().slice(0, 500);
+  if (!q) return {ok:false,error:"A search query is required."};
+  try {
+    const target = "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
+    const r = await fetch(target, {
+      method:"GET",
+      redirect:"follow",
+      headers:{
+        "Accept":"text/html,application/xhtml+xml",
+        "User-Agent":"CookieAI/1.1 (+https://cookie.pages.dev)"
+      }
+    });
+    const raw = await r.text();
+    if (!r.ok) return {ok:false,error:"Public search failed with HTTP "+r.status+"."};
+    const results=[];
+    const blockRe=/<div[^>]*class=["'][^"']*result[^"']*["'][\s\S]*?<\/div>\s*<\/div>/gi;
+    const blocks=raw.match(blockRe)||[];
+    const clean=value=>String(value||"")
+      .replace(/<script[\s\S]*?<\/script>/gi," ")
+      .replace(/<style[\s\S]*?<\/style>/gi," ")
+      .replace(/<[^>]+>/g," ")
+      .replace(/&nbsp;/gi," ")
+      .replace(/&amp;/gi,"&")
+      .replace(/&quot;/gi,'"')
+      .replace(/&#39;/gi,"'")
+      .replace(/&lt;/gi,"<")
+      .replace(/&gt;/gi,">")
+      .replace(/\s+/g," ")
+      .trim();
+    for (const block of blocks) {
+      const link=block.match(/<a[^>]+class=["'][^"']*result__a[^"']*["'][^>]+href=["']([^"']+)["']/i);
+      if(!link) continue;
+      const title=clean((block.match(/<a[^>]+class=["'][^"']*result__a[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)||[])[1]);
+      const snippet=clean((block.match(/class=["'][^"']*result__snippet[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)||[])[1]
+        || (block.match(/class=["'][^"']*result__snippet[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)||[])[1]);
+      let url=link[1];
+      try { url=new URL(url,"https://html.duckduckgo.com").href; } catch {}
+      if(!/^https?:\/\//i.test(url)) continue;
+      if(!results.some(x=>x.url===url)) results.push({title:title||"Search result",url,content:snippet||""});
+      if(results.length>=maxResults) break;
+    }
+    if(results.length) return {ok:true,results};
+    return {ok:false,error:"No public search results were found."};
+  } catch(error) {
+    return {ok:false,error:String(error?.message||"Public search failed.")};
+  }
+}
+
 export async function executeWebTool(name,args,apiKey="") {
   const a=args&&typeof args==="object"?args:{};
   const key=String(apiKey||"").trim();
@@ -64,14 +113,24 @@ export async function executeWebTool(name,args,apiKey="") {
     } catch {}
   }
 
-  // Always retain a public direct-fetch fallback.
-  if(name==="web_search") return {ok:false,error:"Ollama web search returned no usable results."};
+  // Always retain a public search fallback so web research still works when
+  // the hosted search endpoint is unavailable or temporarily out of quota.
+  if(name==="web_search") return searchPublic(a.query, Math.min(8, Math.max(1, Number(a.max_results)||5)));
   return fetchPage(String(a.url||""),18000);
 }
 
 export async function researchWeb(query, apiKey = "") {
   const domain=domainOf(query);
-  if (!domain) return executeWebTool("web_search",{query},apiKey);
+  if (!domain) {
+    const search=await executeWebTool("web_search",{query,max_results:6},apiKey);
+    if (!search?.ok || !Array.isArray(search.results) || !search.results.length) return search;
+    const pages=(await Promise.all(
+      search.results.slice(0,6).map(async result=>{
+        try{return await fetchPage(String(result.url||""),12000);}catch{return {ok:false};}
+      })
+    )).filter(page=>page?.ok);
+    return {ok:true,results:search.results.slice(0,8),pages:pages.slice(0,6)};
+  }
   const base="https://"+domain;
   const pages=[]; const seen=new Set();
   for (const url of [base+"/",base+"/sitemap.xml",base+"/robots.txt"]) {
