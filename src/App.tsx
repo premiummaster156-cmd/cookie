@@ -76,6 +76,28 @@ function CookieBootLoader({failed,message,onRetry}:{failed:boolean;message:strin
   </div>;
 }
 
+function PublicShareView({chat,onOpenCookie}:{chat:Chat;onOpenCookie:()=>void}){
+  return <div className="public-share">
+    <div className="public-share-card">
+      <header className="public-share-head">
+        <div className="public-share-brand"><CookieIcon size={30}/><div><strong>Cookie AI</strong><span>Shared conversation</span></div></div>
+        <button className="public-share-open" onClick={onOpenCookie}>Open Cookie AI</button>
+      </header>
+      <div className="public-share-title">{chat.title}</div>
+      <div className="public-share-messages">
+        {chat.messages.map(m=><div className={"public-share-message "+m.role} key={m.id}>
+          <div className="public-share-avatar">{m.role==="assistant"?<CookieIcon size={21}/>:<Avatar/>}</div>
+          <div className="public-share-body">
+            <div className="public-share-author">{m.role==="assistant"?"Cookie":"You"}</div>
+            {m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}
+          </div>
+        </div>)}
+      </div>
+      <div className="public-share-foot">Shared from Cookie AI · Read-only conversation</div>
+    </div>
+  </div>;
+}
+
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
 function safeTextParts(text:string){ return [text]; }
 function Inline({text}:{text:string}){
@@ -338,7 +360,19 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     try{const languageIndex=LANGUAGES.indexOf(settings.language);const payload={model,messages:msgs.map(m=>({role:m.role,content:m.content})),attachments:user.attachments||[],preferences:{responseMode:model,language:LANG_CODES[languageIndex]||"auto",answerLength:"auto",creativity:.7,memory:memoryEnabled,personality:settings.personality,reasoning:settings.reasoning||"auto",instructions:settings.instructions||"",webSearch,profile}};let r:Response|null=null;let lastNetworkError:any=null;for(let attempt=0;attempt<2;attempt++){try{r=await fetch("/api/chat",{method:"POST",signal:ctl.signal,cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});break}catch(err:any){lastNetworkError=err;if(err?.name==="AbortError")throw err;if(attempt===0)await new Promise(res=>setTimeout(res,700))}}if(!r){let health="";try{const hr=await fetch("/api/health",{cache:"no-store",headers:{"Accept":"application/json"}});if(hr.ok){const hd=await hr.json();health=hd?.ok?" Cookie server is reachable; the AI provider connection may be the failing part.":"";}}catch{}throw new Error("Unable to connect to Cookie AI."+health+" Please try again.");}let d:any=null;try{d=await r.json()}catch{throw new Error(r.ok?"Cookie returned an unreadable response.":"Cookie AI is temporarily unavailable.")}if(!r.ok)throw new Error(d?.error||"Cookie AI could not answer right now.");const a:Message={id:uid(),role:"assistant",content:String(d.message||""),files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],images:Array.isArray(d.generatedImages)?d.generatedImages:[],createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80))}catch(e:any){if(e?.name!=="AbortError"){const raw=String(e?.message||"Unknown error.");const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)?"Unable to connect to Cookie AI. The server connection failed. Please try again.":raw;const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}))}}finally{setLoading(false);setAbort(null)}
   }
   function retry(m:Message){if(!chat||loading)return;const i=chat.messages.findIndex(x=>x.id===m.id);if(i<1)return;const prior=chat.messages[i-1];updateChat(chat.id,x=>({...x,messages:x.messages.slice(0,i-1),updatedAt:Date.now()}));setText(prior.content);setTimeout(()=>send(prior.content),0)}
-  async function share(){if(!chat)return;const payload=JSON.stringify({title:chat.title,messages:chat.messages.map(m=>({role:m.role,content:m.content}))});const url=location.origin+location.pathname+"#share="+btoa(unescape(encodeURIComponent(payload)));try{await (navigator as any).share?.({title:chat.title,url})}catch{try{await navigator.clipboard.writeText(url)}catch{}}}
+  async function share(){
+    if(!chat)return;
+    try{
+      const r=await fetch("/api/chats?share=1",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:chat.title,messages:chat.messages.map(m=>({id:m.id,role:m.role,content:m.content,createdAt:m.createdAt}))})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d?.url)throw new Error(d?.error||"Could not create share link.");
+      const url=String(d.url);
+      try{
+        if((navigator as any).share){await (navigator as any).share({title:chat.title,text:"Shared from Cookie AI",url});return}
+      }catch{}
+      try{await navigator.clipboard.writeText(url);notify("Short share link copied")}catch{window.prompt("Copy this Cookie share link:",url)}
+    }catch(e:any){notify(e?.message||"Could not create share link.")}
+  }
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
@@ -362,6 +396,10 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
 }
 
 export default function App(){
+  const [shareRequested]=useState(()=>/^#share=[a-f0-9]{32}$/i.test(location.hash));
+  const [sharedChat,setSharedChat]=useState<Chat|null>(null);
+  const [shareLoading,setShareLoading]=useState(()=>/^#share=[a-f0-9]{32}$/i.test(location.hash));
+  const [shareError,setShareError]=useState("");
   const [authUser,setAuthUser]=useState<AuthUser|null>(null);
   const [authLoading,setAuthLoading]=useState(true);
   const [authError,setAuthError]=useState("");
@@ -372,6 +410,22 @@ export default function App(){
     setAuthUser(user);setAuthError("");setAuthBootError("");setAuthLoading(false);
     try{localStorage.setItem("cookie_profile",JSON.stringify({name:user.name,username:user.username,email:user.email}))}catch{}
   },[]);
+
+  useEffect(()=>{
+    if(!shareRequested){setShareLoading(false);return}
+    let cancelled=false;
+    const id=location.hash.slice("#share=".length);
+    fetch("/api/chats?share="+encodeURIComponent(id),{cache:"no-store"})
+      .then(async r=>{
+        const d=await r.json().catch(()=>({}));
+        if(cancelled)return;
+        if(!r.ok)throw new Error(d?.error||"This share link is unavailable.");
+        setSharedChat({id:"shared-"+id,title:String(d.title||"Shared Cookie chat"),messages:Array.isArray(d.messages)?d.messages:[],model:"standard",updatedAt:Number(d.createdAt)||Date.now()});
+      })
+      .catch((e:any)=>{if(!cancelled)setShareError(e?.message||"This share link is unavailable.")})
+      .finally(()=>{if(!cancelled)setShareLoading(false)});
+    return()=>{cancelled=true};
+  },[shareRequested]);
 
   useEffect(()=>{
     let cancelled=false;
@@ -389,6 +443,9 @@ export default function App(){
     return()=>{cancelled=true};
   },[handleAuthenticated,authAttempt]);
 
+  if(shareRequested&&shareLoading) return <CookieBootLoader failed={false} message="" onRetry={()=>location.reload()}/>;
+  if(shareRequested&&sharedChat) return <PublicShareView chat={sharedChat} onOpenCookie={()=>{history.replaceState({}, "", location.pathname+location.search);location.reload()}}/>;
+  if(shareRequested&&shareError) return <div className="public-share-error"><CookieIcon size={44}/><h1>Share link unavailable</h1><p>{shareError}</p><button onClick={()=>{history.replaceState({}, "", location.pathname+location.search);location.reload()}}>Open Cookie AI</button></div>;
   if(authLoading||authBootError) return <CookieBootLoader failed={Boolean(authBootError)} message={authBootError} onRetry={()=>{setAuthBootError("");setAuthLoading(true);setAuthAttempt(v=>v+1)}}/>;
   if(!authUser) return <AuthPage onAuthenticated={handleAuthenticated} configError={authError}/>;
   return <AuthenticatedApp authUser={authUser} onLogout={()=>{setAuthUser(null);setAuthLoading(false)}}/>;
