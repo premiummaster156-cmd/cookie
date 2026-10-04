@@ -4262,3 +4262,229 @@ html[data-theme="light"] .cookie-liquid-glass-backdrop.liquid-glass::after{
 .settings-material-card::before{
   content:none!important;
 }
+
+
+/* ==========================================================================
+   FINAL LIQUID GLASS PASS
+   One material layer per surface. Hosts only provide geometry/layout; the
+   LiquidGlassBackdrop owns tint, blur/refraction and optical depth.
+   ========================================================================== */
+
+/* The scene is an environment-light layer, not a UI card. Keep it restrained
+   so Safari fallback refraction has something real to bend without a giant blob. */
+.cookie-ambient-scene{
+  position:fixed!important;
+  inset:-3%!important;
+  width:106%!important;
+  height:106%!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:
+    radial-gradient(38% 32% at 6% 3%, rgba(112,148,255,.095), transparent 70%),
+    radial-gradient(30% 28% at 94% 10%, rgba(205,150,255,.075), transparent 72%),
+    radial-gradient(34% 32% at 70% 92%, rgba(84,191,255,.055), transparent 74%),
+    linear-gradient(180deg, rgba(255,255,255,.018), transparent 42%)!important;
+  filter:blur(24px) saturate(118%)!important;
+  opacity:.88!important;
+  transform:translateZ(0)!important;
+}
+
+/* Never paint a second material on the host. */
+.topbar,
+.composer,
+.sidebar,
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+
+/* The glass layer itself is the surface. The host may remain rounded, but the
+   visual material is only painted once. */
+.topbar-glass-layer,
+.sidebar-glass-layer,
+.composer-glass-layer,
+.menu-glass-layer{
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:var(--lg-tint,transparent)!important;
+  border:0!important;
+  border-radius:inherit!important;
+  box-shadow:var(--lg-shadow,none)!important;
+  -webkit-backdrop-filter:var(--lg-backdrop-filter,none)!important;
+  backdrop-filter:var(--lg-backdrop-filter,none)!important;
+}
+
+/* Keep actual controls/content above the material. */
+.topbar > :not(.topbar-glass-layer),
+.composer > :not(.composer-glass-layer),
+.sidebar > :not(.sidebar-glass-layer),
+.model-menu > :not(.menu-glass-layer),
+.attach-menu > :not(.menu-glass-layer),
+.tools-menu > :not(.menu-glass-layer),
+.row-menu > :not(.menu-glass-layer),
+.new-menu > :not(.menu-glass-layer),
+.profile-menu > :not(.menu-glass-layer){
+  position:relative;
+  z-index:1;
+}
+
+/* Popovers are floating functional surfaces, not framed cards. */
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  border-radius:20px!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  padding:6px!important;
+}
+
+/* Menu surface uses the engine once; remove legacy double-blur from the host. */
+.model-menu .menu-glass-layer,
+.attach-menu .menu-glass-layer,
+.tools-menu .menu-glass-layer,
+.row-menu .menu-glass-layer,
+.new-menu .menu-glass-layer,
+.profile-menu .menu-glass-layer{
+  border-radius:inherit!important;
+}
+
+/* Navigation is intentionally light-touch: transparent controls sitting on the
+   shared glass layer rather than glass-in-glass buttons. */
+.side-icon,
+.top-icon,
+.mobile-menu,
+.composer-icon,
+.model-picker{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.side-icon:hover,
+.top-icon:hover,
+.mobile-menu:hover,
+.composer-icon:hover,
+.model-picker:hover{
+  background:rgba(255,255,255,.055)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.switcher button.active{
+  background:rgba(255,255,255,.085)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+/* Composer: one capsule-like material with calm controls inside. */
+.composer{
+  border:0!important;
+  border-radius:30px!important;
+  box-shadow:none!important;
+}
+.composer-glass-layer{
+  border-radius:30px!important;
+}
+
+/* Top bar: the material floats; no hard divider. */
+.topbar{
+  border:0!important;
+  box-shadow:none!important;
+}
+.topbar-glass-layer{
+  border-radius:0!important;
+}
+
+/* Floating mobile sidebar: preserve the rounded trailing edge, but no boxed
+   inner slab or second blur. */
+@media(max-width:900px){
+  .sidebar{
+    background:transparent!important;
+    border:0!important;
+    border-right:1px solid rgba(255,255,255,.09)!important;
+    border-radius:0 30px 30px 0!important;
+    box-shadow:22px 0 70px rgba(0,0,0,.28)!important;
+  }
+  .sidebar-glass-layer{
+    border-radius:inherit!important;
+  }
+}
+
+/* Small native-feeling touch flex. It follows the finger while held, then
+   expands and fades on release. No backdrop-filter and no clip-path here. */
+@media (hover:none) and (pointer:coarse){
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    pointer-events:none!important;
+    border-radius:inherit!important;
+    z-index:8!important;
+    clip-path:none!important;
+    -webkit-clip-path:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    transform:none!important;
+    transition:none!important;
+    background:
+      radial-gradient(
+        circle at calc(var(--lg-touch-x,.5) * 100%) calc(var(--lg-touch-y,.5) * 100%),
+        rgba(255,255,255,.13) 0,
+        rgba(255,255,255,.06) 7px,
+        transparent 15px
+      ),
+      radial-gradient(
+        circle at calc(var(--lg-touch-x,.5) * 100%) calc(var(--lg-touch-y,.5) * 100%),
+        transparent calc(var(--lg-touch-radius,18px) - 3px),
+        rgba(255,255,255,.20) var(--lg-touch-radius,18px),
+        rgba(255,255,255,.05) calc(var(--lg-touch-radius,18px) + 4px),
+        transparent calc(var(--lg-touch-radius,18px) + 10px)
+      )!important;
+    opacity:var(--lg-touch-energy,0)!important;
+    filter:blur(.12px)!important;
+  }
+
+  .cookie-liquid-glass-backdrop.liquid-glass:active::before,
+  .cookie-liquid-glass-backdrop.liquid-glass:focus-within::before{
+    opacity:max(.06,var(--lg-touch-energy,0))!important;
+  }
+
+  .cookie-liquid-glass-backdrop.liquid-glass::after{
+    transition:none!important;
+  }
+
+  .cookie-liquid-glass-backdrop.liquid-glass{
+    -webkit-tap-highlight-color:transparent;
+  }
+}
+
+/* Optical hierarchy: the functional layer gets stronger depth only when it is
+   actually large enough to justify it. Content cards stay on standard material. */
+html[data-theme="light"] .model-menu,
+html[data-theme="light"] .attach-menu,
+html[data-theme="light"] .tools-menu,
+html[data-theme="light"] .row-menu,
+html[data-theme="light"] .new-menu,
+html[data-theme="light"] .profile-menu{
+  color:#17181d!important;
+}
+
+@media (prefers-reduced-transparency: reduce){
+  .cookie-liquid-glass-backdrop.liquid-glass{
+    background:rgba(255,255,255,.16)!important;
+    -webkit-backdrop-filter:blur(14px)!important;
+    backdrop-filter:blur(14px)!important;
+  }
+  html[data-theme="dark"] .cookie-liquid-glass-backdrop.liquid-glass{
+    background:rgba(20,20,24,.82)!important;
+  }
+}
