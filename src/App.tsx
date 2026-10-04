@@ -159,7 +159,16 @@ function Rich({text}:{text:string}){
 }
 function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:()=>void;onAction:(action:"pin"|"archive"|"delete")=>void}){
   const [open,setOpen]=useState(false);
-  return <div className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>setOpen(v=>!v)}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu popover-pop"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
+  const ref=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    if(!open)return;
+    const close=(e:Event)=>{if(ref.current&&!ref.current.contains(e.target as Node))setOpen(false)};
+    const closeOthers=()=>setOpen(false);
+    document.addEventListener("pointerdown",close);
+    window.addEventListener("cookie:close-chat-menus",closeOthers);
+    return()=>{document.removeEventListener("pointerdown",close);window.removeEventListener("cookie:close-chat-menus",closeOthers)};
+  },[open]);
+  return <div ref={ref} className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>{window.dispatchEvent(new Event("cookie:close-chat-menus"));setOpen(v=>!v)}}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu popover-pop"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
 }
 
 function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,onImagePrompt,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;onImagePrompt:()=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void}){
@@ -174,7 +183,9 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     {id:"code-analysis",name:"Code analysis",detail:"Deep code review and debugging",plan:"pro",icon:<Code2 size={18}/>},
     {id:"deep-research",name:"Deep research",detail:"Broader multi-source research",plan:"max",icon:<Sparkles size={18}/>}
   ];
-  useEffect(()=>{const t=textRef.current;if(t){t.style.height="0px";t.style.height=Math.min(220,Math.max(52,t.scrollHeight))+"px"}},[value]);
+  const resizeInput=useCallback(()=>{const t=textRef.current;if(!t)return;t.style.height="52px";const next=Math.min(220,Math.max(52,t.scrollHeight));t.style.height=next+"px"},[]);
+  useEffect(()=>{resizeInput()},[value,resizeInput]);
+  const submit=useCallback(()=>{const t=textRef.current;if(t)t.style.height="52px";onSend()},[onSend]);
   const add=(list:FileList|null)=>{if(!list)return;Array.from(list).slice(0,10-attachments.length).forEach(file=>{const r=new FileReader();r.onload=()=>setAttachments(p=>[...p,{id:uid(),kind:file.type.startsWith("image/")?"image":"file",name:file.name,mime:file.type,data:String(r.result||""),size:file.size}]);r.readAsDataURL(file)})};
   const chooseTool=(tool:ToolSpec)=>{
     const required=tool.plan==="max"?2:tool.plan==="pro"?1:0;
@@ -205,8 +216,8 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
           <div className="tools-menu-note"><FileSearch size={13}/><span>File analysis works with the files you attach.</span></div>
         </div>}
       </div>}
-      <textarea ref={textRef} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sendOnEnter){e.preventDefault();onSend()}}} placeholder="Message Cookie" rows={1}/>
-      <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={onSend}><ArrowUp size={19}/></button>}</div>
+      <textarea ref={textRef} value={value} onChange={e=>{setValue(e.target.value);requestAnimationFrame(resizeInput)}} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sendOnEnter){e.preventDefault();submit()}}} onBlur={()=>requestAnimationFrame(resizeInput)} placeholder="Message Cookie" rows={1}/>
+      <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={submit}><ArrowUp size={19}/></button>}</div>
     </div>
     <div className="composer-note">Cookie can make mistakes. Check important info.</div>
     <input hidden ref={imageRef} type="file" accept="image/*" multiple onChange={e=>{add(e.target.files);e.currentTarget.value=""}}/>
@@ -341,9 +352,26 @@ function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Cha
   if(view==="code") return <CodeStudioPage/>;
   if(view==="projects") return <ProjectsPage/>;
   if(view==="gpts") return <GPTsPage onOpen={()=>{}} plan="free"/>;
-  if(view==="work") return <div className="work-page"><div className="work-label"><Zap size={16}/> Work</div><h1>Get work done with Cookie</h1><p>Turn a goal into a structured conversation.</p><div className="work-grid"><button onClick={()=>onPrompt("Plan this project step by step and help me complete it.")}>Plan a project</button><button onClick={()=>onPrompt("Break this task into actionable steps.")}>Break down a task</button></div></div>;
+  if(view==="work") return <WorkPage onStart={onPrompt}/>;
   if(view==="help") return <div className="page"><h1>Help with Cookie</h1><p>Quick answers.</p><div className="help-grid">{[["Search","Use Search or ⌘K / Ctrl+K to find conversations."],["Files","Use + in the composer to attach images or files."],["Voice","Use the voice button and allow microphone access."],["Temporary chats","Start a temporary chat from the sidebar menu."]].map(([a,b])=><div className="help-item" key={a}><CircleHelp size={18}/><div><b>{a}</b><span>{b}</span></div></div>)}</div></div>;
   return null;
+}
+function WorkPage({onStart}:{onStart:(prompt:string)=>void}){
+  const [value,setValue]=useState("");
+  const ref=useRef<HTMLTextAreaElement>(null);
+  const submit=()=>{const v=value.trim();if(!v)return;setValue("");if(ref.current)ref.current.style.height="56px";onStart(v)};
+  useEffect(()=>{const t=ref.current;if(!t)return;t.style.height="56px";t.style.height=Math.min(220,Math.max(56,t.scrollHeight))+"px"},[value]);
+  return <div className="work-page">
+    <div className="work-intro">
+      <div className="work-mark"><Zap size={18}/></div>
+      <div><h1>What are you working on?</h1><p>Tell Cookie the goal. It will figure out the steps, tools, and depth itself.</p></div>
+    </div>
+    <div className="work-input">
+      <textarea ref={ref} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit()}}} placeholder="Describe the work…" rows={1}/>
+      <button className={value.trim()?"ready":""} disabled={!value.trim()} onClick={submit} aria-label="Start work"><ArrowUp size={18}/></button>
+    </div>
+    <span className="work-hint">No templates. No scripted prompts. Just describe what you need.</span>
+  </div>;
 }
 function SearchPanel({chats,onOpen}:{chats:Chat[];onOpen:(id:string)=>void}){
   const [q,setQ]=useState(""); const hits=chats.filter(c=>c.title.toLowerCase().includes(q.toLowerCase())||c.messages.some(m=>m.content.toLowerCase().includes(q.toLowerCase())));
