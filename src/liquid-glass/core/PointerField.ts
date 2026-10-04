@@ -16,6 +16,7 @@
  */
 
 const elements = new Set<HTMLElement>();
+const touchLensCallbacks = new Map<HTMLElement, (x: number, y: number, energy: number, radius: number) => void>();
 /** On-screen subset (kept by the IntersectionObserver) — only these are updated. */
 const visible = new Set<HTMLElement>();
 /** Last glow written per element, so we can skip elements that stay dark. */
@@ -243,14 +244,19 @@ function pressTick(): void {
     el.style.setProperty('--lg-wave-y', iy.toFixed(4));
     el.style.setProperty('--lg-wave-radius', Math.round(pressWaveRadius) + 'px');
     el.style.setProperty('--lg-wave-energy', waveEnergy.toFixed(4));
+    const cb = touchLensCallbacks.get(el);
+    if (cb && (pressTarget || waveEnergy > 0.004)) {
+      try { cb(ix, iy, waveEnergy, pressWaveRadius); } catch { /* visual effect must never break input */ }
+    }
   }
 
   if (pressEnergy > 0 || pressTarget > 0 || waveEnergy > 0.004) pressRaf = requestAnimationFrame(pressTick);
 }
 
-export function registerPointerLight(el: HTMLElement): void {
+export function registerPointerLight(el: HTMLElement, onTouchLens?: (x: number, y: number, energy: number, radius: number) => void): void {
   if (typeof window === 'undefined') return;
   elements.add(el);
+  if (onTouchLens) touchLensCallbacks.set(el, onTouchLens);
   markRectsDirty();
   const io = ensureObserver();
   if (io) io.observe(el);
@@ -274,6 +280,7 @@ export function registerPointerLight(el: HTMLElement): void {
 
 export function unregisterPointerLight(el: HTMLElement): void {
   elements.delete(el);
+  touchLensCallbacks.delete(el);
   visible.delete(el);
   rectCache.delete(el);
   observer?.unobserve(el);
