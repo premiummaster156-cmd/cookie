@@ -568,6 +568,7 @@ type InstallPromptEvent = Event & {
 };
 
 function isCookieAppInstalled(){
+  if((window as any).__COOKIE_NATIVE_APP__===true)return true;
   return window.matchMedia?.("(display-mode: standalone)").matches === true
     || window.matchMedia?.("(display-mode: window-controls-overlay)").matches === true
     || Boolean((navigator as any).standalone);
@@ -725,6 +726,21 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   useEffect(()=>{const theme=settings.theme==="System"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):settings.theme.toLowerCase();document.documentElement.dataset.theme=theme;document.documentElement.dataset.accent=settings.accent||"Default";document.documentElement.dataset.fontSize=settings.fontSize||"Default";document.body.classList.toggle("compact-mode",settings.compact);document.body.classList.toggle("motion-off",!settings.animations);document.body.classList.toggle("hide-timestamps",!settings.timestamps)},[settings]);
   useEffect(()=>{if(view!=="chat")setSidebar(false)},[view]);
   useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setView("search");setSidebar(false)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
+  useEffect(()=>{
+    const onNativeCommand=(event:Event)=>{
+      const command=(event as CustomEvent<string>).detail;
+      if(command==="new-chat"){createChat(false);return}
+      if(command==="search"){setView("search");setSidebar(false);return}
+      if(command==="library"){setView("library");setSidebar(false);return}
+      if(command==="projects"){setView("projects");setSidebar(false);return}
+      if(command==="code"){setView("code");setSidebar(false);return}
+      if(command==="gpts"){setView("gpts");setSidebar(false);return}
+      if(command==="work"){setView("work");setSidebar(false);return}
+      if(command==="settings"){setSettingsTab("general");setView("settings");setSidebar(false);return}
+    };
+    addEventListener("cookie:native-command",onNativeCommand as EventListener);
+    return()=>removeEventListener("cookie:native-command",onNativeCommand as EventListener);
+  },[model]);
   function notify(message:string){setToast(message);window.setTimeout(()=>setToast(""),1800)}
   function createChat(temp:boolean){const c:Chat={id:uid(),title:temp?"Temporary chat":"New chat",messages:[],model,temporary:temp,updatedAt:Date.now()};setChats(p=>[c,...p]);setActiveId(c.id);setTemporary(temp);setText("");setAttachments([]);setView("chat");setSidebar(false);setNewOpen(false)}
   function updateChat(id:string,fn:(c:Chat)=>Chat){setChats(p=>p.map(c=>c.id===id?fn(c):c))}
@@ -780,7 +796,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       <div className="sidebar-foot"><button className="nav-btn" onClick={()=>setNewOpen(v=>!v)}><Plus size={18}/><span>Try something new</span><ChevronDown size={15}/></button>{newOpen&&<div className="new-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/><button onClick={()=>createChat(true)}><Clock3 size={17}/><span><b>Temporary chat</b><small>Don't save this chat to history.</small></span></button><button onClick={()=>{setView("work");setNewOpen(false);setSidebar(false)}}><Zap size={17}/><span><b>Work</b><small>Structured tasks.</small></span></button></div>}<button className={"account "+(view==="settings"&&settingsTab==="account"?"active":"")} aria-label="Open account settings" onClick={()=>{setSettingsTab("account");setView("settings");setProfileOpen(false);setSidebar(false)}}><Avatar/><span><b>{profile.name||"Cookie user"}</b><small>{profile.username?("@"+profile.username):"Cookie account"}</small></span><MoreHorizontal size={17}/></button></div>
     </aside>
     <main className="main-shell">
-      <header className="topbar"><LiquidGlassBackdrop className="topbar-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={19}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/>{MODELS.map(x=><button key={x.id} className={x.id===model?"selected":""} onClick={()=>{setModel(x.id);setModelOpen(false)}}><span><b>{x.name}</b><small>{x.detail}</small></span>{x.id===model&&<Check size={16}/>}</button>)}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)}><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
+      <header className="topbar"><LiquidGlassBackdrop className="topbar-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={19}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/>{MODELS.map(x=><button key={x.id} className={x.id===model?"selected":""} onClick={()=>{setModel(x.id);setModelOpen(false)}}><span><b>{x.name}</b><small>{x.detail}</small></span>{x.id===model&&<Check size={16}/>}</button>)}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
       {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify}/></div>}
       {view!=="chat"&&main}
     </main>
