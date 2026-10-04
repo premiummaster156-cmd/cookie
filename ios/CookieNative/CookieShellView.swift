@@ -27,7 +27,7 @@ struct CookieShellView: View {
                     .controlSize(.small)
                     .tint(.primary)
                     .frame(width: 36, height: 36)
-                    .glassEffect(.clear, in: Circle())
+                    .glassEffect(.regular, in: Circle())
                     .transition(.opacity)
             }
         }
