@@ -180,24 +180,8 @@ export class FilterChain {
       this.filter.appendChild(this.feDispG);
     }
 
-    // A second, transient displacement pass is reserved for direct touch.
-    // The base map provides the static lens geometry; this map is replaced at
-    // touch-time with a tiny radial vector field centered under the finger.
-    this.feImageTouch = document.createElementNS(SVG_NS, 'feImage');
-    this.feImageTouch.setAttribute('href', NEUTRAL_TOUCH_MAP);
-    this.feImageTouch.setAttribute('x', String(-initial.displacementPadding));
-    this.feImageTouch.setAttribute('y', String(-initial.displacementPadding));
-    this.feImageTouch.setAttribute('width', String(initial.width + initial.displacementPadding * 2));
-    this.feImageTouch.setAttribute('height', String(initial.height + initial.displacementPadding * 2));
-    this.feImageTouch.setAttribute('preserveAspectRatio', 'none');
-    this.feImageTouch.setAttribute('result', 'touchMap');
-    this.filter.appendChild(this.feImageTouch);
-
-    this.feTouchDisp = disp(SVG_NS, 'distorted', 'touchMap', 42, 'touchDistorted');
-    this.filter.appendChild(this.feTouchDisp);
-
     this.feSaturate = document.createElementNS(SVG_NS, 'feColorMatrix');
-    this.feSaturate.setAttribute('in', 'touchDistorted');
+    this.feSaturate.setAttribute('in', 'distorted');
     this.feSaturate.setAttribute('type', 'saturate');
     this.feSaturate.setAttribute('values', String(initial.saturation / 100));
     this.feSaturate.setAttribute('result', 'saturated');
