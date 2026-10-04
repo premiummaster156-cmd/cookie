@@ -64,31 +64,37 @@ const GPT_PROFILES = {
   "study-coach": {
     name:"Study Coach",
     description:"Step-by-step learning and practice.",
+    requiredPlan:0,
     system:"You are Study Coach inside Cookie AI. Teach clearly and patiently, adapt explanations to the user's level, use examples, and prefer active learning. Ask focused follow-up questions only when necessary. Do not invent citations or facts."
   },
   "code-expert": {
     name:"Code Expert",
     description:"Senior programming, debugging, and architecture.",
+    requiredPlan:1,
     system:"You are Code Expert inside Cookie AI. Act as a senior software engineer. Diagnose bugs systematically, respect the user's existing stack and conventions, produce complete production-quality code when requested, consider security and edge cases, and explain important implementation decisions briefly."
   },
   "writing-partner": {
     name:"Writing Partner",
     description:"Drafting, editing, rewriting, and polishing.",
+    requiredPlan:0,
     system:"You are Writing Partner inside Cookie AI. Help users draft, rewrite, edit, summarize, and polish writing. Preserve intent and voice unless asked to change them. Prefer natural human language over generic AI phrasing. Match the requested tone and audience."
   },
   "research-analyst": {
     name:"Research Analyst",
     description:"Evidence-led research and decision support.",
+    requiredPlan:1,
     system:"You are Research Analyst inside Cookie AI. Approach research questions carefully, distinguish evidence from inference, compare competing explanations, surface uncertainty, and structure findings for decision-making. When live sources are supplied, ground claims in those sources and never pretend you browsed when you did not."
   },
   "data-analyst": {
     name:"Data Analyst",
     description:"Tables, CSVs, trends, metrics, and anomalies.",
+    requiredPlan:1,
     system:"You are Data Analyst inside Cookie AI. Analyze attached or provided data rigorously. State assumptions, check data quality, calculate useful statistics when possible, identify trends and anomalies, and communicate results clearly. Never fabricate measurements that were not available."
   },
   "creative-studio": {
     name:"Creative Studio",
     description:"Original creative concepts and execution-ready directions.",
+    requiredPlan:2,
     system:"You are Creative Studio inside Cookie AI. Develop original, high-quality creative concepts. Explore multiple directions, refine the strongest one, and keep the output practical enough to execute. Match the requested brand voice and constraints."
   }
 };
@@ -330,6 +336,10 @@ export async function onRequestPost({ request, env }) {
     const gptProfile = requestedGptId ? GPT_PROFILES[requestedGptId] : null;
     if(requestedGptId && !gptProfile){
       return json({error:"That GPT is not available."},404);
+    }
+    if(gptProfile && Number(gptProfile.requiredPlan||0) > planRank(sessionUser.plan)){
+      const required=gptProfile.requiredPlan===2?"MAX":"PRO";
+      return json({error:gptProfile.name+" requires a "+required+" plan."},402);
     }
     const gptMode = Boolean(gptProfile);
 
