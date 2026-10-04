@@ -5,13 +5,13 @@ import {
   Archive, ArrowUp, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download,
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
-  Wrench, ImagePlus, FolderKanban, CreditCard, Brain,
+  Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
   Volume2, X, Zap
 } from "lucide-react";
 
 type Role = "user" | "assistant";
-type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "work" | "settings" | "help";
+type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "settings" | "help";
 type SettingsTab = "general" | "personalization" | "data" | "notifications" | "voice" | "account" | "about";
 type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; data:string; size:number };
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
@@ -28,6 +28,20 @@ const MODELS = [
 const LANG_CODES = ["en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
 const LANGUAGES = ["English","Uzbek","Russian","Turkish","Kazakh","Kyrgyz","Tajik","Arabic","Persian","Hindi","Urdu","Chinese","Japanese","Korean","Spanish","French","German","Italian","Portuguese","Indonesian"];
 const PERSONALITIES = ["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
+
+type ToolMode = "calculator"|"file-analysis"|"data-analysis"|"url-fetch"|"code-analysis"|"image-generation"|"deep-research"|null;
+type ToolSpec = {id:Exclude<ToolMode,null>;name:string;detail:string;plan:"free"|"pro"|"max";icon:React.ReactNode};
+
+type GPTDefinition = {id:string;name:string;description:string;category:string;icon:"study"|"code"|"writer"|"research"|"data"|"creative";system:string;plan:"free"|"pro"|"max"};
+
+const GPTS:GPTDefinition[]=[
+  {id:"study-coach",name:"Study Coach",description:"Break down difficult topics, teach step by step, and quiz you when useful.",category:"Education",icon:"study",plan:"free",system:"You are Study Coach inside Cookie AI. Teach clearly and patiently, adapt explanations to the user's level, use examples, and prefer active learning. Ask focused follow-up questions only when necessary. Do not invent citations or facts."},
+  {id:"code-expert",name:"Code Expert",description:"Senior-level programming help, debugging, architecture, and production-quality code.",category:"Programming",icon:"code",plan:"pro",system:"You are Code Expert inside Cookie AI. Act as a senior software engineer. Diagnose bugs systematically, respect the user's existing stack and conventions, produce complete production-quality code when requested, consider security and edge cases, and explain important implementation decisions briefly."},
+  {id:"writing-partner",name:"Writing Partner",description:"Rewrite, draft, edit, and polish writing with a strong natural voice.",category:"Writing",icon:"writer",plan:"free",system:"You are Writing Partner inside Cookie AI. Help users draft, rewrite, edit, summarize, and polish writing. Preserve intent and voice unless asked to change them. Prefer natural human language over generic AI phrasing. Match requested tone and audience."},
+  {id:"research-analyst",name:"Research Analyst",description:"Compare evidence, structure findings, and turn complex research questions into clear conclusions.",category:"Research",icon:"research",plan:"pro",system:"You are Research Analyst inside Cookie AI. Approach research questions carefully, distinguish evidence from inference, compare competing explanations, surface uncertainty, and structure findings for decision-making. When live sources are supplied, ground claims in those sources and never pretend you browsed when you did not."},
+  {id:"data-analyst",name:"Data Analyst",description:"Understand tables, CSVs, trends, metrics, and business data with rigorous analysis.",category:"Data",icon:"data",plan:"pro",system:"You are Data Analyst inside Cookie AI. Analyze attached or provided data rigorously. State assumptions, check data quality, calculate useful statistics when possible, identify trends and anomalies, and communicate results clearly. Never fabricate measurements that were not available."},
+  {id:"creative-studio",name:"Creative Studio",description:"Develop polished concepts, visual directions, campaigns, names, and creative ideas.",category:"Creative",icon:"creative",plan:"max",system:"You are Creative Studio inside Cookie AI. Develop original, high-quality creative concepts. Explore multiple directions, refine the strongest one, and keep the output practical enough to execute. Match the requested brand voice and constraints."}
+];
 const uid = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + Date.now().toString(36);
 const readJSON = <T,>(key:string, fallback:T):T => { try { return JSON.parse(localStorage.getItem(key) || "") as T; } catch { return fallback; } };
 const saveJSON = (key:string, value:unknown) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
@@ -148,12 +162,30 @@ function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:
   return <div className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>setOpen(v=>!v)}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
 }
 
-function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,onImagePrompt}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;onImagePrompt:()=>void}){
+function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,onImagePrompt,toolMode,setToolMode,plan,hideTools=false,onToolNotice}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;onImagePrompt:()=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;onToolNotice:(message:string)=>void}){
   const [open,setOpen]=useState(false),[toolsOpen,setToolsOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
+  const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
+  const tools:ToolSpec[]=[
+    {id:"calculator",name:"Calculator",detail:"Exact arithmetic and quick formulas",plan:"free",icon:<Calculator size={18}/>},
+    {id:"file-analysis",name:"File analysis",detail:"Analyze attached documents and files",plan:"free",icon:<FileSearch size={18}/>},
+    {id:"data-analysis",name:"Data analysis",detail:"Tables, CSVs, trends, and metrics",plan:"pro",icon:<BarChart3 size={18}/>},
+    {id:"url-fetch",name:"Read a URL",detail:"Fetch and inspect a public webpage",plan:"pro",icon:<Link2 size={18}/>},
+    {id:"code-analysis",name:"Code analysis",detail:"Deep code review and debugging",plan:"pro",icon:<Code2 size={18}/>},
+    {id:"image-generation",name:"Image generation",detail:"Create or edit images",plan:"pro",icon:<ImagePlus size={18}/>},
+    {id:"deep-research",name:"Deep research",detail:"Broader multi-source research",plan:"max",icon:<Sparkles size={18}/>}
+  ];
   useEffect(()=>{const t=textRef.current;if(t){t.style.height="0px";t.style.height=Math.min(220,Math.max(52,t.scrollHeight))+"px"}},[value]);
   const add=(list:FileList|null)=>{if(!list)return;Array.from(list).slice(0,10-attachments.length).forEach(file=>{const r=new FileReader();r.onload=()=>setAttachments(p=>[...p,{id:uid(),kind:file.type.startsWith("image/")?"image":"file",name:file.name,mime:file.type,data:String(r.result||""),size:file.size}]);r.readAsDataURL(file)})};
+  const chooseTool=(tool:ToolSpec)=>{
+    const required=tool.plan==="max"?2:tool.plan==="pro"?1:0;
+    if(rank<required){onToolNotice(tool.name+" requires a "+(tool.plan==="max"?"MAX":"PRO")+" plan.");setToolsOpen(false);return}
+    setToolMode(tool.id);setToolsOpen(false);
+    if(tool.id==="file-analysis"&&!attachments.length)onToolNotice("Attach a file or image, then send your request.");
+    if(tool.id==="image-generation")onImagePrompt();
+  };
   return <div className="composer-wrap">
+    {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
     {webSearch&&<div className="search-chip"><Globe2 size={13}/><span>Web research enabled</span><button onClick={()=>setWebSearch(false)} aria-label="Turn off web research"><X size={13}/></button></div>}
     {!!attachments.length&&<div className="attachment-strip">{attachments.map(a=><div className="attachment-card" key={a.id}>{a.kind==="image"?<img src={a.data} alt=""/>:<div className="file-icon"><FileIcon size={18}/></div>}<div><b>{a.name}</b><span>{Math.max(1,Math.round(a.size/1024))} KB</span></div><button onClick={()=>setAttachments(p=>p.filter(x=>x.id!==a.id))}><X size={14}/></button></div>)}</div>}
     <div className="composer">
@@ -164,16 +196,16 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button onClick={()=>{fileRef.current?.click();setOpen(false)}}><FilePlus2 size={18}/><span>Upload files</span></button>
         <button className={webSearch?"active":""} onClick={()=>{setWebSearch(!webSearch);setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>{webSearch?"Web research on":"Search the web"}</span></button>
       </div>}</div></div>
-      <div className="tools-wrap attach-wrap">
+      {!hideTools&&<div className="tools-wrap attach-wrap">
         <button className={"composer-icon tool-button "+(toolsOpen?"active":"")} aria-label="Tools" onClick={()=>{setToolsOpen(v=>!v);setOpen(false)}}><Wrench size={18}/></button>
         {toolsOpen&&<div className="attach-menu tools-menu">
-          <button className={webSearch?"active":""} onClick={()=>{setWebSearch(!webSearch);setToolsOpen(false)}}><Globe2 size={18}/><span><b>Web research</b><small>{webSearch?"Enabled for this chat":"Search current web sources"}</small></span></button>
-          <button className={memoryEnabled?"active":""} onClick={()=>{setMemoryEnabled(!memoryEnabled);setToolsOpen(false)}}><Brain size={18}/><span><b>Memory</b><small>{memoryEnabled?"Use long-term memory":"Memory is off"}</small></span></button>
-          <button onClick={()=>{onImagePrompt();setToolsOpen(false)}}><ImagePlus size={18}/><span><b>Create image</b><small>Generate or edit an image</small></span></button>
+          <div className="tools-menu-head"><span>Tools</span><small>Choose an action</small></div>
+          {tools.map(tool=><button key={tool.id} className={toolMode===tool.id?"active":""} onClick={()=>chooseTool(tool)}><span className="tool-icon">{tool.icon}</span><span className="tool-copy"><b>{tool.name}</b><small>{tool.detail}</small></span>{(tool.plan!=="free"&&rank<(tool.plan==="max"?2:1))?<><LockKeyhole size={14}/><em>{tool.plan.toUpperCase()}</em></>:toolMode===tool.id?<Check size={14}/>:null}</button>)}
           <div className="tools-divider"/>
-          <div className="tools-note"><CreditCard size={15}/><span>File tools run automatically when needed.</span></div>
+          <button className={memoryEnabled?"active":""} onClick={()=>{setMemoryEnabled(!memoryEnabled);setToolsOpen(false)}}><span className="tool-icon"><Brain size={18}/></span><span className="tool-copy"><b>Memory</b><small>{memoryEnabled?"Use saved preferences":"Memory is off"}</small></span></button>
+          <div className="tools-menu-note"><FileSearch size={13}/><span>File analysis works with the files you attach.</span></div>
         </div>}
-      </div>
+      </div>}
       <textarea ref={textRef} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sendOnEnter){e.preventDefault();onSend()}}} placeholder="Message Cookie" rows={1}/>
       <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={onSend}><ArrowUp size={19}/></button>}</div>
     </div>
@@ -183,7 +215,6 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     <input hidden ref={fileRef} type="file" multiple onChange={e=>{add(e.target.files);e.currentTarget.value=""}}/>
   </div>;
 }
-
 function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void}){
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(ref.current)ref.current.scrollTop=ref.current.scrollHeight},[chat?.messages.length,loading]);
@@ -231,12 +262,53 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
   </main></div>;
 }
 
+function GPTIcon({kind,size=20}:{kind:GPTDefinition["icon"];size?:number}){
+  if(kind==="study") return <BookOpen size={size}/>;
+  if(kind==="code") return <Code2 size={size}/>;
+  if(kind==="writer") return <PenLine size={size}/>;
+  if(kind==="research") return <Search size={size}/>;
+  if(kind==="data") return <BarChart3 size={size}/>;
+  return <Sparkles size={size}/>;
+}
+
+function GPTsPage({onOpen,plan}:{onOpen:(id:string)=>void;plan:string}){
+  const [q,setQ]=useState("");
+  const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
+  const filtered=GPTS.filter(g=>!q||g.name.toLowerCase().includes(q.toLowerCase())||g.description.toLowerCase().includes(q.toLowerCase())||g.category.toLowerCase().includes(q.toLowerCase()));
+  return <div className="gpts-page">
+    <div className="gpts-topbar"><div><button className="gpts-mini-brand"><CookieIcon size={24}/><span>Cookie</span></button></div><div className="gpts-top-right"><span>Explore GPTs</span><span className="gpts-model-pill">GPT-5.1</span></div></div>
+    <div className="gpts-content">
+      <section className="gpts-hero"><span className="gpts-eyebrow"><Sparkles size={14}/>GPTs</span><h1>Explore GPTs</h1><p>Purpose-built Cookie assistants. Open one in a fresh chat instead of inserting a scripted prompt.</p><div className="gpts-search"><Search size={18}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search GPTs"/></div></section>
+      <div className="gpts-section-head"><h2>Featured</h2><span>{filtered.length} available</span></div>
+      <div className="gpt-cards">{filtered.map(g=>{const locked=rank<(g.plan==="max"?2:g.plan==="pro"?1:0);return <button className={"gpt-card "+(locked?"locked":"")} key={g.id} onClick={()=>onOpen(g.id)}>
+        <div className={"gpt-card-icon "+g.icon}><GPTIcon kind={g.icon} size={22}/></div>
+        <div className="gpt-card-body"><div className="gpt-card-title"><strong>{g.name}</strong>{g.plan!=="free"&&<span className={"gpt-plan "+g.plan}>{g.plan.toUpperCase()}</span>}</div><p>{g.description}</p><small>{g.category}</small></div>
+        <div className="gpt-card-arrow">{locked?<LockKeyhole size={16}/>:<ChevronRight size={18}/>}</div>
+      </button>})}</div>
+    </div>
+  </div>;
+}
+
+function GPTChatPage({chat,gpt,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onDownload,sendOnEnter}:{chat:Chat;gpt:GPTDefinition;onSend:()=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onDownload:(f:GeneratedFile)=>void;sendOnEnter:boolean}){
+  const [text,setText]=useState(""); const [attachments,setAttachments]=useState<Attachment[]>([]);
+  const [webSearch,setWebSearch]=useState(false); const [memoryEnabled,setMemoryEnabled]=useState(false);
+  const [toolMode,setToolMode]=useState<ToolMode>(null);
+  const [toast,setToast]=useState("");
+  const notify=(m:string)=>{setToast(m);window.setTimeout(()=>setToast(""),1900)};
+  useEffect(()=>{setText("");setAttachments([]);setToolMode(null)},[gpt.id]);
+  return <div className="gpt-chat-shell">
+    <header className="gpt-chat-top"><button className="gpt-back" onClick={()=>history.back()}><ArrowLeft size={17}/><span>GPTs</span></button><div className="gpt-chat-identity"><div className={"gpt-card-icon "+gpt.icon}><GPTIcon kind={gpt.icon} size={18}/></div><div><strong>{gpt.name}</strong><small>{gpt.category} · GPT-5.1</small></div></div><button className="gpt-chat-new" onClick={()=>location.reload()}><MessageSquarePlus size={17}/><span>New chat</span></button></header>
+    <main className="gpt-chat-main"><ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload}/><div className="gpt-chat-composer"><Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} onImagePrompt={()=>{setText(v=>v||"Describe the image you want")}} toolMode={toolMode} setToolMode={setToolMode} plan="free" hideTools onToolNotice={notify}/></div></main>
+    {toast&&<div className="gpt-chat-toast">{toast}</div>}
+  </div>;
+}
+
 function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[]}){
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
   if(view==="code") return <CodeStudioPage/>;
   if(view==="projects") return <ProjectsPage/>;
-  if(view==="gpts") return <div className="page"><h1>GPTs</h1><p>Specialized Cookie experiences.</p><div className="gpt-grid">{[["Study buddy","Guided learning and explanations."],["Code reviewer","Debug and improve your code."],["Writing partner","Draft polished writing."],["Idea maker","Brainstorm concepts fast."]].map(([a,b])=><button className="gpt-item" key={a} onClick={()=>onPrompt("Act as my "+a+". "+b)}><div className="gpt-icon"><Code2 size={18}/></div><div><b>{a}</b><span>{b}</span></div><ChevronRight size={17}/></button>)}</div></div>;
+  if(view==="gpts") return <GPTsPage onOpen={()=>{}} plan="free"/>;
   if(view==="work") return <div className="work-page"><div className="work-label"><Zap size={16}/> Work</div><h1>Get work done with Cookie</h1><p>Turn a goal into a structured conversation.</p><div className="work-grid"><button onClick={()=>onPrompt("Plan this project step by step and help me complete it.")}>Plan a project</button><button onClick={()=>onPrompt("Break this task into actionable steps.")}>Break down a task</button></div></div>;
   if(view==="help") return <div className="page"><h1>Help with Cookie</h1><p>Quick answers.</p><div className="help-grid">{[["Search","Use Search or ⌘K / Ctrl+K to find conversations."],["Files","Use + in the composer to attach images or files."],["Voice","Use the voice button and allow microphone access."],["Temporary chats","Start a temporary chat from the sidebar menu."]].map(([a,b])=><div className="help-item" key={a}><CircleHelp size={18}/><div><b>{a}</b><span>{b}</span></div></div>)}</div></div>;
   return null;
@@ -314,6 +386,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [sidebar,setSidebar]=useState(false),[model,setModel]=useState(localStorage.getItem("cookie_model")||"standard"),[modelOpen,setModelOpen]=useState(false);
   const [text,setText]=useState(""),[attachments,setAttachments]=useState<Attachment[]>([]),[webSearch,setWebSearch]=useState(false),[loading,setLoading]=useState(false),[voice,setVoice]=useState(false),[newOpen,setNewOpen]=useState(false),[profileOpen,setProfileOpen]=useState(false);
   const [temporary,setTemporary]=useState(false),[abort,setAbort]=useState<AbortController|null>(null),[toast,setToast]=useState("");
+  const [toolMode,setToolMode]=useState<ToolMode>(null);
+  const [selectedGPT,setSelectedGPT]=useState<GPTDefinition|null>(null);
   const [profile,setProfile]=useState({name:authUser.name||"Cookie user",username:authUser.username||"cookie-user",email:authUser.email||""});
   const [settings,setSettings]=useState(readJSON("cookie_settings",{theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",memory:true,instructions:"",history:true,improve:false,notifications:true,updates:false,voice:"Arbor",captions:true}));
   const [memoryEnabled,setMemoryEnabled]=useState(true);
@@ -351,14 +425,24 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   function notify(message:string){setToast(message);window.setTimeout(()=>setToast(""),1800)}
   function createChat(temp:boolean){const c:Chat={id:uid(),title:temp?"Temporary chat":"New chat",messages:[],model,temporary:temp,updatedAt:Date.now()};setChats(p=>[c,...p]);setActiveId(c.id);setTemporary(temp);setText("");setAttachments([]);setView("chat");setSidebar(false);setNewOpen(false)}
   function updateChat(id:string,fn:(c:Chat)=>Chat){setChats(p=>p.map(c=>c.id===id?fn(c):c))}
-  async function send(override?:string){
+  async function send(override?:string, forcedGptId?:string){
     const body=(override??text).trim(); if((!body&&!attachments.length)||loading)return;
+    const activeGptId=forcedGptId||selectedGPT?.id||"";
     let c=chat;if(!c){const n:Chat={id:uid(),title:"New chat",messages:[],model,temporary,updatedAt:Date.now()};setChats(p=>[n,...p]);setActiveId(n.id);c=n}
     const user:Message={id:uid(),role:"user",content:body||"Please analyze these files.",attachments,createdAt:Date.now()};
     const msgs=[...c.messages,user];const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));setText("");setAttachments([]);setWebSearch(false);setLoading(true);
     const ctl=new AbortController();setAbort(ctl);
-    try{const languageIndex=LANGUAGES.indexOf(settings.language);const payload={model,messages:msgs.map(m=>({role:m.role,content:m.content})),attachments:user.attachments||[],preferences:{responseMode:model,language:LANG_CODES[languageIndex]||"auto",answerLength:"auto",creativity:.7,memory:memoryEnabled,personality:settings.personality,reasoning:settings.reasoning||"auto",instructions:settings.instructions||"",webSearch,profile}};let r:Response|null=null;let lastNetworkError:any=null;for(let attempt=0;attempt<2;attempt++){try{r=await fetch("/api/chat",{method:"POST",signal:ctl.signal,cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});break}catch(err:any){lastNetworkError=err;if(err?.name==="AbortError")throw err;if(attempt===0)await new Promise(res=>setTimeout(res,700))}}if(!r){let health="";try{const hr=await fetch("/api/health",{cache:"no-store",headers:{"Accept":"application/json"}});if(hr.ok){const hd=await hr.json();health=hd?.ok?" Cookie server is reachable; the AI provider connection may be the failing part.":"";}}catch{}throw new Error("Unable to connect to Cookie AI."+health+" Please try again.");}let d:any=null;try{d=await r.json()}catch{throw new Error(r.ok?"Cookie returned an unreadable response.":"Cookie AI is temporarily unavailable.")}if(!r.ok)throw new Error(d?.error||"Cookie AI could not answer right now.");const a:Message={id:uid(),role:"assistant",content:String(d.message||""),files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],images:Array.isArray(d.generatedImages)?d.generatedImages:[],createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80))}catch(e:any){if(e?.name!=="AbortError"){const raw=String(e?.message||"Unknown error.");const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)?"Unable to connect to Cookie AI. The server connection failed. Please try again.":raw;const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}))}}finally{setLoading(false);setAbort(null)}
+    try{const languageIndex=LANGUAGES.indexOf(settings.language);const payload={model,messages:msgs.map(m=>({role:m.role,content:m.content})),attachments:user.attachments||[],preferences:{responseMode:model,language:LANG_CODES[languageIndex]||"auto",answerLength:"auto",creativity:.7,memory:activeGptId?false:memoryEnabled,personality:settings.personality,reasoning:settings.reasoning||"auto",instructions:settings.instructions||"",webSearch,tool:toolMode,gptId:activeGptId,profile}};let r:Response|null=null;let lastNetworkError:any=null;for(let attempt=0;attempt<2;attempt++){try{r=await fetch("/api/chat",{method:"POST",signal:ctl.signal,cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});break}catch(err:any){lastNetworkError=err;if(err?.name==="AbortError")throw err;if(attempt===0)await new Promise(res=>setTimeout(res,700))}}if(!r){let health="";try{const hr=await fetch("/api/health",{cache:"no-store",headers:{"Accept":"application/json"}});if(hr.ok){const hd=await hr.json();health=hd?.ok?" Cookie server is reachable; the AI provider connection may be the failing part.":"";}}catch{}throw new Error("Unable to connect to Cookie AI."+health+" Please try again.");}let d:any=null;try{d=await r.json()}catch{throw new Error(r.ok?"Cookie returned an unreadable response.":"Cookie AI is temporarily unavailable.")}if(!r.ok)throw new Error(d?.error||"Cookie AI could not answer right now.");const a:Message={id:uid(),role:"assistant",content:String(d.message||""),files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],images:Array.isArray(d.generatedImages)?d.generatedImages:[],createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80))}catch(e:any){if(e?.name!=="AbortError"){const raw=String(e?.message||"Unknown error.");const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)?"Unable to connect to Cookie AI. The server connection failed. Please try again.":raw;const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}))}}finally{setLoading(false);setAbort(null)}
   }
+  function openGPT(id:string){
+    const g=GPTS.find(x=>x.id===id); if(!g)return;
+    const rank=authUser.plan.toLowerCase()==="max"?2:authUser.plan.toLowerCase()==="pro"||authUser.plan.toLowerCase()==="plus"?1:0;
+    const required=g.plan==="max"?2:g.plan==="pro"?1:0;
+    if(rank<required){notify(g.name+" requires a "+g.plan.toUpperCase()+" plan.");return}
+    const c:Chat={id:uid(),title:g.name,messages:[],model:"gpt-5.1",temporary:false,updatedAt:Date.now()};
+    setChats(p=>[c,...p]);setActiveId(c.id);setSelectedGPT(g);setText("");setAttachments([]);setToolMode(null);setView("gpt-chat");setSidebar(false);
+  }
+
   function retry(m:Message){if(!chat||loading)return;const i=chat.messages.findIndex(x=>x.id===m.id);if(i<1)return;const prior=chat.messages[i-1];updateChat(chat.id,x=>({...x,messages:x.messages.slice(0,i-1),updatedAt:Date.now()}));setText(prior.content);setTimeout(()=>send(prior.content),0)}
   async function share(){
     if(!chat)return;
@@ -375,7 +459,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   }
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
   if(String(view)==="code") return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <div className="cookie-app">
     <button className="mobile-sidebar-trigger" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={21}/></button>
@@ -388,7 +473,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     </aside>
     <main className="main-shell">
       <header className="topbar"><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)}><Menu size={20}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu">{MODELS.map(x=><button key={x.id} className={x.id===model?"selected":""} onClick={()=>{setModel(x.id);setModelOpen(false)}}><span><b>{x.name}</b><small>{x.detail}</small></span>{x.id===model&&<Check size={16}/>}</button>)}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)}><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
-      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} onImagePrompt={()=>{setText(v=>v||"Create an image of ");setWebSearch(false)}}/></div>}
+      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} onImagePrompt={()=>{setWebSearch(false);setToolMode("image-generation")}} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify}/></div>}
       {view!=="chat"&&main}
     </main>
     {voice&&<VoiceOverlay onClose={()=>setVoice(false)}/>} {toast&&<div className="toast" role="status">{toast}</div>}
