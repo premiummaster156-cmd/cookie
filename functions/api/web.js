@@ -44,8 +44,6 @@ async function searchPublic(query, maxResults = 6) {
     const raw = await r.text();
     if (!r.ok) return {ok:false,error:"Public search failed with HTTP "+r.status+"."};
     const results=[];
-    const blockRe=/<div[^>]*class=["'][^"']*result[^"']*["'][\s\S]*?<\/div>\s*<\/div>/gi;
-    const blocks=raw.match(blockRe)||[];
     const clean=value=>String(value||"")
       .replace(/<script[\s\S]*?<\/script>/gi," ")
       .replace(/<style[\s\S]*?<\/style>/gi," ")
@@ -58,17 +56,23 @@ async function searchPublic(query, maxResults = 6) {
       .replace(/&gt;/gi,">")
       .replace(/\s+/g," ")
       .trim();
-    for (const block of blocks) {
-      const link=block.match(/<a[^>]+class=["'][^"']*result__a[^"']*["'][^>]+href=["']([^"']+)["']/i);
-      if(!link) continue;
-      const title=clean((block.match(/<a[^>]+class=["'][^"']*result__a[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)||[])[1]);
-      const snippet=clean((block.match(/class=["'][^"']*result__snippet[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)||[])[1]
-        || (block.match(/class=["'][^"']*result__snippet[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)||[])[1]);
-      let url=link[1];
-      try { url=new URL(url,"https://html.duckduckgo.com").href; } catch {}
-      if(!/^https?:\/\//i.test(url)) continue;
-      if(!results.some(x=>x.url===url)) results.push({title:title||"Search result",url,content:snippet||""});
-      if(results.length>=maxResults) break;
+    const linkRe=/<a[^>]+class=["'][^"']*result__a[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while((match=linkRe.exec(raw)) && results.length<maxResults){
+      const start=match.index;
+      const window=raw.slice(start,Math.min(raw.length,start+6000));
+      const title=clean(match[2]);
+      const snippet=clean(
+        (window.match(/class=["'][^"']*result__snippet[^"']*["'][^>]*>([\s\S]*?)(?:<\/div>|<\/span>)/i)||[])[1] || ""
+      );
+      let url=match[1];
+      try{
+        const resolved=new URL(url,"https://html.duckduckgo.com");
+        const uddg=resolved.searchParams.get("uddg");
+        url=uddg?decodeURIComponent(uddg):resolved.href;
+      }catch{}
+      if(!/^https?:\/\//i.test(url))continue;
+      if(!results.some(x=>x.url===url))results.push({title:title||"Search result",url,content:snippet||""});
     }
     if(results.length) return {ok:true,results};
     return {ok:false,error:"No public search results were found."};
