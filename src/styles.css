@@ -1794,3 +1794,60 @@ button:active:not(:disabled){
     background:rgba(24,26,30,.96)!important;
   }
 }
+
+
+/* ===== Mobile viewport containment hotfix =====
+   Prevent flex/absolute children from centering against an oversized
+   containing block on iOS Safari. */
+@media(max-width:900px){
+  html,body,#root{
+    width:100vw!important;
+    max-width:100vw!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+  }
+  .cookie-app{
+    width:100vw!important;
+    max-width:100vw!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  .main-shell{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    flex:1 1 auto!important;
+    overflow:hidden!important;
+  }
+  .topbar,
+  .chat-layer,
+  .chat-view,
+  .chat-scroll{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  .composer-wrap{
+    left:10px!important;
+    right:10px!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  .composer{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  .composer-left,.composer-right,
+  .composer textarea{
+    min-width:0!important;
+  }
+}
+@media(max-width:560px){
+  .composer-wrap{
+    left:8px!important;
+    right:8px!important;
+  }
+}
