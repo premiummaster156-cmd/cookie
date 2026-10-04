@@ -39,7 +39,7 @@ struct CookieNativeTopBar: View {
                 Spacer(minLength: 0)
 
                 Menu {
-                    ForEach(models, id: .0) { model in
+                    ForEach(models, id: \.0) { model in
                         Button {
                             onModel(model.0)
                         } label: {
