@@ -4488,3 +4488,15 @@ html[data-theme="light"] .profile-menu{
     background:rgba(20,20,24,.82)!important;
   }
 }
+
+
+/* Row menus are CSS materials today because they are rendered without a
+   LiquidGlassBackdrop instance. Keep them visible without adding glass-on-glass. */
+.row-menu{
+  background:rgba(20,21,24,.58)!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:18px!important;
+  box-shadow:0 22px 58px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.10)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(150%)!important;
+  backdrop-filter:blur(24px) saturate(150%)!important;
+}
