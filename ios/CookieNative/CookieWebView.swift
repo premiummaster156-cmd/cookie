@@ -6,14 +6,16 @@ struct CookieWebView: UIViewRepresentable {
     @ObservedObject var controller: CookieWebController
     @Binding var isLoading: Bool
     @Binding var canGoBack: Bool
+    @Binding var isAuthenticated: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(controller: controller, isLoading: $isLoading, canGoBack: $canGoBack)
+        Coordinator(controller: controller, isLoading: $isLoading, canGoBack: $canGoBack, isAuthenticated: $isAuthenticated)
     }
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
+        configuration.userContentController.add(context.coordinator, name: "cookieAuth")
 
         let controllerScript = """
         (() => {
@@ -53,8 +55,6 @@ struct CookieWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
-        webView.customUserAgent = "CookieNative/1.0 (iOS 26; WKWebView)"
-
         context.coordinator.webView = webView
         controller.webView = webView
 
@@ -74,15 +74,23 @@ struct CookieWebView: UIViewRepresentable {
         weak var controller: CookieWebController?
         var isLoading: Binding<Bool>
         var canGoBack: Binding<Bool>
+        var isAuthenticated: Binding<Bool>
 
         init(
             controller: CookieWebController,
             isLoading: Binding<Bool>,
-            canGoBack: Binding<Bool>
+            canGoBack: Binding<Bool>,
+            isAuthenticated: Binding<Bool>
         ) {
             self.controller = controller
             self.isLoading = isLoading
             self.canGoBack = canGoBack
+            self.isAuthenticated = isAuthenticated
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.name == "cookieAuth" else { return }
+            isAuthenticated.wrappedValue = (message.body as? Bool) ?? false
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
