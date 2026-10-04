@@ -291,7 +291,7 @@ function GPTsPage({onOpen,plan}:{onOpen:(id:string)=>void;plan:string}){
   const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
   const filtered=GPTS.filter(g=>!q||g.name.toLowerCase().includes(q.toLowerCase())||g.description.toLowerCase().includes(q.toLowerCase())||g.category.toLowerCase().includes(q.toLowerCase()));
   return <div className="gpts-page">
-    <header className="gpts-nav">
+    <header className="gpts-nav"><LiquidGlassBackdrop className="gpt-nav-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/>
       <div className="gpts-nav-group">
         <button className="gpts-nav-icon" aria-label="Cookie home"><CookieIcon size={22}/></button>
         <div className="gpts-nav-title"><strong>GPTs</strong><span>Cookie AI</span></div>
@@ -335,7 +335,7 @@ function GPTsPage({onOpen,plan}:{onOpen:(id:string)=>void;plan:string}){
 
 function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onDownload,sendOnEnter,value,setValue,attachments,setAttachments,webSearch,setWebSearch}:{chat:Chat;gpt:GPTDefinition;onBack:()=>void;onNewChat:()=>void;onSend:()=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onDownload:(f:GeneratedFile)=>void;sendOnEnter:boolean;value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;webSearch:boolean;setWebSearch:(v:boolean)=>void}){
   return <div className="gpt-chat-shell">
-    <header className="gpt-chat-top">
+    <header className="gpt-chat-top"><LiquidGlassBackdrop className="gpt-nav-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/>
       <button className="gpt-back" onClick={onBack} aria-label="Back to GPTs"><ArrowLeft size={17}/><span>GPTs</span></button>
       <div className="gpt-chat-identity">
         <div className={"gpt-card-icon "+gpt.icon}><GPTIcon kind={gpt.icon} size={18}/></div>
@@ -371,7 +371,7 @@ function WorkPage({onStart}:{onStart:(prompt:string)=>void}){
       <div className="work-mark"><Zap size={18}/></div>
       <div><h1>What are you working on?</h1><p>Tell Cookie the goal. It will figure out the steps, tools, and depth itself.</p></div>
     </div>
-    <div className="work-input">
+    <div className="work-input"><LiquidGlassBackdrop className="work-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:24}}/>
       <textarea ref={ref} value={value} onChange={e=>setValue(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit()}}} placeholder="Describe the work…" rows={1}/>
       <button className={value.trim()?"ready":""} disabled={!value.trim()} onClick={submit} aria-label="Start work"><ArrowUp size={18}/></button>
     </div>
@@ -509,7 +509,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   }
   function newGPTChat(){
     if(!selectedGPT)return;
-    const c:Chat={id:uid(),title:selectedGPT.name,messages:[],model:"gpt-5.1",temporary:false,updatedAt:Date.now()};
+    const c:Chat={id:uid(),title:selectedGPT.name,messages:[],model:"standard",temporary:false,updatedAt:Date.now()};
     setChats(p=>[c,...p]);setActiveId(c.id);setText("");setAttachments([]);setToolMode(null);setView("gpt-chat");setSidebar(false);
   }
 
