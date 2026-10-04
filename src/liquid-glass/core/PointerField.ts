@@ -280,7 +280,8 @@ function pressTick(): void {
     const el = pressTouchElement;
 
     if (el && el.isConnected) {
-      const rect = el.getBoundingClientRect();
+      const rect = rectCache.get(el) ?? el.getBoundingClientRect();
+      rectCache.set(el, rect);
       if (rect.width > 0 && rect.height > 0) {
         const ix = Math.max(0, Math.min(1, (pressX - rect.left) / rect.width));
         const iy = Math.max(0, Math.min(1, (pressY - rect.top) / rect.height));
