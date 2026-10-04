@@ -105,7 +105,6 @@ const TOOL_REQUIREMENTS = {
   "data-analysis":1,
   "url-fetch":1,
   "code-analysis":1,
-  "image-generation":1,
   "deep-research":2
 };
 
@@ -459,9 +458,6 @@ export async function onRequestPost({ request, env }) {
       }
     } else if(requestedTool==="code-analysis"){
       toolContext.push("CODE ANALYSIS MODE: Act as a senior reviewer. Inspect supplied code carefully for correctness, security, maintainability, bugs, edge cases, and integration mistakes. Give actionable findings and production-quality fixes.");
-    } else if(requestedTool==="image-generation"){
-      if(!env.OPENAI_API_KEY) return json({error:"Image generation requires OPENAI_API_KEY to be configured."},503);
-      toolContext.push("IMAGE GENERATION MODE: When the user asks for an image, use the image_generate tool and wait for the tool result.");
     } else if(requestedTool==="deep-research"){
       const research=await researchWeb(requestedWebQuery,apiKey);
       toolContext.push("DEEP RESEARCH RESULTS:\n"+JSON.stringify(research));
