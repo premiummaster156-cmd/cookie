@@ -1858,6 +1858,8 @@ button:active:not(:disabled){
   display:none;
 }
 @media(max-width:900px){
+  .topbar{display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:450!important;}
+  .mobile-menu{display:grid!important;visibility:visible!important;}
   .mobile-nav-launcher{
     display:grid!important;
     place-items:center;
