@@ -1290,6 +1290,7 @@ class LiquidGlass {
     // Transparent window: the shader paints the backdrop; drop the element's own
     // background tint and any backdrop-filter.
     this.element.style.backgroundColor = 'transparent';
+    this.element.style.setProperty('--lg-tint', 'transparent');
     this.dropOwnBackdrop();
     return true;
   }
@@ -1324,6 +1325,9 @@ class LiquidGlass {
     this.gpuHandle.destroy();
     this.gpuHandle = null;
     this.usesGpu = false;
+    const tint = this.options.tint ?? this.variantTint();
+    this.element.style.backgroundColor = tint;
+    this.element.style.setProperty('--lg-tint', tint);
   }
 
   private async installFallbackFx(): Promise<void> {
