@@ -7,7 +7,7 @@ export async function onRequestPost({ request, env }) {
   console.log("[Cookie register] entered");
   if (!dbAvailable(env)) {
     console.error("[Cookie register] DB binding unavailable");
-    return json({ error: "Cookie auth database is not connected. Bind a D1 database as DB in Pages." }, 503);
+    return json({ error: "Cookie auth database is not connected. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
   }
 
   const body = await readJson(request);
