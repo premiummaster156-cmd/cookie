@@ -37,7 +37,6 @@ struct CookieNavigationSheet: View {
                     Button("Done") {
                         onCommand("dismiss")
                     }
-                    .buttonStyle(.glass)
                 }
             }
         }
