@@ -98,7 +98,8 @@ struct CookieNativeComposer: View {
                         .font(.system(size: 16, weight: .bold))
                         .frame(width: 36, height: 36)
                 }
-                .buttonStyle(.glass(.clear.interactive()))
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
                 .accessibilityLabel("Add attachment")
 
                 TextField("Message Cookie", text: $text, axis: .vertical)
@@ -121,7 +122,8 @@ struct CookieNativeComposer: View {
                     }
                     .frame(width: 36, height: 36)
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
                 .accessibilityLabel("Send message")
             }
