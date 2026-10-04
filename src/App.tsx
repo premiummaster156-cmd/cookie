@@ -172,7 +172,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     {id:"data-analysis",name:"Data analysis",detail:"Tables, CSVs, trends, and metrics",plan:"pro",icon:<BarChart3 size={18}/>},
     {id:"url-fetch",name:"Read a URL",detail:"Fetch and inspect a public webpage",plan:"pro",icon:<Link2 size={18}/>},
     {id:"code-analysis",name:"Code analysis",detail:"Deep code review and debugging",plan:"pro",icon:<Code2 size={18}/>},
-    {id:"image-generation",name:"Image generation",detail:"Create or edit images",plan:"pro",icon:<ImagePlus size={18}/>},
+    ,
     {id:"deep-research",name:"Deep research",detail:"Broader multi-source research",plan:"max",icon:<Sparkles size={18}/>}
   ];
   useEffect(()=>{const t=textRef.current;if(t){t.style.height="0px";t.style.height=Math.min(220,Math.max(52,t.scrollHeight))+"px"}},[value]);
@@ -182,7 +182,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     if(rank<required){onToolNotice(tool.name+" requires a "+(tool.plan==="max"?"MAX":"PRO")+" plan.");setToolsOpen(false);return}
     setToolMode(tool.id);setToolsOpen(false);
     if(tool.id==="file-analysis"&&!attachments.length)onToolNotice("Attach a file or image, then send your request.");
-    if(tool.id==="image-generation")onImagePrompt();
+    
   };
   return <div className="composer-wrap">
     {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
