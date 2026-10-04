@@ -3777,3 +3777,276 @@ html[data-theme="light"] .user-content{
     transition:none!important;
   }
 }
+
+
+/* ==========================================================================
+   COOKIE OPTICAL GLASS v2
+   The previous pass still read as a framed panel. This pass follows the actual
+   Liquid Glass hierarchy: content is the canvas, navigation floats above it,
+   surfaces stay translucent, and touch creates a local lens rather than a
+   generic button flash.
+   ========================================================================== */
+
+/* Give the glass something optical to refract: soft environmental light, not
+   a fake solid panel. The real chat/content remains visually dominant. */
+.cookie-app::before{
+  background:
+    radial-gradient(34% 28% at 12% 10%,rgba(255,255,255,.18),transparent 70%),
+    radial-gradient(30% 30% at 88% 16%,rgba(95,145,255,.18),transparent 72%),
+    radial-gradient(38% 34% at 72% 78%,rgba(185,105,255,.13),transparent 70%),
+    radial-gradient(28% 28% at 18% 76%,rgba(65,170,255,.11),transparent 72%)!important;
+  filter:blur(38px) saturate(150%)!important;
+  opacity:1!important;
+}
+
+.cookie-ambient-scene{
+  background:
+    radial-gradient(22% 18% at 22% 24%,rgba(255,255,255,.12),transparent 72%),
+    radial-gradient(25% 24% at 78% 18%,rgba(80,140,255,.13),transparent 74%),
+    radial-gradient(32% 28% at 62% 70%,rgba(190,95,255,.10),transparent 75%),
+    radial-gradient(20% 22% at 18% 82%,rgba(60,180,255,.08),transparent 76%)!important;
+  filter:blur(28px) saturate(145%)!important;
+  opacity:1!important;
+}
+
+/* Never let the host surfaces become opaque rectangles. */
+.topbar,
+.composer{
+  background:transparent!important;
+  border-color:transparent!important;
+}
+
+.topbar{
+  overflow:visible!important;
+  isolation:isolate;
+}
+
+.topbar-glass-layer{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.018) 48%,rgba(255,255,255,.045))!important;
+  border:0!important;
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.055)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(175%) contrast(106%)!important;
+  backdrop-filter:blur(22px) saturate(175%) contrast(106%)!important;
+}
+
+.composer{
+  overflow:visible!important;
+  isolation:isolate;
+  border-radius:32px!important;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.26),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -1px 0 rgba(0,0,0,.18)!important;
+}
+
+.composer-glass-layer{
+  border-radius:32px!important;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.095),rgba(255,255,255,.025) 44%,rgba(255,255,255,.055) 100%)!important;
+  border:0!important;
+  -webkit-backdrop-filter:blur(26px) saturate(185%) contrast(108%)!important;
+  backdrop-filter:blur(26px) saturate(185%) contrast(108%)!important;
+}
+
+/* The model control is typography sitting on the glass toolbar, not a little
+   boxed card. */
+.model-picker{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+  min-height:40px!important;
+}
+.model-picker:hover{
+  background:rgba(255,255,255,.055)!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.model-wrap{position:relative!important;z-index:20!important}
+.top-left,.top-right{z-index:20!important}
+
+/* Popovers must escape both the toolbar and composer clipping contexts. */
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  z-index:5000!important;
+  transform-origin:center bottom;
+}
+.model-menu{top:48px!important}
+.attach-menu{bottom:54px!important}
+.tools-menu{bottom:54px!important}
+.attach-wrap,.tools-wrap{position:relative!important;z-index:50!important}
+.popover-pop{isolation:isolate!important}
+
+/* A menu is one floating sheet, not a stack of opaque nested boxes. */
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  background:rgba(20,21,24,.58)!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(0,0,0,.16)!important;
+  -webkit-backdrop-filter:blur(34px) saturate(185%) contrast(108%)!important;
+  backdrop-filter:blur(34px) saturate(185%) contrast(108%)!important;
+}
+
+/* Glass itself supplies the depth. Rows are nearly invisible until touched. */
+.model-menu button,
+.attach-menu button,
+.tools-menu button,
+.row-menu button,
+.new-menu button,
+.profile-menu button{
+  background:transparent!important;
+  border:0!important;
+  min-height:44px!important;
+}
+.model-menu button:hover,
+.attach-menu button:hover,
+.tools-menu button:hover,
+.row-menu button:hover,
+.new-menu button:hover,
+.profile-menu button:hover,
+.model-menu button.selected{
+  background:rgba(255,255,255,.10)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+
+/* Optical rim: thin, continuous, non-rectangular-looking light volume. */
+.cookie-liquid-glass-backdrop.liquid-glass{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.065),rgba(255,255,255,.018) 42%,rgba(255,255,255,.045))!important;
+  border:0!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.12),
+    0 14px 45px rgba(0,0,0,.16)!important;
+}
+
+/* This is the persistent glass edge. It stays visible even when nobody is
+   touching the screen, so the material doesn't collapse into plain blur. */
+.cookie-liquid-glass-backdrop.liquid-glass::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  border-radius:inherit!important;
+  border:1px solid transparent!important;
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.48),
+      rgba(255,255,255,.08) 18%,
+      transparent 42%,
+      rgba(255,255,255,.12) 72%,
+      rgba(255,255,255,.34)
+    ) border-box!important;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0) border-box!important;
+  -webkit-mask-composite:xor!important;
+  mask-composite:exclude!important;
+  opacity:.72!important;
+  mix-blend-mode:screen!important;
+  z-index:9!important;
+}
+
+/* Exact finger lens. PointerField.ts writes x/y/radius/energy continuously.
+   The clipped backdrop-filter gives the finger a real local optical lens on
+   Safari instead of merely changing the whole control's color. */
+.cookie-liquid-glass-backdrop.liquid-glass::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  border-radius:inherit!important;
+  z-index:8!important;
+  clip-path:circle(
+    calc(var(--lg-wave-radius,22px) + 18px)
+    at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%)
+  )!important;
+  -webkit-clip-path:circle(
+    calc(var(--lg-wave-radius,22px) + 18px)
+    at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%)
+  )!important;
+  background:
+    radial-gradient(circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      rgba(255,255,255,.20) 0,
+      rgba(255,255,255,.09) 22%,
+      transparent 48%),
+    radial-gradient(circle at calc(var(--lg-wave-x,.5) * 100%) calc(var(--lg-wave-y,.5) * 100%),
+      transparent calc(var(--lg-wave-radius,22px) - 7px),
+      rgba(255,255,255,.34) calc(var(--lg-wave-radius,22px) - 3px),
+      rgba(255,255,255,.12) calc(var(--lg-wave-radius,22px) + 2px),
+      transparent calc(var(--lg-wave-radius,22px) + 14px))!important;
+  opacity:max(.01,var(--lg-wave-energy,0))!important;
+  -webkit-backdrop-filter:blur(2px) saturate(190%) brightness(1.10)!important;
+  backdrop-filter:blur(2px) saturate(190%) brightness(1.10)!important;
+  transform:scale(calc(1 + var(--lg-wave-energy,0) * .025))!important;
+  transform-origin:
+    calc(var(--lg-wave-x,.5) * 100%)
+    calc(var(--lg-wave-y,.5) * 100%)!important;
+  will-change:clip-path,transform,opacity,background;
+}
+
+/* Hold = live lens; move = the lens center follows the exact finger. */
+@media(hover:none){
+  .cookie-liquid-glass-backdrop.liquid-glass{
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    transition:none!important;
+  }
+}
+
+/* Make the large surfaces feel like floating navigation rather than framed
+   windows. */
+@media(max-width:900px){
+  .topbar{
+    overflow:visible!important;
+  }
+  .topbar-glass-layer{
+    border-radius:0!important;
+  }
+  .composer{
+    overflow:visible!important;
+  }
+  .composer-glass-layer{
+    border-radius:32px!important;
+  }
+  .sidebar{
+    border:0!important;
+    border-right:1px solid rgba(255,255,255,.18)!important;
+  }
+}
+
+/* Light mode gets the same optical hierarchy without the gray-card look. */
+html[data-theme="light"] .topbar-glass-layer,
+html[data-theme="light"] .composer-glass-layer{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.54),rgba(255,255,255,.18) 48%,rgba(255,255,255,.42))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    inset 0 -1px 0 rgba(0,0,0,.06)!important;
+}
+html[data-theme="light"] .cookie-liquid-glass-backdrop.liquid-glass::after{
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.95),
+      rgba(255,255,255,.22) 20%,
+      transparent 46%,
+      rgba(0,0,0,.08) 78%,
+      rgba(255,255,255,.78)
+    ) border-box!important;
+}
