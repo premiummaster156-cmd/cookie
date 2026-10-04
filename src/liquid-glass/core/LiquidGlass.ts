@@ -866,7 +866,7 @@ export class LiquidGlass {
     // CSS/JS, so it works on the Safari/Firefox fallback too. Skipped on
     // hover-less touch devices: it gains nothing there and updating it during a
     // touch-scroll only costs style recalcs.
-    if (!this.reducedTransparency) registerPointerLight(this.element, this.onTouchLens);
+    if (!this.reducedTransparency) registerPointerLight(this.element);
 
     // Sample the backdrop once laid out (content-aware shadow + adaptive scheme).
     // Also runs on the fallback path: luminance sampling is plain DOM, so Safari
@@ -880,19 +880,6 @@ export class LiquidGlass {
     // attaching an elementsFromPoint/getComputedStyle loop to scroll.
     this.refreshBackdropSamplingSubscription();
   }
-
-  private onTouchLens = (x: number, y: number, energy: number, radius: number): void => {
-    // The browser's backdrop compositor already does the live scene sampling.
-    // This transient second displacement pass adds the missing physical-lens
-    // behavior: a small vector field centered exactly under the finger.
-    if (this.destroyed || this.suspended || !this.filter) return;
-    const now = nowMs();
-    if (now - this.touchLensLastAt < 42) return;
-    this.touchLensLastAt = now;
-    const dataUrl = createTouchLensMap(x, y, radius, energy);
-    const padding = Math.max(8, Math.min(48, this.effectiveRefraction() * 0.35));
-    this.filter.updateTouchLens(dataUrl, this.currentWidth, this.currentHeight, padding, Math.min(58, 34 + energy * 34));
-  };
 
   update(partial: LiquidGlassOptions): void {
     const prev = this.options;
