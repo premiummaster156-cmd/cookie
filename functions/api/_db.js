@@ -291,6 +291,7 @@ export function createNeonD1Compat(env) {
     }
 
     async run() {
+      await ready;
       const result = await sql.query(this.compiled.text, this.values, { fullResults: true });
       return {
         success: true,
@@ -302,6 +303,7 @@ export function createNeonD1Compat(env) {
 
   return {
     __cookieNeon: true,
+    __cookieNeonUrl: url,
     prepare(query) {
       const compiled = compile(query);
       return new Statement(compiled);
