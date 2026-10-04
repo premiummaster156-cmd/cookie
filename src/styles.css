@@ -4235,3 +4235,16 @@ html[data-theme="light"] .cookie-liquid-glass-backdrop.liquid-glass::after{
     will-change:opacity,background-position!important;
   }
 }
+
+/* ==========================================================================
+   NATIVE-QUALITY GLASS POLICY — no synthetic touch lens on touch devices
+   The platform/native Liquid Glass renderer owns interaction physics. Safari web
+   cannot access Apple's private lensing compositor, so we do not fake it with
+   a glowing circle, clip-path lens, or per-frame backdrop effect.
+   ========================================================================== */
+@media (hover:none) and (pointer:coarse){
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    content:none!important;
+    display:none!important;
+  }
+}
