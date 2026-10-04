@@ -724,6 +724,12 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   },[chats,serverSyncReady]);
  useEffect(()=>saveJSON("cookie_settings",settings),[settings]); useEffect(()=>saveJSON("cookie_library",files),[files]); useEffect(()=>localStorage.setItem("cookie_model",model),[model]);
   useEffect(()=>{const theme=settings.theme==="System"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):settings.theme.toLowerCase();document.documentElement.dataset.theme=theme;document.documentElement.dataset.accent=settings.accent||"Default";document.documentElement.dataset.fontSize=settings.fontSize||"Default";document.body.classList.toggle("compact-mode",settings.compact);document.body.classList.toggle("motion-off",!settings.animations);document.body.classList.toggle("hide-timestamps",!settings.timestamps)},[settings]);
+  useEffect(()=>{
+    if(!(window as any).__COOKIE_NATIVE_APP__)return;
+    const webkit=(window as any).webkit;
+    try{webkit?.messageHandlers?.cookieAuth?.postMessage(true)}catch{}
+    return()=>{try{webkit?.messageHandlers?.cookieAuth?.postMessage(false)}catch{}};
+  },[]);
   useEffect(()=>{if(view!=="chat")setSidebar(false)},[view]);
   useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setView("search");setSidebar(false)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
   useEffect(()=>{
@@ -737,6 +743,11 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       if(command==="gpts"){setView("gpts");setSidebar(false);return}
       if(command==="work"){setView("work");setSidebar(false);return}
       if(command==="settings"){setSettingsTab("general");setView("settings");setSidebar(false);return}
+      if(command.startsWith("model:")){
+        const next=command.slice(6);
+        if(MODELS.some(x=>x.id===next)) setModel(next);
+        return;
+      }
     };
     addEventListener("cookie:native-command",onNativeCommand as EventListener);
     return()=>removeEventListener("cookie:native-command",onNativeCommand as EventListener);
