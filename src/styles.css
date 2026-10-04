@@ -2934,3 +2934,230 @@ html[data-theme="light"] .composer-note{color:rgba(0,0,0,.48)!important}
 @keyframes cookie-install-sheet{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 html[data-theme="light"] .install-app-modal{background:rgba(249,249,250,.84);border-color:rgba(0,0,0,.10);box-shadow:0 28px 80px rgba(0,0,0,.20),inset 0 1px rgba(255,255,255,.80)}html[data-theme="light"] .install-app-modal:before{background:linear-gradient(135deg,rgba(255,255,255,.55),transparent 38%,rgba(0,0,0,.025) 76%)}html[data-theme="light"] .install-app-badge,html[data-theme="light"] .install-app-benefits>div,html[data-theme="light"] .install-app-step,html[data-theme="light"] .install-app-secondary{background:rgba(0,0,0,.025);border-color:rgba(0,0,0,.07)}html[data-theme="light"] .install-app-copy p,html[data-theme="light"] .install-app-benefits small,html[data-theme="light"] .install-app-step p,html[data-theme="light"] .install-app-foot{color:#6f6f75}html[data-theme="light"] .install-app-secondary{color:#34343a}html[data-theme="light"] .install-app-close{color:#67676d;background:rgba(0,0,0,.035)}
 @media(prefers-reduced-motion:reduce){.install-app-scrim,.install-app-modal{animation:none}.install-app-pulse{animation:none}}
+
+
+/* ============================================================
+   LIQUID GLASS 2 — optical material pass
+   The old implementation put an opaque surface behind the
+   LiquidGlassBackdrop. That prevented the backdrop from ever
+   seeing the content it was supposed to refract. These rules make
+   the glass layer the actual material and keep the host transparent.
+   ============================================================ */
+
+.cookie-app{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  background:#17181b;
+}
+.cookie-app::before{
+  content:"";
+  position:absolute;
+  inset:-22%;
+  z-index:-2;
+  pointer-events:none;
+  background:
+    radial-gradient(42% 34% at 14% 16%,rgba(255,255,255,.13),transparent 62%),
+    radial-gradient(36% 32% at 86% 20%,rgba(110,150,255,.12),transparent 65%),
+    radial-gradient(45% 38% at 62% 82%,rgba(190,110,255,.08),transparent 68%),
+    radial-gradient(32% 30% at 18% 78%,rgba(90,180,255,.07),transparent 70%);
+  filter:blur(42px) saturate(135%);
+  transform:translate3d(0,0,0) scale(1.08);
+  animation:cookie-glass-ambient 18s ease-in-out infinite alternate;
+}
+.cookie-ambient-scene{
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:
+    radial-gradient(28% 24% at 30% 28%,rgba(255,255,255,.055),transparent 70%),
+    radial-gradient(24% 28% at 74% 58%,rgba(112,155,255,.045),transparent 72%);
+  mix-blend-mode:screen;
+  opacity:.9;
+}
+@keyframes cookie-glass-ambient{
+  0%{transform:translate3d(-2%,-1%,0) scale(1.08)}
+  50%{transform:translate3d(1.5%,1%,0) scale(1.11)}
+  100%{transform:translate3d(3%,-1.5%,0) scale(1.09)}
+}
+
+.main-shell{
+  background:transparent!important;
+  position:relative;
+}
+.main-shell::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background:
+    radial-gradient(40% 32% at 54% 8%,rgba(255,255,255,.035),transparent 70%),
+    radial-gradient(32% 38% at 90% 72%,rgba(100,145,255,.025),transparent 72%);
+}
+.main-shell>*{position:relative;z-index:1}
+
+.sidebar{
+  background:transparent!important;
+  border-right:0!important;
+  box-shadow:none!important;
+  position:relative;
+}
+.topbar{
+  background:transparent!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+}
+.composer{
+  position:relative;
+  isolation:isolate;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:hidden;
+  border-radius:24px!important;
+}
+.sidebar-glass-layer,
+.topbar-glass-layer,
+.composer-glass-layer,
+.settings-glass-layer,
+.menu-glass-layer{
+  position:absolute!important;
+  inset:0!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+}
+
+/* Every glass host keeps its content above the material. */
+.sidebar>*:not(.sidebar-glass-layer),
+.topbar>*:not(.topbar-glass-layer),
+.composer>*:not(.composer-glass-layer),
+.settings-glass-card>*:not(.settings-glass-layer),
+.account-card>*:not(.settings-glass-layer),
+.about-card>*:not(.settings-glass-layer),
+.danger-zone>*:not(.settings-glass-layer),
+.attach-menu>*:not(.menu-glass-layer),
+.tools-menu>*:not(.menu-glass-layer),
+.new-menu>*:not(.menu-glass-layer),
+.profile-menu>*:not(.menu-glass-layer){
+  position:relative;
+  z-index:2;
+}
+
+/* The material itself: translucent body + backdrop sampling + optical edge. */
+.cookie-liquid-glass-backdrop.liquid-glass{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.035) 32%,rgba(255,255,255,.018) 68%,rgba(255,255,255,.075)),
+    radial-gradient(100% 160% at 0% 0%,rgba(255,255,255,.09),transparent 42%),
+    radial-gradient(80% 120% at 100% 100%,rgba(120,150,255,.045),transparent 52%)!important;
+  border:1px solid rgba(255,255,255,.17)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(0,0,0,.20),
+    inset 1px 0 0 rgba(255,255,255,.07),
+    0 14px 42px rgba(0,0,0,.22)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(180%) contrast(108%)!important;
+  backdrop-filter:blur(24px) saturate(180%) contrast(108%)!important;
+  transform:translateZ(0);
+}
+
+/* Broad environmental reflection — deliberately visible on dark OLED screens. */
+.cookie-liquid-glass-backdrop.liquid-glass::before{
+  opacity:1!important;
+  background:
+    radial-gradient(85% 55% at 8% 0%,rgba(255,255,255,.17),transparent 55%),
+    radial-gradient(55% 75% at 100% 100%,rgba(150,180,255,.055),transparent 58%),
+    linear-gradient(115deg,rgba(255,255,255,.07),transparent 27%,transparent 70%,rgba(255,255,255,.045))!important;
+  mix-blend-mode:screen;
+  z-index:8!important;
+}
+.cookie-liquid-glass-backdrop.liquid-glass::after{
+  opacity:.95!important;
+  border:1px solid transparent!important;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.10) 20%,transparent 46%,rgba(255,255,255,.18) 78%,rgba(255,255,255,.42)) border-box!important;
+  -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0) border-box!important;
+  -webkit-mask-composite:destination-out!important;
+  mask-composite:exclude!important;
+  z-index:9!important;
+}
+
+/* Stronger optical material for the large floating surfaces. */
+.sidebar-glass-layer{
+  border-radius:0 28px 28px 0!important;
+  background:
+    linear-gradient(120deg,rgba(255,255,255,.13),rgba(255,255,255,.045) 36%,rgba(255,255,255,.018) 72%,rgba(255,255,255,.08)),
+    radial-gradient(70% 45% at 0% 5%,rgba(255,255,255,.13),transparent 68%)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(185%) contrast(110%)!important;
+  backdrop-filter:blur(30px) saturate(185%) contrast(110%)!important;
+  box-shadow:
+    inset -1px 0 rgba(255,255,255,.20),
+    inset 0 1px rgba(255,255,255,.18),
+    inset 0 -1px rgba(0,0,0,.22),
+    14px 0 50px rgba(0,0,0,.20)!important;
+}
+.topbar-glass-layer{
+  border-radius:0!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.035) 52%,rgba(255,255,255,.055))!important;
+  -webkit-backdrop-filter:blur(25px) saturate(185%) contrast(108%)!important;
+  backdrop-filter:blur(25px) saturate(185%) contrast(108%)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.22),inset 0 -1px rgba(255,255,255,.055),0 8px 32px rgba(0,0,0,.16)!important;
+}
+.composer-glass-layer{
+  border-radius:24px!important;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.045) 40%,rgba(255,255,255,.02) 72%,rgba(255,255,255,.08))!important;
+  -webkit-backdrop-filter:blur(30px) saturate(190%) contrast(110%)!important;
+  backdrop-filter:blur(30px) saturate(190%) contrast(110%)!important;
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.23),
+    inset 0 -1px rgba(0,0,0,.22),
+    0 16px 50px rgba(0,0,0,.28)!important;
+}
+.menu-glass-layer{
+  border-radius:14px!important;
+  background:rgba(255,255,255,.07)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(185%) contrast(108%)!important;
+  backdrop-filter:blur(28px) saturate(185%) contrast(108%)!important;
+}
+
+/* Glass controls: don't flatten them into opaque gray pills. */
+.side-icon,.top-icon,.mobile-menu,.composer-icon,.model-picker{
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.055);
+  box-shadow:inset 0 1px rgba(255,255,255,.07);
+}
+.side-icon:hover,.top-icon:hover,.mobile-menu:hover,.composer-icon:hover,.model-picker:hover{
+  background:rgba(255,255,255,.09);
+  border-color:rgba(255,255,255,.13);
+  box-shadow:inset 0 1px rgba(255,255,255,.14),0 4px 18px rgba(0,0,0,.16);
+}
+.switcher button.active{
+  background:rgba(255,255,255,.105)!important;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:inset 0 1px rgba(255,255,255,.13),0 6px 24px rgba(0,0,0,.14);
+}
+.send-button{
+  box-shadow:inset 0 1px rgba(255,255,255,.55),0 5px 18px rgba(0,0,0,.20)!important;
+}
+
+@media(max-width:700px){
+  .cookie-app::before{filter:blur(34px) saturate(145%);opacity:.85}
+  .sidebar{box-shadow:10px 0 50px rgba(0,0,0,.32)!important}
+  .sidebar-glass-layer{
+    border-radius:0 30px 30px 0!important;
+    -webkit-backdrop-filter:blur(32px) saturate(190%) contrast(110%)!important;
+    backdrop-filter:blur(32px) saturate(190%) contrast(110%)!important;
+  }
+  .topbar-glass-layer{-webkit-backdrop-filter:blur(28px) saturate(190%) contrast(108%)!important;backdrop-filter:blur(28px) saturate(190%) contrast(108%)!important}
+  .composer-glass-layer{-webkit-backdrop-filter:blur(32px) saturate(195%) contrast(110%)!important;backdrop-filter:blur(32px) saturate(195%) contrast(110%)!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .cookie-app::before{animation:none}
+}
