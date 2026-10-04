@@ -5001,3 +5001,360 @@ html[data-theme="light"] .profile-menu{
     backdrop-filter:blur(12px)!important;
   }
 }
+
+
+/* ==========================================================================
+   COOKIE WEB V5 — ChatGPT-style workspace
+   Clean navigation, quiet content, floating composer, richer responsive shell.
+   The web app intentionally does NOT fake native iOS Liquid Glass chrome.
+   ========================================================================== */
+
+:root{
+  --cookie-bg:#0b0b0c;
+  --cookie-sidebar:#101011;
+  --cookie-sidebar-hover:#1a1a1b;
+  --cookie-sidebar-active:#242425;
+  --cookie-surface:#202021;
+  --cookie-surface-2:#2a2a2b;
+  --cookie-text:#f3f3f3;
+  --cookie-muted:#a0a0a5;
+  --cookie-faint:#6f7075;
+  --cookie-border:rgba(255,255,255,.09);
+}
+
+html,body,#root{background:var(--cookie-bg)!important}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif!important}
+.cookie-app{background:var(--cookie-bg)!important;isolation:isolate}
+.cookie-ambient-scene{display:none!important}
+
+/* Navigation: flat and quiet like a real AI workspace. */
+.sidebar{
+  width:268px!important;
+  background:var(--cookie-sidebar)!important;
+  border-right:1px solid rgba(255,255,255,.045)!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+}
+.sidebar-glass-layer,
+.topbar-glass-layer{display:none!important}
+
+.sidebar-head{height:58px!important;padding:0 10px!important}
+.brand{
+  border-radius:10px!important;
+  padding:8px 10px!important;
+  font-size:15px!important;
+}
+.brand:hover{background:var(--cookie-sidebar-hover)!important}
+.side-icon,.top-icon,.mobile-menu{
+  border-radius:10px!important;
+  color:#b8b8bc!important;
+}
+.side-icon:hover,.top-icon:hover,.mobile-menu:hover{
+  background:#1b1b1c!important;
+  color:#fff!important;
+}
+
+.switcher{
+  padding:2px 10px 7px!important;
+  gap:2px!important;
+}
+.switcher button{
+  min-height:34px!important;
+  border-radius:9px!important;
+  color:#99999f!important;
+  font-size:12px!important;
+}
+.switcher button.active{
+  background:#242425!important;
+  color:#f0f0f1!important;
+}
+
+.sidebar-scroll{padding:3px 9px!important}
+.nav-btn{
+  height:38px!important;
+  border-radius:8px!important;
+  color:#c8c8cc!important;
+  padding:0 10px!important;
+}
+.nav-btn:hover{background:var(--cookie-sidebar-hover)!important}
+.nav-btn.active{background:var(--cookie-sidebar-active)!important}
+.nav-btn small{margin-left:auto;color:#68686d!important;font-size:9px!important}
+
+.side-label{
+  padding:18px 10px 6px!important;
+  color:#696a70!important;
+  font-size:10px!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+  font-weight:600!important;
+}
+
+.chat-row{min-height:36px!important;border-radius:8px!important}
+.chat-row-main{padding:7px 9px!important}
+.chat-row-main svg{display:none!important}
+.chat-row-main span{font-size:12px!important;color:#bdbdc2!important}
+.chat-row.active,.chat-row:hover{background:#1a1a1b!important}
+.chat-row-more{opacity:.15!important}
+.chat-row:hover .chat-row-more,.chat-row.active .chat-row-more{opacity:1!important}
+
+.sidebar-foot{
+  border-top:1px solid rgba(255,255,255,.05)!important;
+  padding:7px 9px!important;
+}
+.account{border-radius:9px!important;padding:8px!important}
+.account:hover{background:#1b1b1c!important}
+
+.main-shell{
+  background:var(--cookie-bg)!important;
+  min-width:0!important;
+}
+.topbar{
+  height:56px!important;
+  min-height:56px!important;
+  padding:0 14px!important;
+  background:rgba(11,11,12,.86)!important;
+  border-bottom:1px solid rgba(255,255,255,.035)!important;
+  backdrop-filter:blur(16px)!important;
+  -webkit-backdrop-filter:blur(16px)!important;
+}
+.model-picker{
+  height:38px!important;
+  border-radius:10px!important;
+  padding:0 10px!important;
+  font-size:15px!important;
+  font-weight:650!important;
+}
+.model-picker:hover{background:#1a1a1b!important}
+.model-menu{
+  background:#242425!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:14px!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.5)!important;
+  backdrop-filter:blur(24px)!important;
+}
+.model-menu .menu-glass-layer,
+.attach-menu .menu-glass-layer,
+.tools-menu .menu-glass-layer,
+.new-menu .menu-glass-layer,
+.profile-menu .menu-glass-layer{display:none!important}
+
+.chat-layer{background:var(--cookie-bg)!important}
+.chat-scroll{
+  padding:0 24px 190px!important;
+  scrollbar-width:thin;
+}
+.messages{
+  width:min(900px,100%)!important;
+  padding-top:28px!important;
+}
+.message-row{
+  padding:20px 0!important;
+  grid-template-columns:30px minmax(0,1fr)!important;
+  gap:12px!important;
+}
+.message-avatar{opacity:.9!important}
+.message-author{
+  font-size:12px!important;
+  color:#d2d2d5!important;
+  margin-bottom:6px!important;
+}
+.rich,.user-content{
+  font-size:15px!important;
+  line-height:1.65!important;
+}
+.user-content{
+  background:#2a2a2b!important;
+  border:0!important;
+  border-radius:18px!important;
+  padding:10px 15px!important;
+  max-width:min(760px,100%)!important;
+}
+.message-tools{opacity:0;transition:opacity .15s ease!important}
+.message-row:hover .message-tools{opacity:1}
+.generated-images{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr))!important;
+  gap:10px!important;
+  max-width:760px!important;
+  margin-top:14px!important;
+}
+.generated-image{
+  display:block!important;
+  overflow:hidden!important;
+  border-radius:14px!important;
+  background:#171718!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  text-decoration:none!important;
+}
+.generated-image img{
+  display:block!important;
+  width:100%!important;
+  aspect-ratio:1!important;
+  object-fit:cover!important;
+}
+.generated-image span{
+  display:block!important;
+  padding:8px 10px!important;
+  color:#a9a9ae!important;
+  font-size:10px!important;
+}
+
+/* Composer: one floating ChatGPT-like surface, no nested glass layers. */
+.composer-wrap{
+  width:min(820px,calc(100% - 48px))!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+}
+.composer{
+  min-height:58px!important;
+  border-radius:18px!important;
+  padding:8px 9px 8px 10px!important;
+  background:rgba(34,34,35,.96)!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.40),0 1px 0 rgba(255,255,255,.04) inset!important;
+  backdrop-filter:blur(22px)!important;
+  -webkit-backdrop-filter:blur(22px)!important;
+}
+.composer-glass-layer{display:none!important}
+.composer textarea{
+  font-size:16px!important;
+  color:#f2f2f4!important;
+  padding:9px 6px!important;
+}
+.composer textarea::placeholder{color:#929298!important}
+.composer-icon,.send-button{
+  width:38px!important;height:38px!important;
+  min-width:38px!important;min-height:38px!important;
+  border-radius:50%!important;
+}
+.composer-icon:hover{background:#3a3a3b!important;color:#fff!important}
+.send-button{
+  background:#f1f1f1!important;
+  color:#101011!important;
+}
+.send-button.disabled{
+  background:#454547!important;
+  color:#171719!important;
+}
+.composer-note{
+  margin-top:7px!important;
+  color:#69696f!important;
+  font-size:9px!important;
+}
+.attachment-strip{padding-bottom:8px!important}
+.attach-menu,.tools-menu,.new-menu,.profile-menu,.row-menu{
+  background:#29292a!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  border-radius:15px!important;
+  box-shadow:0 24px 72px rgba(0,0,0,.50)!important;
+  backdrop-filter:blur(24px)!important;
+  -webkit-backdrop-filter:blur(24px)!important;
+}
+.attach-menu button,.tools-menu button,.new-menu button,.profile-menu button,.row-menu button{
+  border-radius:10px!important;
+  min-height:38px!important;
+}
+.attach-menu button:hover,.tools-menu button:hover,.new-menu button:hover,.profile-menu button:hover,.row-menu button:hover{
+  background:#3a3a3b!important;
+}
+
+/* Empty state: larger, cleaner, more useful. */
+.empty{
+  min-height:calc(100dvh - 250px)!important;
+  justify-content:center!important;
+  padding-top:70px!important;
+}
+.empty-cookie{
+  width:54px!important;height:54px!important;
+  display:grid!important;place-items:center!important;
+  background:#181819!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.25)!important;
+}
+.empty h1{
+  margin:15px 0 4px!important;
+  font-size:28px!important;
+  font-weight:650!important;
+  letter-spacing:-.02em!important;
+}
+.empty>p{
+  font-size:13px!important;
+  color:#7d7d82!important;
+}
+.starter-prompts{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:min(640px,100%)!important;
+}
+.starter-prompts button{
+  min-height:52px!important;
+  border-radius:14px!important;
+  background:#151516!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+}
+.starter-prompts button:hover{
+  background:#202021!important;
+  border-color:rgba(255,255,255,.12)!important;
+  transform:translateY(-1px)!important;
+}
+
+/* Mobile: true floating drawer, content remains full-screen underneath. */
+@media(max-width:900px){
+  .cookie-app{display:block!important}
+  .sidebar{
+    position:fixed!important;
+    left:0!important;
+    top:0!important;
+    bottom:0!important;
+    height:100dvh!important;
+    width:min(86vw,330px)!important;
+    border-radius:0 22px 22px 0!important;
+    background:#111112!important;
+    transform:translate3d(-105%,0,0)!important;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1)!important;
+    z-index:700!important;
+    box-shadow:22px 0 70px rgba(0,0,0,.48)!important;
+  }
+  .sidebar.open{transform:translate3d(0,0,0)!important}
+  .sidebar-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:650!important;
+    background:rgba(0,0,0,.48)!important;
+    backdrop-filter:blur(2px)!important;
+    -webkit-backdrop-filter:blur(2px)!important;
+  }
+  .topbar{
+    height:52px!important;
+    min-height:52px!important;
+    background:rgba(11,11,12,.76)!important;
+  }
+  .mobile-menu{display:grid!important}
+  .chat-scroll{padding:0 16px 185px!important}
+  .messages{padding-top:16px!important}
+  .message-row{padding:17px 0!important}
+  .composer-wrap{
+    width:calc(100% - 24px)!important;
+    bottom:max(9px,env(safe-area-inset-bottom))!important;
+  }
+  .composer{border-radius:20px!important}
+  .starter-prompts{grid-template-columns:1fr!important}
+  .empty{min-height:calc(100dvh - 210px)!important;padding-top:40px!important}
+  .empty h1{font-size:24px!important}
+  .message-tools{opacity:1!important}
+  .generated-images{grid-template-columns:1fr!important}
+}
+
+@media(max-width:520px){
+  .top-right .top-icon:nth-last-child(1){display:none!important}
+  .model-picker{font-size:14px!important}
+  .composer textarea{font-size:16px!important}
+  .starter-prompts button{min-height:48px!important}
+}
+
+/* Kill the expensive synthetic touch orb on the web shell. Native iOS owns
+   real Liquid Glass interaction; Safari gets a clean, responsive surface. */
+@media (hover:none) and (pointer:coarse){
+  .cookie-liquid-glass-backdrop.liquid-glass::before,
+  .cookie-liquid-glass-backdrop.liquid-glass::after{
+    display:none!important;
+  }
+}
