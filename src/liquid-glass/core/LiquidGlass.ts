@@ -649,6 +649,7 @@ const touchLensCanvas = typeof document !== 'undefined' ? document.createElement
 const touchLensSize = 72;
 
 function createTouchLensMap(x: number, y: number, radiusPx: number, energy: number): string {
+  if (energy <= 0.003) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
   if (!touchLensCanvas) return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="rgb(128,128,128)"/></svg>');
   touchLensCanvas.width = touchLensSize;
   touchLensCanvas.height = touchLensSize;
@@ -877,7 +878,7 @@ export class LiquidGlass {
     // The browser's backdrop compositor already does the live scene sampling.
     // This transient second displacement pass adds the missing physical-lens
     // behavior: a small vector field centered exactly under the finger.
-    if (this.destroyed || this.suspended || !this.filter || energy <= 0.003) return;
+    if (this.destroyed || this.suspended || !this.filter) return;
     const now = nowMs();
     if (now - this.touchLensLastAt < 42) return;
     this.touchLensLastAt = now;
