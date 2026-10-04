@@ -4,6 +4,22 @@ import { dbAvailable, getSessionUser } from "./auth/_auth.js";
 const MAX_CHATS = 80;
 const MAX_MESSAGES = 200;
 const MAX_TEXT = 20000;
+const MAX_SHARE_MESSAGES = 200;
+const MAX_SHARE_PAYLOAD = 3000000;
+
+async function ensureShareTable(env){
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS shared_chats (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER,
+    title TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`).run();
+}
+
+function shareId(){
+  return crypto.randomUUID().replaceAll("-","");
+}
 
 async function requireUser(request, env) {
   if (!dbAvailable(env)) return {error:json({error:"Cookie database is not connected."},503)};
@@ -13,6 +29,19 @@ async function requireUser(request, env) {
 }
 
 export async function onRequestGet({request,env}) {
+  const url=new URL(request.url);
+  const shareIdParam=String(url.searchParams.get("share")||"").replace(/[^a-f0-9]/gi,"").slice(0,32);
+  if(shareIdParam){
+    if(!dbAvailable(env)) return json({error:"Cookie database is not connected."},503);
+    if(shareIdParam.length!==32) return json({error:"Invalid share link."},400);
+    await ensureShareTable(env);
+    const row=await env.DB.prepare("SELECT title,payload,created_at FROM shared_chats WHERE id=? LIMIT 1").bind(shareIdParam).first();
+    if(!row) return json({error:"This share link no longer exists."},404);
+    try{
+      const data=JSON.parse(String(row.payload||""));
+      return json({ok:true,title:String(data?.title||row.title||"Shared Cookie chat"),messages:Array.isArray(data?.messages)?data.messages:[],createdAt:Number(row.created_at)||Date.now()});
+    }catch{return json({error:"This share link is corrupted."},500);}
+  }
   const auth=await requireUser(request,env);
   if(auth.error) return auth.error;
   const chats=await env.DB.prepare(
@@ -46,6 +75,26 @@ export async function onRequestGet({request,env}) {
 }
 
 export async function onRequestPost({request,env}) {
+  const url=new URL(request.url);
+  if(url.searchParams.get("share")==="1"){
+    const auth=await requireUser(request,env);
+    if(auth.error) return auth.error;
+    const body=await readJson(request);
+    const title=String(body?.title||"Shared Cookie chat").slice(0,200);
+    const messages=Array.isArray(body?.messages)?body.messages.slice(-MAX_SHARE_MESSAGES).map((m)=>({
+      id:String(m?.id||crypto.randomUUID()).slice(0,100),
+      role:m?.role==="assistant"?"assistant":"user",
+      content:String(m?.content||"").slice(0,MAX_TEXT),
+      createdAt:Number(m?.createdAt)||Date.now()
+    })):[];
+
+    const payload=JSON.stringify({title,messages});
+    if(payload.length>MAX_SHARE_PAYLOAD) return json({error:"This conversation is too large to share."},413);
+    await ensureShareTable(env);
+    const id=shareId();
+    await env.DB.prepare("INSERT INTO shared_chats (id,user_id,title,payload,created_at) VALUES (?,?,?,?,?)").bind(id,auth.user.id,title,payload,Date.now()).run();
+    return json({ok:true,id,url:new URL("/#share="+id,request.url).toString()});
+  }
   const auth=await requireUser(request,env);
   if(auth.error) return auth.error;
   const body=await readJson(request);
