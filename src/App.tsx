@@ -200,10 +200,10 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
     {webSearch&&<div className="search-chip"><Globe2 size={13}/><span>Web research enabled</span><button onClick={()=>setWebSearch(false)} aria-label="Turn off web research"><X size={13}/></button></div>}
     {!!attachments.length&&<div className="attachment-strip">{attachments.map(a=><div className="attachment-card" key={a.id}>{a.kind==="image"?<img src={a.data} alt=""/>:<div className="file-icon"><FileIcon size={18}/></div>}<div><b>{a.name}</b><span>{Math.max(1,Math.round(a.size/1024))} KB</span></div><button onClick={()=>setAttachments(p=>p.filter(x=>x.id!==a.id))}><X size={14}/></button></div>)}</div>}
-    <div className="composer" data-liquid-glass="composer"><LiquidGlassBackdrop className="composer-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:22}}/>
+    <div className="composer" data-liquid-glass="composer"><LiquidGlassBackdrop className="composer-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:22,backdropSource:".cookie-ambient-scene"}}/>
       <div className="composer-left">
       <div className="attach-wrap"><button className="composer-icon" aria-label="Add" onClick={()=>{setOpen(v=>!v);setToolsOpen(false)}}><Plus size={21}/></button>{open&&<div className="attach-menu popover-pop">
-        <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/>
+        <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12,backdropSource:".cookie-ambient-scene"}}/>
         <button onClick={()=>{imageRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Photos & images</span></button>
         <button onClick={()=>{cameraRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Camera</span></button>
         <button onClick={()=>{fileRef.current?.click();setOpen(false)}}><FilePlus2 size={18}/><span>Upload files</span></button>
@@ -212,7 +212,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
       {!hideTools&&<div className="tools-wrap attach-wrap">
         <button className={"composer-icon tool-button "+(toolsOpen?"active":"")} aria-label="Tools" onClick={()=>{setToolsOpen(v=>!v);setOpen(false)}}><Wrench size={18}/></button>
         {toolsOpen&&<div className="attach-menu tools-menu popover-pop">
-          <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:14}}/>
+          <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:14,backdropSource:".cookie-ambient-scene"}}/>
           <div className="tools-menu-head"><span>Tools</span><small>Choose an action</small></div>
           {tools.map(tool=><button key={tool.id} className={toolMode===tool.id?"active":""} onClick={()=>chooseTool(tool)}><span className="tool-icon">{tool.icon}</span><span className="tool-copy"><b>{tool.name}</b><small>{tool.detail}</small></span>{(tool.plan!=="free"&&rank<(tool.plan==="max"?2:1))?<><LockKeyhole size={14}/><em>{tool.plan.toUpperCase()}</em></>:toolMode===tool.id?<Check size={14}/>:null}</button>)}
           <div className="tools-divider"/>
@@ -252,7 +252,7 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
   const Toggle=({k}:{k:string})=><button type="button" className={"toggle "+(settings[k]?"on":"")} aria-pressed={!!settings[k]} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
   const openTab=(id:SettingsTab)=>{setTab(id);setMobileHome(false)};
   const Row=({title,desc,children,icon}:{title:string;desc:string;children:React.ReactNode;icon?:React.ReactNode})=><div className="set-row"><div className="set-row-copy">{icon&&<span className="set-row-icon">{icon}</span>}<div><b>{title}</b><span>{desc}</span></div></div><div className="set-row-control">{children}</div></div>;
-  const GlassCard=({children,className=""}:{children:React.ReactNode;className?:string})=><div className={"settings-card settings-glass-card "+className}><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"balanced",scheme:"adaptive",radius:20,quality:"auto"}}/>{children}</div>;
+  const GlassCard=({children,className=""}:{children:React.ReactNode;className?:string})=><div className={"settings-card settings-glass-card "+className}><LiquidGlassBackdrop className="settings-glass-layer" options={{profile:"card",variant:"regular",preset:"balanced",scheme:"adaptive",radius:20,quality:"auto",backdropSource:".cookie-ambient-scene"}}/>{children}</div>;
   const downloadData=()=>{
     try{
       const payload={exportedAt:new Date().toISOString(),profile,settings,chats:readJSON("cookie_chats",[])};
@@ -411,7 +411,7 @@ function GPTsPage({onOpen,plan}:{onOpen:(id:string)=>void;plan:string}){
   const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
   const filtered=GPTS.filter(g=>!q||g.name.toLowerCase().includes(q.toLowerCase())||g.description.toLowerCase().includes(q.toLowerCase())||g.category.toLowerCase().includes(q.toLowerCase()));
   return <div className="gpts-page">
-    <header className="gpts-nav"><LiquidGlassBackdrop className="gpt-nav-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/>
+    <header className="gpts-nav"><LiquidGlassBackdrop className="gpt-nav-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0,backdropSource:".cookie-ambient-scene"}}/>
       <div className="gpts-nav-group">
         <button className="gpts-nav-icon" aria-label="Cookie home"><CookieIcon size={22}/></button>
         <div className="gpts-nav-title"><strong>GPTs</strong><span>Cookie AI</span></div>
@@ -809,7 +809,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   return <div className="cookie-app"><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
     <aside className={"sidebar "+(sidebar?"open":"")}>
-      <LiquidGlassBackdrop className="sidebar-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:24}}/>
+      <LiquidGlassBackdrop className="sidebar-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:24,backdropSource:".cookie-ambient-scene"}}/>
       <div className="sidebar-head"><button className="brand" onClick={()=>{setView("chat");setSidebar(false)}}><CookieIcon size={23}/><span>Cookie</span></button><div><button className="side-icon hide-mobile" onClick={()=>setSidebar(false)}><PanelLeft size={18}/></button><button className="side-icon" onClick={()=>createChat(false)}><MessageSquarePlus size={18}/></button></div></div>
       <div className="switcher"><button className={view==="chat"?"active":""} onClick={()=>{setView("chat");setSidebar(false)}}><MessageSquare size={16}/>Chat</button><button className={view==="work"?"active":""} onClick={()=>{setView("work");setSidebar(false)}}><Zap size={16}/>Work</button></div>
       <div className="sidebar-scroll"><button className="nav-btn" onClick={()=>{setView("search");setSidebar(false)}}><Search size={18}/><span>Search</span><kbd>⌘K</kbd></button><button className="nav-btn" onClick={()=>{setView("library");setSidebar(false)}}><Library size={18}/><span>Library</span></button><button className="nav-btn" onClick={()=>{setView("projects");setSidebar(false)}}><FolderKanban size={18}/><span>Projects</span></button><button className={"nav-btn "+(String(view)==="code"?"active":"")} onClick={()=>{setView("code");setSidebar(false)}}><Code2 size={18}/><span>Code Studio</span></button><button className="nav-btn" onClick={()=>{setView("gpts");setSidebar(false)}}><Code2 size={18}/><span>GPTs</span></button><button className="nav-btn install-app-nav" onClick={()=>{window.dispatchEvent(new Event("cookie:open-install-app"));setSidebar(false)}}><Download size={18}/><span>Install app</span><small>Better app experience</small></button><div className="side-label">Recent</div>{recent.map(c=><ChatRow key={c.id} chat={c} active={c.id===activeId} onOpen={()=>{setActiveId(c.id);setTemporary(!!c.temporary);setView("chat");setSidebar(false)}} onAction={a=>a==="pin"?updateChat(c.id,x=>({...x,pinned:!x.pinned})):a==="archive"?updateChat(c.id,x=>({...x,archived:true})):(!settings.confirmDelete||window.confirm("Delete this chat?"))&&setChats(p=>p.filter(x=>x.id!==c.id))}/>)}</div>
