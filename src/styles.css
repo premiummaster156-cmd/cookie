@@ -4500,3 +4500,504 @@ html[data-theme="light"] .profile-menu{
   -webkit-backdrop-filter:blur(24px) saturate(150%)!important;
   backdrop-filter:blur(24px) saturate(150%)!important;
 }
+
+
+
+/* ==========================================================================
+   COOKIE 4 — POLISHED LIQUID GLASS + STREAMING AI
+   Navigation and composer are the functional glass layer. Content remains
+   quiet, spacious and high-contrast. Touch feedback is a tiny local flex,
+   never a page-sized glow.
+   ========================================================================== */
+
+:root{
+  --cookie-glass-rest:rgba(255,255,255,.055);
+  --cookie-glass-hover:rgba(255,255,255,.085);
+  --cookie-glass-line:rgba(255,255,255,.11);
+  --cookie-glass-shadow:0 18px 58px rgba(0,0,0,.20);
+}
+
+.cookie-app{
+  background:#0b0c0f!important;
+  color:#f4f4f6!important;
+}
+
+.cookie-ambient-scene{
+  background:
+    radial-gradient(42% 34% at 6% 4%,rgba(105,135,255,.10),transparent 72%),
+    radial-gradient(34% 30% at 94% 13%,rgba(189,130,255,.07),transparent 74%),
+    radial-gradient(36% 34% at 72% 95%,rgba(52,176,255,.05),transparent 76%)!important;
+  filter:blur(28px) saturate(118%)!important;
+  opacity:.82!important;
+}
+
+.topbar,
+.composer,
+.sidebar,
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+.topbar{
+  min-height:52px!important;
+  isolation:isolate!important;
+}
+
+.topbar-glass-layer,
+.sidebar-glass-layer,
+.composer-glass-layer,
+.menu-glass-layer{
+  opacity:1!important;
+  background:var(--lg-tint,rgba(255,255,255,.035))!important;
+  box-shadow:var(--lg-shadow,none)!important;
+  -webkit-backdrop-filter:var(--lg-backdrop-filter,blur(18px) saturate(145%))!important;
+  backdrop-filter:var(--lg-backdrop-filter,blur(18px) saturate(145%))!important;
+}
+
+.topbar-glass-layer{
+  border-radius:0!important;
+  box-shadow:inset 0 -1px rgba(255,255,255,.065)!important;
+}
+
+.sidebar-glass-layer{
+  box-shadow:inset -1px 0 rgba(255,255,255,.085)!important;
+}
+
+.composer{
+  min-height:56px!important;
+  border-radius:30px!important;
+  overflow:visible!important;
+  background:rgba(255,255,255,.035)!important;
+  box-shadow:0 18px 58px rgba(0,0,0,.22)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
+.composer-glass-layer{
+  border-radius:30px!important;
+}
+
+.composer-left,
+.composer-right,
+.composer textarea{
+  position:relative!important;
+  z-index:2!important;
+}
+
+.composer textarea{
+  font-size:16px!important;
+  line-height:1.35!important;
+}
+
+.top-icon,
+.mobile-menu,
+.side-icon,
+.composer-icon,
+.send-button,
+.model-picker,
+.chat-row-more{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  border-radius:999px!important;
+  transition:background .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s ease!important;
+}
+
+.top-icon,
+.mobile-menu,
+.side-icon,
+.composer-icon,
+.send-button{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+}
+
+.top-icon:hover,
+.mobile-menu:hover,
+.side-icon:hover,
+.composer-icon:hover,
+.send-button:hover:not(.disabled),
+.model-picker:hover,
+.chat-row-more:hover{
+  background:rgba(255,255,255,.075)!important;
+}
+
+.top-icon:active,
+.mobile-menu:active,
+.side-icon:active,
+.composer-icon:active,
+.send-button:active{
+  transform:scale(.91)!important;
+}
+
+.send-button{
+  background:rgba(255,255,255,.92)!important;
+  color:#111318!important;
+}
+.send-button.disabled{
+  background:rgba(255,255,255,.07)!important;
+  color:rgba(255,255,255,.38)!important;
+}
+
+.model-picker{
+  padding:7px 11px!important;
+}
+
+.switcher button{
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.switcher button.active{
+  background:rgba(255,255,255,.075)!important;
+}
+
+.nav-btn,
+.chat-row,
+.chat-row-main{
+  border-radius:999px!important;
+  border:0!important;
+  background:transparent!important;
+}
+.nav-btn:hover,
+.chat-row:hover{
+  background:rgba(255,255,255,.055)!important;
+}
+.nav-btn.active,
+.chat-row.active{
+  background:rgba(255,255,255,.085)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+.model-menu,
+.attach-menu,
+.tools-menu,
+.row-menu,
+.new-menu,
+.profile-menu{
+  border-radius:20px!important;
+  padding:6px!important;
+  overflow:hidden!important;
+  background:rgba(20,22,27,.62)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(165%)!important;
+  backdrop-filter:blur(30px) saturate(165%)!important;
+  box-shadow:
+    0 26px 80px rgba(0,0,0,.34),
+    inset 0 1px rgba(255,255,255,.10)!important;
+}
+
+.model-menu button,
+.attach-menu button,
+.tools-menu button,
+.row-menu button,
+.new-menu button,
+.profile-menu button{
+  border:0!important;
+  border-radius:13px!important;
+  background:transparent!important;
+}
+.model-menu button:hover,
+.attach-menu button:hover,
+.tools-menu button:hover,
+.row-menu button:hover,
+.new-menu button:hover,
+.profile-menu button:hover,
+.model-menu button.selected{
+  background:rgba(255,255,255,.075)!important;
+}
+
+.message-row{
+  content-visibility:auto;
+  contain-intrinsic-size:80px;
+}
+
+.message-body{
+  max-width:min(860px,100%)!important;
+}
+
+.message-sources{
+  margin-top:13px;
+  max-width:760px;
+  padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.07);
+}
+.message-sources-head{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:rgba(255,255,255,.58);
+  font-size:10px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.message-sources-head b{
+  min-width:19px;
+  height:19px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.07);
+  color:rgba(255,255,255,.72);
+  font-size:9px;
+}
+.message-sources-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:8px;
+}
+.message-sources-list a{
+  min-width:0;
+  max-width:260px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 9px;
+  border-radius:12px;
+  text-decoration:none;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.065);
+  color:#e9eaee;
+}
+.message-sources-list a:hover{
+  background:rgba(255,255,255,.065);
+}
+.source-domain{
+  flex:none;
+  max-width:76px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:rgba(255,255,255,.48);
+  font-size:9px;
+}
+.message-sources-list strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+  font-weight:600;
+}
+
+.stream-reply{
+  position:relative;
+  min-height:18px;
+}
+.stream-caret{
+  display:inline-block;
+  width:2px;
+  height:1.05em;
+  margin-left:2px;
+  vertical-align:-.16em;
+  background:currentColor;
+  opacity:.72;
+  animation:cookie-stream-caret .9s ease-in-out infinite;
+}
+@keyframes cookie-stream-caret{
+  0%,55%{opacity:.15}
+  56%,100%{opacity:.8}
+}
+.stream-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:9px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.48);
+  font-size:10px;
+}
+.stream-status-dot{
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 0 3px rgba(255,255,255,.045);
+}
+
+.empty{
+  align-items:center!important;
+}
+.empty>p{
+  margin:8px 0 18px!important;
+  color:rgba(255,255,255,.45)!important;
+  font-size:12px!important;
+}
+.empty-cookie{
+  border-radius:999px!important;
+  background:rgba(255,255,255,.035)!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.14),inset 0 1px rgba(255,255,255,.10)!important;
+}
+.starter-prompts{
+  width:min(620px,100%);
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.starter-prompts button{
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 13px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.075);
+  background:rgba(255,255,255,.035);
+  color:#eceef1;
+  text-align:left;
+  transition:transform .18s ease,background .18s ease,border-color .18s ease;
+}
+.starter-prompts button:hover{
+  background:rgba(255,255,255,.065);
+  border-color:rgba(255,255,255,.11);
+  transform:translateY(-1px);
+}
+.starter-prompts button span{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.starter-prompts button b{
+  font-size:11px;
+  font-weight:600;
+}
+.starter-prompts button>svg{
+  flex:none;
+  color:rgba(255,255,255,.38);
+}
+
+.settings-action-button,
+.settings-primary-button{
+  border-radius:999px!important;
+  border:1px solid rgba(255,255,255,.10)!important;
+  background:rgba(255,255,255,.06)!important;
+  box-shadow:none!important;
+}
+.settings-primary-button{
+  background:rgba(255,255,255,.92)!important;
+  color:#111318!important;
+  padding:9px 15px!important;
+}
+
+@media(max-width:900px){
+  .topbar{
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+  .topbar-glass-layer{
+    background:rgba(255,255,255,.035)!important;
+  }
+  .sidebar{
+    top:8px!important;
+    bottom:8px!important;
+    height:calc(100dvh - 16px)!important;
+    width:min(82vw,320px)!important;
+    border:0!important;
+    border-radius:0 30px 30px 0!important;
+    box-shadow:24px 0 76px rgba(0,0,0,.34)!important;
+    overflow:hidden!important;
+  }
+  .sidebar-glass-layer{
+    background:rgba(18,20,25,.30)!important;
+    border-radius:inherit!important;
+  }
+  .sidebar-overlay{
+    background:rgba(0,0,0,.34)!important;
+    -webkit-backdrop-filter:blur(3px)!important;
+    backdrop-filter:blur(3px)!important;
+  }
+  .mobile-menu{
+    width:40px!important;
+    height:40px!important;
+    min-width:40px!important;
+    min-height:40px!important;
+  }
+  .starter-prompts{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  .starter-prompts button{
+    min-height:46px;
+    border-radius:15px;
+  }
+  .message-sources-list{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .message-sources-list a{
+    flex:0 0 210px;
+  }
+  .composer{
+    border-radius:28px!important;
+  }
+  .composer-glass-layer{
+    border-radius:28px!important;
+  }
+}
+
+@media (hover:none) and (pointer:coarse){
+  /* Exact-touch flex: compact center shimmer + small expanding ring. */
+  .cookie-liquid-glass-backdrop.liquid-glass::before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    pointer-events:none!important;
+    border-radius:inherit!important;
+    z-index:8!important;
+    clip-path:none!important;
+    -webkit-clip-path:none!important;
+    background:
+      radial-gradient(
+        circle 5px at calc(var(--lg-touch-x,.5) * 100%) calc(var(--lg-touch-y,.5) * 100%),
+        rgba(255,255,255,.18) 0 1px,
+        rgba(255,255,255,.08) 2px,
+        transparent 5px
+      ),
+      radial-gradient(
+        circle at calc(var(--lg-touch-x,.5) * 100%) calc(var(--lg-touch-y,.5) * 100%),
+        transparent max(0px,calc(var(--lg-touch-radius,14px) - 4px)),
+        rgba(255,255,255,.20) calc(var(--lg-touch-radius,14px) - 2px),
+        rgba(255,255,255,.07) calc(var(--lg-touch-radius,14px) + 1px),
+        transparent calc(var(--lg-touch-radius,14px) + 6px)
+      )!important;
+    opacity:var(--lg-touch-energy,0)!important;
+    transform:none!important;
+    filter:none!important;
+    transition:none!important;
+  }
+  .cookie-liquid-glass-backdrop.liquid-glass::after{
+    transition:none!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .stream-caret{animation:none!important;opacity:.55}
+  .starter-prompts button{transition:none!important}
+}
+
+@media(prefers-reduced-transparency:reduce){
+  .model-menu,.attach-menu,.tools-menu,.row-menu,.new-menu,.profile-menu,
+  .composer,.sidebar-glass-layer,.topbar-glass-layer{
+    background:rgba(28,30,34,.94)!important;
+    -webkit-backdrop-filter:blur(12px)!important;
+    backdrop-filter:blur(12px)!important;
+  }
+}
