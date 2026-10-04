@@ -327,6 +327,8 @@ function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setMod
         <div className="settings-group"><div className="settings-group-title">Response style</div>
           <GlassCard>
             <Row title="AI personality" desc="How Cookie should sound."><select value={settings.personality} onChange={e=>setSettings((s:any)=>({...s,personality:e.target.value}))}>{PERSONALITIES.map(p=><option key={p}>{p}</option>)}</select></Row>
+            <Row title="Reasoning effort" desc="Choose how much internal reasoning Cookie should use."><select value={settings.reasoning||"auto"} onChange={e=>setSettings((s:any)=>({...s,reasoning:e.target.value}))}><option value="auto">Auto</option><option value="fast">Fast</option><option value="deep">Deep</option></select></Row>
+            <Row title="Answer length" desc="Control the default response length."><select value={settings.answerLength||"auto"} onChange={e=>setSettings((s:any)=>({...s,answerLength:e.target.value}))}><option value="auto">Auto</option><option value="short">Short</option><option value="detailed">Detailed</option></select></Row>
             <Row title="Memory" desc="Use relevant saved preferences in conversations."><Toggle k="memory"/></Row>
           </GlassCard>
         </div>
