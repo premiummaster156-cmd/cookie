@@ -18,14 +18,15 @@ type SettingsTab = "general" | "personalization" | "data" | "notifications" | "v
 type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; data:string; size:number };
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
 type GeneratedImage = { dataUrl:string; prompt:string; model?:string };
-type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; createdAt:number };
+type SourceRef = { title:string; url:string; domain?:string; snippet?:string };
+type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
 const ICON = "https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
 const MODELS = [
-  { id:"standard", name:"CPT-1", detail:"Fast everyday responses" },
-  { id:"max", name:"CPT-2 MAX", detail:"More reasoning and coding" },
-  { id:"ultra", name:"CPT-3 ULTRA", detail:"Highest Cookie capability" }
+  { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI" },
+  { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering" },
+  { id:"ultra", name:"CPT-3 ULTRA", detail:"Multimodal + agentic work" }
 ];
 const LANG_CODES = ["en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
 const LANGUAGES = ["English","Uzbek","Russian","Turkish","Kazakh","Kyrgyz","Tajik","Arabic","Persian","Hindi","Urdu","Chinese","Japanese","Korean","Spanish","French","German","Italian","Portuguese","Indonesian"];
@@ -229,11 +230,22 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     <input hidden ref={fileRef} type="file" multiple onChange={e=>{add(e.target.files);e.currentTarget.value=""}}/>
   </div>;
 }
-function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void}){
+function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus=""}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string}){
   const ref=useRef<HTMLDivElement>(null);
-  useEffect(()=>{if(ref.current)ref.current.scrollTop=ref.current.scrollHeight},[chat?.messages.length,loading]);
+  useEffect(()=>{
+    const el=ref.current;
+    if(!el)return;
+    const nearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<160;
+    if(nearBottom||loading&&!streamText) el.scrollTop=el.scrollHeight;
+  },[chat?.messages.length,loading,streamText]);
   const messages=chat?.messages||[];
-  return <div className="chat-view"><div className="chat-scroll" ref={ref}>{!messages.length?<div className="empty"><div className="empty-cookie"><CookieIcon size={34}/></div><h1>What can I help with?</h1></div>:<div className="messages">{messages.map(m=><div className={"message-row "+m.role} key={m.id}><div className="message-avatar">{m.role==="assistant"?<CookieIcon size={23}/>:<Avatar/>}</div><div className="message-body"><div className="message-author">{m.role==="assistant"?"Cookie":"You"}</div>{m.attachments?.length?<div className="sent-files">{m.attachments.map(a=><div className="sent-file" key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileIcon size={17}/>}<span>{a.name}</span></div>)}</div>:null}{m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}{m.images?.length?<div className="generated-images">{m.images.map((img,i)=><a className="generated-image" key={img.dataUrl+i} href={img.dataUrl} target="_blank" rel="noreferrer" download={"cookie-image-"+(i+1)+".png"}><img src={img.dataUrl} alt={img.prompt||"Generated image"}/><span>Open image</span></a>)}</div>:null}{m.files?.length?<div className="generated-list">{m.files.map(f=><button key={f.path} className="generated-file" onClick={()=>onDownload(f)}><FileIcon size={18}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:null}<div className="message-tools"><span>{fmt(m.createdAt)}</span><button onClick={()=>onCopy(m)}><Copy size={14}/></button>{m.role==="assistant"&&<button onClick={()=>onRetry(m)}><RotateCcw size={14}/></button>}<button onClick={onShare}><Share2 size={14}/></button><button onClick={()=>onDelete(m)}><Trash2 size={14}/></button></div></div></div>)}{loading&&<div className="message-row assistant"><div className="message-avatar"><CookieIcon size={23}/></div><div className="message-body"><div className="message-author">Cookie</div><div className="thinking"><i/><i/><i/></div></div></div>}</div>}</div></div>;
+  const starters=[
+    ["Explain something","Teach me a difficult topic simply, then quiz me.",BookOpen],
+    ["Research live","Research the latest information and cite your sources.",Globe2],
+    ["Analyze a file","I’ll attach a file. Find the important points and explain them.",FileSearch],
+    ["Build something","Help me build a production-ready solution step by step.",Code2]
+  ];
+  return <div className="chat-view"><div className="chat-scroll" ref={ref}>{!messages.length?<div className="empty"><div className="empty-cookie"><CookieIcon size={34}/></div><h1>What can I help with?</h1><p>Ask anything, or start with one of these.</p><div className="starter-prompts">{starters.map(([label,prompt,Icon])=>{const I=Icon as React.ComponentType<{size?:number}>;return <button key={String(label)} onClick={()=>onSend(String(prompt))}><span><I size={16}/><b>{String(label)}</b></span><ChevronRight size={15}/></button>})}</div></div>:<div className="messages">{messages.map(m=><div className={"message-row "+m.role} key={m.id}><div className="message-avatar">{m.role==="assistant"?<CookieIcon size={23}/>:<Avatar/>}</div><div className="message-body"><div className="message-author">{m.role==="assistant"?"Cookie":"You"}</div>{m.attachments?.length?<div className="sent-files">{m.attachments.map(a=><div className="sent-file" key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileIcon size={17}/>}<span>{a.name}</span></div>)}</div>:null}{m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}{m.images?.length?<div className="generated-images">{m.images.map((img,i)=><a className="generated-image" key={img.dataUrl+i} href={img.dataUrl} target="_blank" rel="noreferrer" download={"cookie-image-"+(i+1)+".png"}><img src={img.dataUrl} alt={img.prompt||"Generated image"}/><span>Open image</span></a>)}</div>:null}{m.files?.length?<div className="generated-list">{m.files.map(f=><button key={f.path} className="generated-file" onClick={()=>onDownload(f)}><FileIcon size={18}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:null}{m.sources?.length?<div className="message-sources"><div className="message-sources-head"><Globe2 size={13}/><span>Sources</span><b>{m.sources.length}</b></div><div className="message-sources-list">{m.sources.slice(0,6).map((src,i)=><a key={src.url+i} href={src.url} target="_blank" rel="noreferrer"><span className="source-domain">{src.domain||"web"}</span><strong>{src.title||src.domain||"Source"}</strong></a>)}</div></div>:null}<div className="message-tools"><span>{fmt(m.createdAt)}</span><button onClick={()=>onCopy(m)} aria-label="Copy"><Copy size={14}/></button>{m.role==="assistant"&&<button onClick={()=>onRetry(m)} aria-label="Retry"><RotateCcw size={14}/></button>}<button onClick={onShare} aria-label="Share"><Share2 size={14}/></button><button onClick={()=>onDelete(m)} aria-label="Delete"><Trash2 size={14}/></button></div></div></div>)}{loading&&<div className="message-row assistant streaming-row"><div className="message-avatar"><CookieIcon size={23}/></div><div className="message-body"><div className="message-author">Cookie</div>{streamText?<div className="stream-reply"><Rich text={streamText}/><span className="stream-caret" aria-hidden="true"/></div>:<div className="thinking"><i/><i/><i/></div>}{streamStatus&&<div className="stream-status"><span className="stream-status-dot"/>{streamStatus}</div>}</div></div>}</div>}</div>;
 }
 
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser}){
@@ -699,10 +711,16 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [sidebar,setSidebar]=useState(false),[model,setModel]=useState(localStorage.getItem("cookie_model")||"standard"),[modelOpen,setModelOpen]=useState(false);
   const [text,setText]=useState(""),[attachments,setAttachments]=useState<Attachment[]>([]),[webSearch,setWebSearch]=useState(false),[loading,setLoading]=useState(false),[voice,setVoice]=useState(false),[newOpen,setNewOpen]=useState(false),[profileOpen,setProfileOpen]=useState(false);
   const [temporary,setTemporary]=useState(false),[abort,setAbort]=useState<AbortController|null>(null),[toast,setToast]=useState("");
+  const [streamText,setStreamText]=useState(""),[streamStatus,setStreamStatus]=useState("");
   const [toolMode,setToolMode]=useState<ToolMode>(null);
   const [selectedGPT,setSelectedGPT]=useState<GPTDefinition|null>(null);
   const [profile,setProfile]=useState({name:authUser.name||"Cookie user",username:authUser.username||"cookie-user",email:authUser.email||""});
-  const [settings,setSettings]=useState(readJSON("cookie_settings",{theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",memory:true,instructions:"",history:true,improve:false,notifications:true,updates:false,voice:"Arbor",captions:true}));
+  const [settings,setSettings]=useState(()=>({
+    theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",answerLength:"auto",
+    animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",
+    memory:true,instructions:"",history:true,improve:false,notifications:true,updates:false,voice:"Arbor",captions:true,
+    ...readJSON("cookie_settings",{})
+  }));
   const [memoryEnabled,setMemoryEnabled]=useState(true);
   const [serverSyncReady,setServerSyncReady]=useState(false);
   const [files,setFiles]=useState<GeneratedFile[]>(readJSON("cookie_library",[]));
@@ -765,13 +783,137 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   function createChat(temp:boolean){const c:Chat={id:uid(),title:temp?"Temporary chat":"New chat",messages:[],model,temporary:temp,updatedAt:Date.now()};setChats(p=>[c,...p]);setActiveId(c.id);setTemporary(temp);setText("");setAttachments([]);setView("chat");setSidebar(false);setNewOpen(false)}
   function updateChat(id:string,fn:(c:Chat)=>Chat){setChats(p=>p.map(c=>c.id===id?fn(c):c))}
   async function send(override?:string, forcedGptId?:string){
-    const body=(override??text).trim(); if((!body&&!attachments.length)||loading)return;
+    const body=(override??text).trim();
+    if((!body&&!attachments.length)||loading)return;
     const activeGptId=forcedGptId||selectedGPT?.id||"";
-    let c=chat;if(!c){const n:Chat={id:uid(),title:"New chat",messages:[],model,temporary,updatedAt:Date.now()};setChats(p=>[n,...p]);setActiveId(n.id);c=n}
+    let c=chat;
+    if(!c){
+      const n:Chat={id:uid(),title:"New chat",messages:[],model,temporary,updatedAt:Date.now()};
+      setChats(p=>[n,...p]);setActiveId(n.id);c=n;
+    }
     const user:Message={id:uid(),role:"user",content:body||"Please analyze these files.",attachments,createdAt:Date.now()};
-    const msgs=[...c.messages,user];const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));setText("");setAttachments([]);setWebSearch(false);setLoading(true);
+    const msgs=[...c.messages,user];
+    const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;
+    updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
+    setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
     const ctl=new AbortController();setAbort(ctl);
-    try{const languageIndex=LANGUAGES.indexOf(settings.language);const payload={model,gptId:activeGptId,messages:msgs.map(m=>({role:m.role,content:m.content})),attachments:user.attachments||[],preferences:{responseMode:model,language:LANG_CODES[languageIndex]||"auto",answerLength:"auto",creativity:.7,memory:activeGptId?false:memoryEnabled,personality:settings.personality,reasoning:settings.reasoning||"auto",instructions:settings.instructions||"",webSearch,tool:toolMode,gptId:activeGptId,profile}};let r:Response|null=null;let lastNetworkError:any=null;for(let attempt=0;attempt<2;attempt++){try{r=await fetch("/api/chat",{method:"POST",signal:ctl.signal,cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});break}catch(err:any){lastNetworkError=err;if(err?.name==="AbortError")throw err;if(attempt===0)await new Promise(res=>setTimeout(res,700))}}if(!r){let health="";try{const hr=await fetch("/api/health",{cache:"no-store",headers:{"Accept":"application/json"}});if(hr.ok){const hd=await hr.json();health=hd?.ok?" Cookie server is reachable; the AI provider connection may be the failing part.":"";}}catch{}throw new Error("Unable to connect to Cookie AI."+health+" Please try again.");}let d:any=null;try{d=await r.json()}catch{throw new Error(r.ok?"Cookie returned an unreadable response.":"Cookie AI is temporarily unavailable.")}if(!r.ok)throw new Error(d?.error||"Cookie AI could not answer right now.");const a:Message={id:uid(),role:"assistant",content:String(d.message||""),files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],images:Array.isArray(d.generatedImages)?d.generatedImages:[],createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80))}catch(e:any){if(e?.name!=="AbortError"){const raw=String(e?.message||"Unknown error.");const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)?"Unable to connect to Cookie AI. The server connection failed. Please try again.":raw;const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}))}}finally{setLoading(false);setAbort(null)}
+    try{
+      const languageIndex=LANGUAGES.indexOf(settings.language);
+      const payload={
+        model,
+        gptId:activeGptId,
+        messages:msgs.map(m=>({role:m.role,content:m.content})),
+        attachments:user.attachments||[],
+        preferences:{
+          responseMode:model,
+          language:LANG_CODES[languageIndex]||"auto",
+          answerLength:settings.answerLength||"auto",
+          creativity:.7,
+          memory:activeGptId?false:memoryEnabled,
+          personality:settings.personality,
+          reasoning:settings.reasoning||"auto",
+          instructions:settings.instructions||"",
+          webSearch,
+          tool:toolMode,
+          gptId:activeGptId,
+          profile
+        }
+      };
+
+      let r:Response|null=null;
+      for(let attempt=0;attempt<2;attempt++){
+        try{
+          r=await fetch("/api/chat?stream=1",{
+            method:"POST",
+            signal:ctl.signal,
+            cache:"no-store",
+            headers:{"Content-Type":"application/json","Accept":"text/event-stream, application/json"},
+            body:JSON.stringify(payload)
+          });
+          break;
+        }catch(err:any){
+          if(err?.name==="AbortError")throw err;
+          if(attempt===0)await new Promise(res=>setTimeout(res,500));
+        }
+      }
+      if(!r)throw new Error("Unable to connect to Cookie AI. Please try again.");
+
+      const contentType=(r.headers.get("content-type")||"").toLowerCase();
+      let doneData:any=null;
+      let assembled="";
+      if(contentType.includes("text/event-stream")){
+        if(!r.body)throw new Error("Cookie returned no streaming response.");
+        const reader=r.body.getReader();
+        const decoder=new TextDecoder();
+        let buffer="";
+        const processLine=(line:string)=>{
+          const trimmed=line.trim();
+          if(!trimmed.startsWith("data:"))return;
+          const raw=trimmed.slice(5).trim();
+          if(!raw)return;
+          let event:any;
+          try{event=JSON.parse(raw)}catch{return};
+          if(event.type==="delta"){
+            const delta=String(event.delta||"");
+            if(delta){assembled+=delta;setStreamText(prev=>prev+delta)}
+          }else if(event.type==="status"){
+            setStreamStatus(String(event.status||"Working…"));
+          }else if(event.type==="done"){
+            doneData=event;
+          }else if(event.type==="error"){
+            throw new Error(String(event.error||"Cookie could not answer right now."));
+          }
+        };
+        while(true){
+          const chunk=await reader.read();
+          if(chunk.done)break;
+          buffer+=decoder.decode(chunk.value,{stream:true});
+          const lines=buffer.split("\n");
+          buffer=lines.pop()||"";
+          for(const line of lines)processLine(line);
+        }
+        buffer+=decoder.decode();
+        if(buffer.trim())processLine(buffer);
+        const finalText=String(doneData?.message||assembled||"").trim();
+        if(!finalText)throw new Error("Cookie returned an empty response.");
+        const a:Message={
+          id:uid(),
+          role:"assistant",
+          content:finalText,
+          files:Array.isArray(doneData?.generatedFiles)?doneData.generatedFiles:[],
+          images:Array.isArray(doneData?.generatedImages)?doneData.generatedImages:[],
+          sources:Array.isArray(doneData?.sources)?doneData.sources:[],
+          createdAt:Date.now()
+        };
+        updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+        if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80));
+      }else{
+        let d:any=null;
+        try{d=await r.json()}catch{throw new Error(r.ok?"Cookie returned an unreadable response.":"Cookie AI is temporarily unavailable.")}
+        if(!r.ok)throw new Error(d?.error||"Cookie AI could not answer right now.");
+        const a:Message={
+          id:uid(),role:"assistant",content:String(d.message||""),
+          files:Array.isArray(d.generatedFiles)?d.generatedFiles:[],
+          images:Array.isArray(d.generatedImages)?d.generatedImages:[],
+          sources:Array.isArray(d.sources)?d.sources:[],
+          createdAt:Date.now()
+        };
+        updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+        if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80));
+      }
+    }catch(e:any){
+      setStreamText("");setStreamStatus("");
+      if(e?.name!=="AbortError"){
+        const raw=String(e?.message||"Unknown error.");
+        const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)
+          ?"Unable to connect to Cookie AI. The server connection failed. Please try again."
+          :raw;
+        const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};
+        updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+      }
+    }finally{
+      setStreamText("");setStreamStatus("");setLoading(false);setAbort(null);
+    }
   }
   function openGPT(id:string){
     const g=GPTS.find(x=>x.id===id); if(!g)return;
@@ -804,7 +946,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch}/>;
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
   if(String(view)==="code") return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <div className="cookie-app"><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
