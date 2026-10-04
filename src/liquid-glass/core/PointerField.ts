@@ -41,6 +41,9 @@ let pressX = 0;
 let pressY = 0;
 let pressTarget = 0; // 1 while held, 0 on release
 let pressEnergy = 0; // eased toward pressTarget
+let pressPointerId: number | null = null;
+let pressWaveStartedAt = 0;
+let pressWaveRadius = 24;
 let pressRaf = 0;
 
 let observer: IntersectionObserver | null = null;
@@ -138,6 +141,10 @@ function flush(): void {
 function onPointerMove(e: PointerEvent): void {
   pointerX = e.clientX;
   pointerY = e.clientY;
+  if (pressTarget && (pressPointerId === null || e.pointerId === pressPointerId)) {
+    pressX = e.clientX;
+    pressY = e.clientY;
+  }
   schedule();
 }
 
@@ -177,12 +184,17 @@ function stopListeningIfIdle(): void {
 function onPressDown(e: PointerEvent): void {
   pressX = e.clientX;
   pressY = e.clientY;
+  pressPointerId = e.pointerId;
   pressTarget = 1;
+  pressWaveStartedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  pressWaveRadius = 22;
   if (!pressRaf) pressRaf = requestAnimationFrame(pressTick);
 }
 
-function onPressUp(): void {
+function onPressUp(e?: PointerEvent): void {
+  if (e && pressPointerId !== null && e.pointerId !== pressPointerId) return;
   pressTarget = 0;
+  pressPointerId = null;
   if (!pressRaf) pressRaf = requestAnimationFrame(pressTick);
 }
 
@@ -194,6 +206,13 @@ function pressTick(): void {
   if (pressEnergy < 0.004 && pressTarget === 0) pressEnergy = 0;
 
   if (rectsDirty) refreshRectCache();
+
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const elapsed = Math.max(0, now - pressWaveStartedAt);
+  const cycle = pressTarget ? (elapsed % 720) / 720 : Math.min(1, elapsed / 520);
+  const wavePulse = pressTarget ? 0.5 - 0.5 * Math.cos(cycle * Math.PI * 2) : 1;
+  pressWaveRadius = pressTarget ? 22 + wavePulse * 58 : pressWaveRadius + 3.2;
+  const waveEnergy = pressEnergy * (pressTarget ? (0.42 + wavePulse * 0.32) : Math.max(0, 1 - cycle));
 
   for (const el of Array.from(visible)) {
     if (!el.isConnected) {
@@ -215,15 +234,18 @@ function pressTick(): void {
     if (illum === 0 && (lastIllum.get(el) ?? 0) === 0) continue;
     lastIllum.set(el, illum);
 
-    // Illumination origin in element-local coords (the press point / nearest side).
     const ix = Math.max(0, Math.min(1, (pressX - r.left) / r.width));
     const iy = Math.max(0, Math.min(1, (pressY - r.top) / r.height));
     el.style.setProperty('--lg-illum', illum.toFixed(4));
     el.style.setProperty('--lg-illum-x', ix.toFixed(4));
     el.style.setProperty('--lg-illum-y', iy.toFixed(4));
+    el.style.setProperty('--lg-wave-x', ix.toFixed(4));
+    el.style.setProperty('--lg-wave-y', iy.toFixed(4));
+    el.style.setProperty('--lg-wave-radius', Math.round(pressWaveRadius) + 'px');
+    el.style.setProperty('--lg-wave-energy', waveEnergy.toFixed(4));
   }
 
-  if (pressEnergy > 0 || pressTarget > 0) pressRaf = requestAnimationFrame(pressTick);
+  if (pressEnergy > 0 || pressTarget > 0 || waveEnergy > 0.004) pressRaf = requestAnimationFrame(pressTick);
 }
 
 export function registerPointerLight(el: HTMLElement): void {
@@ -261,5 +283,9 @@ export function unregisterPointerLight(el: HTMLElement): void {
   el.style.removeProperty('--lg-illum');
   el.style.removeProperty('--lg-illum-x');
   el.style.removeProperty('--lg-illum-y');
+  el.style.removeProperty('--lg-wave-x');
+  el.style.removeProperty('--lg-wave-y');
+  el.style.removeProperty('--lg-wave-radius');
+  el.style.removeProperty('--lg-wave-energy');
   stopListeningIfIdle();
 }
