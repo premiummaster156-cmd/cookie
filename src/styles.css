@@ -526,3 +526,28 @@ html[data-theme="light"] .auth-input,html[data-theme="light"] .auth-code{backgro
 .cs-back-cookie:hover{color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}
 .cs-title-divider{width:1px;height:20px;background:rgba(255,255,255,.09);margin:0 5px}
 @media(max-width:700px){.cs-back-cookie span{display:none}.cs-back-cookie{width:31px;padding:0;justify-content:center}.cs-title-divider{margin:0 2px}.cs-title-left>strong{font-size:12px}}
+
+
+/* Always-available mobile Cookie navigation trigger. This stays outside the chat scroll area. */
+.mobile-sidebar-trigger{display:none}
+@media(max-width:900px){
+  .mobile-sidebar-trigger{
+    display:grid;
+    place-items:center;
+    position:fixed;
+    left:10px;
+    top:max(10px,env(safe-area-inset-top));
+    width:40px;
+    height:40px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;
+    background:rgba(35,35,35,.94);
+    color:#e5e5e5;
+    box-shadow:0 8px 28px rgba(0,0,0,.35);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    z-index:500;
+  }
+  .mobile-sidebar-trigger:active{transform:scale(.94)}
+}
+@media(min-width:901px){.mobile-sidebar-trigger{display:none!important}}
