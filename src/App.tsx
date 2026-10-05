@@ -488,7 +488,7 @@ function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,on
       <button className="gpt-chat-new" onClick={onNewChat}><MessageSquarePlus size={17}/><span>New chat</span></button>
     </header>
     <main className="gpt-chat-main">
-      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} streamText={streamText} streamStatus={streamStatus}/>
+      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>
       <div className="gpt-chat-composer">
         <Composer value={value} setValue={setValue} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={false} setMemoryEnabled={()=>{}} toolMode={null} setToolMode={()=>{}} plan="free" hideTools hideWebSearch onToolNotice={()=>{}}/>
       </div>
@@ -729,12 +729,16 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [text,setText]=useState(""),[attachments,setAttachments]=useState<Attachment[]>([]),[webSearch,setWebSearch]=useState(false),[loading,setLoading]=useState(false),[voice,setVoice]=useState(false),[newOpen,setNewOpen]=useState(false),[profileOpen,setProfileOpen]=useState(false);
   const [temporary,setTemporary]=useState(false),[abort,setAbort]=useState<AbortController|null>(null),[toast,setToast]=useState("");
   const [streamText,setStreamText]=useState(""),[streamStatus,setStreamStatus]=useState("");
+  const [streamEvents,setStreamEvents]=useState<ActivityStep[]>([]);
+  const [streamStartedAt,setStreamStartedAt]=useState(0);
+  const [streamElapsed,setStreamElapsed]=useState(0);
   const [toolMode,setToolMode]=useState<ToolMode>(null);
   const [selectedGPT,setSelectedGPT]=useState<GPTDefinition|null>(null);
   const [profile,setProfile]=useState({name:authUser.name||"Cookie user",username:authUser.username||"cookie-user",email:authUser.email||""});
   // Code Studio is an owner/developer control surface, not a normal user feature.
   // Keep it out of the main navigation for regular Cookie users.
-  const canSeeCodeStudio=authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com";
+  const accountRole=String((authUser as any).role||"user").toLowerCase();
+  const canSeeCodeStudio=authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com" || ["owner","admin","staff"].includes(accountRole);
   const [settings,setSettings]=useState(()=>({
     theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",answerLength:"auto",
     animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",
@@ -778,6 +782,16 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     return()=>{try{webkit?.messageHandlers?.cookieAuth?.postMessage(false)}catch{}};
   },[]);
   useEffect(()=>{if(view!=="chat")setSidebar(false)},[view]);
+  useEffect(()=>{
+    if(!loading||!streamStartedAt)return;
+    const tick=()=>setStreamElapsed(Date.now()-streamStartedAt);
+    tick();
+    const t=window.setInterval(tick,500);
+    return()=>window.clearInterval(t);
+  },[loading,streamStartedAt]);
+  useEffect(()=>{
+    if(view==="code"&&!canSeeCodeStudio)setView("chat");
+  },[view,canSeeCodeStudio]);
   useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setView("search");setSidebar(false)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
   useEffect(()=>{
     const onNativeCommand=(event:Event)=>{
@@ -786,7 +800,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       if(command==="search"){setView("search");setSidebar(false);return}
       if(command==="library"){setView("library");setSidebar(false);return}
       if(command==="projects"){setView("projects");setSidebar(false);return}
-      if(command==="code"){setView("code");setSidebar(false);return}
+      if(command==="code"){if(canSeeCodeStudio){setView("code");setSidebar(false)}return}
       if(command==="gpts"){setView("gpts");setSidebar(false);return}
       if(command==="work"){setView("work");setSidebar(false);return}
       if(command==="settings"){setSettingsTab("general");setView("settings");setSidebar(false);return}
@@ -798,7 +812,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     };
     addEventListener("cookie:native-command",onNativeCommand as EventListener);
     return()=>removeEventListener("cookie:native-command",onNativeCommand as EventListener);
-  },[model]);
+  },[model,canSeeCodeStudio]);
   function notify(message:string){setToast(message);window.setTimeout(()=>setToast(""),1800)}
   function createChat(temp:boolean){const c:Chat={id:uid(),title:temp?"Temporary chat":"New chat",messages:[],model,temporary:temp,updatedAt:Date.now()};setChats(p=>[c,...p]);setActiveId(c.id);setTemporary(temp);setText("");setAttachments([]);setView("chat");setSidebar(false);setNewOpen(false)}
   function updateChat(id:string,fn:(c:Chat)=>Chat){setChats(p=>p.map(c=>c.id===id?fn(c):c))}
@@ -816,6 +830,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;
     updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
     setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
+    setStreamEvents([{id:"thinking",stage:"thinking",label:"Thinking",detail:"Analyzing the request"}]);
+    setStreamStartedAt(Date.now());setStreamElapsed(0);
     const ctl=new AbortController();setAbort(ctl);
     try{
       const languageIndex=LANGUAGES.indexOf(settings.language);
@@ -878,6 +894,9 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
             if(delta){assembled+=delta;setStreamText(prev=>prev+delta)}
           }else if(event.type==="status"){
             setStreamStatus(String(event.status||"Working…"));
+          }else if(event.type==="activity"){
+            const step:ActivityStep={id:String(event.stage||"step")+"-"+Date.now(),stage:String(event.stage||"work"),label:String(event.label||"Working"),detail:String(event.detail||""),done:false};
+            setStreamEvents(prev=>[...prev.map(x=>({...x,done:true})),step]);
           }else if(event.type==="done"){
             doneData=event;
           }else if(event.type==="error"){
@@ -896,6 +915,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         if(buffer.trim())processLine(buffer);
         const finalText=String(doneData?.message||assembled||"").trim();
         if(!finalText)throw new Error("Cookie returned an empty response.");
+        const finalActivity=streamEvents.length?streamEvents.map(x=>({...x,done:true})):[{id:"thinking-final",stage:"thinking",label:"Thinking",detail:"Analyzed the request",done:true}];
+        const finalDuration=streamStartedAt?Date.now()-streamStartedAt:0;
         const a:Message={
           id:uid(),
           role:"assistant",
@@ -903,6 +924,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           files:Array.isArray(doneData?.generatedFiles)?doneData.generatedFiles:[],
           images:Array.isArray(doneData?.generatedImages)?doneData.generatedImages:[],
           sources:Array.isArray(doneData?.sources)?doneData.sources:[],
+          activity:finalActivity,
+          activityDuration:finalDuration,
           createdAt:Date.now()
         };
         updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
@@ -932,7 +955,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
       }
     }finally{
-      setStreamText("");setStreamStatus("");setLoading(false);setAbort(null);
+      setStreamText("");setStreamStatus("");setLoading(false);setAbort(null);setStreamStartedAt(0);setStreamElapsed(0);setStreamEvents([]);
     }
   }
   function openGPT(id:string){
@@ -965,9 +988,9 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   }
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
-  if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus}/>;
+  if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>;
   const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
-  if(String(view)==="code") return <CodeStudioPage onExit={()=>setView("chat")}/>;
+  if(String(view)==="code"&&canSeeCodeStudio) return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <div className="cookie-app"><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
     <aside className={"sidebar "+(sidebar?"open":"")}>
