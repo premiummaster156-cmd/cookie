@@ -23,7 +23,7 @@ type ActivityStep = { id:string; label:string; detail:string; stage:string; done
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
-const ICON = "/cookie-ai-icon.svg?v=3";
+const ICON = "/cookie-ai-icon.png?v=1";
 const MODELS = [
   { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
   { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
