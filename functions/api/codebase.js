@@ -163,7 +163,7 @@ function codeBalanceIssue(source){
     if(quote){if(escape){escape=false;continue}if(ch==="\\"){escape=true;continue}if(ch===quote)quote="";continue}
     if(ch==="/"&&next==="/"){lineComment=true;i++;continue}
     if(ch==="/"&&next==="*"){blockComment=true;i++;continue}
-    if(ch==="""||ch==="'"||ch==="\x60"){quote=ch;continue}
+    if(ch==='"'||ch==="\'"||ch==="\\x60"){quote=ch;continue}
     if(ch==="{"||ch==="("||ch==="["){stack.push(ch);continue}
     if(ch==="}"||ch===")"||ch==="]"){
       const expected=ch==="}"?"{":ch===")"?"(":"[";
