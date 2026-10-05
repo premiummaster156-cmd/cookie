@@ -62,13 +62,11 @@ export function withCookies(response, cookies = []) {
 }
 export function dbAvailable(env) {
   const neonUrl = String(env?.NEON_DATABASE_URL || env?.DATABASE_URL || "").trim();
-  if (neonUrl) {
-    if (!env.DB || !env.DB.__cookieNeon || env.DB.__cookieNeonUrl !== neonUrl) {
-      env.DB = createNeonD1Compat(env);
-    }
-    return Boolean(env.DB);
+  if (!neonUrl) return false;
+  if (!env.DB || !env.DB.__cookieNeon || env.DB.__cookieNeonUrl !== neonUrl) {
+    env.DB = createNeonD1Compat(env);
   }
-  return Boolean(env?.DB && typeof env.DB.prepare === "function");
+  return Boolean(env.DB);
 }
 export function publicUser(row) {
   if (!row) return null;
