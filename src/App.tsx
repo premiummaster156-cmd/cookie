@@ -282,7 +282,7 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   </div>;
 }
 
-function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus="",streamEvents=[],streamElapsed=0}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number}){
+function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus="",streamEvents=[],streamElapsed=0,spatialMode=false}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number;spatialMode?:boolean}){
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const el=ref.current;
@@ -579,7 +579,7 @@ function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,on
       <button className="gpt-chat-new" onClick={onNewChat}><MessageSquarePlus size={17}/><span>New chat</span></button>
     </header>
     <main className="gpt-chat-main">
-      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>
+      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed} spatialMode={spatialMode}/>
       <div className="gpt-chat-composer">
         <Composer value={value} setValue={setValue} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={false} setMemoryEnabled={()=>{}} toolMode={null} setToolMode={()=>{}} plan="free" hideTools hideWebSearch onToolNotice={()=>{}}/>
       </div>
