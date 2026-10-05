@@ -5774,3 +5774,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 .chat-jump-latest:hover{background:#2a2b2e;border-color:rgba(255,255,255,.2);color:#fff}.chat-jump-latest svg{margin-top:1px}
 .streaming-row{contain:layout paint}.stream-reply{contain:content}
 @media(max-width:760px){.chat-jump-latest{bottom:84px}.chat-jump-latest span{display:none}}
+
+/* Cookie public landing page */
+.cookie-landing{min-height:100dvh;background:#f7f7f5;color:#202123;overflow-x:hidden}
+.cookie-landing-nav{height:76px;width:min(1120px,calc(100% - 48px));margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.cookie-landing-brand,.auth-brand-home{display:flex;align-items:center;gap:9px;border:0;background:transparent;color:inherit;font-size:17px;font-weight:750;letter-spacing:-.035em;padding:0}
+.cookie-landing-brand img{width:29px;height:29px;border-radius:8px;object-fit:contain}
+.cookie-landing-signin{height:38px;padding:0 16px;border:1px solid #d5d5d0;border-radius:9px;background:#fff;color:#242424;font-size:11px;font-weight:700}
+.cookie-landing-signin:hover{background:#efefec}
+.cookie-landing-hero{width:min(920px,calc(100% - 40px));margin:0 auto;padding:105px 0 118px;text-align:center}
+.cookie-landing-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:9px;font-weight:800;letter-spacing:.17em;color:#7b7b75;margin-bottom:22px}
+.cookie-landing-eyebrow img{width:18px;height:18px;border-radius:5px}
+.cookie-landing-hero h1{margin:0;font-size:clamp(48px,8vw,88px);line-height:.94;letter-spacing:-.065em;font-weight:720}
+.cookie-landing-hero h1 em,.cookie-landing-showcase h2 em{font-family:Georgia,serif;font-weight:400;color:#6f716b}
+.cookie-landing-hero p{max-width:600px;margin:28px auto 0;color:#6f706b;font-size:15px;line-height:1.65}
+.cookie-landing-actions{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:34px}
+.cookie-landing-primary,.cookie-landing-bottom button{height:46px;padding:0 19px;border:0;border-radius:10px;background:#202123;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:750}
+.cookie-landing-primary:hover,.cookie-landing-bottom button:hover{background:#36373a;transform:translateY(-1px)}
+.cookie-landing-text{border:0;background:transparent;color:#555;font-size:11px;font-weight:650}
+.cookie-landing-text:hover{text-decoration:underline;color:#202123}
+.cookie-landing-note{margin-top:16px;color:#a0a09a;font-size:9px}
+.cookie-landing-showcase{width:min(1050px,calc(100% - 40px));margin:0 auto;border-top:1px solid #dddeda;border-bottom:1px solid #dddeda;padding:74px 4px;display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center}
+.cookie-landing-showcase-copy>span{font-size:9px;font-weight:800;letter-spacing:.16em;color:#999a93}
+.cookie-landing-showcase h2{margin:13px 0 16px;font-size:clamp(32px,5vw,55px);line-height:1.02;letter-spacing:-.055em;font-weight:700}
+.cookie-landing-showcase p{max-width:470px;color:#777872;font-size:13px;line-height:1.65}
+.cookie-landing-activity{border-left:1px solid #d9dad4}
+.cookie-landing-line{height:64px;padding:0 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e4e4df;color:#343530;font-size:13px}
+.cookie-landing-line:first-child{border-top:1px solid #e4e4df}
+.cookie-landing-line i{width:7px;height:7px;border-radius:50%;background:#202123}
+.cookie-landing-line b{margin-left:auto;font-size:17px;font-weight:400;color:#999}
+.cookie-landing-features{width:min(1050px,calc(100% - 40px));margin:0 auto;padding:88px 4px;display:grid;grid-template-columns:repeat(3,1fr);gap:52px}
+.cookie-landing-feature-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid #d7d8d2;border-radius:9px;margin-bottom:18px}
+.cookie-landing-features h3{margin:0 0 9px;font-size:14px;letter-spacing:-.02em}
+.cookie-landing-features p{margin:0;color:#777872;font-size:11px;line-height:1.65}
+.cookie-landing-bottom{width:min(760px,calc(100% - 40px));margin:0 auto;padding:105px 0 115px;text-align:center}
+.cookie-landing-bottom img{width:46px;height:46px;border-radius:12px;margin-bottom:18px}
+.cookie-landing-bottom h2{margin:0;font-size:clamp(34px,6vw,58px);letter-spacing:-.055em}
+.cookie-landing-bottom p{margin:14px auto 24px;color:#777872;font-size:12px}
+.cookie-landing-footer{width:min(1120px,calc(100% - 48px));margin:0 auto;padding:22px 0 30px;border-top:1px solid #dddeda;display:flex;justify-content:space-between;color:#9a9b94;font-size:9px}
+.auth-brand-home{cursor:pointer}.auth-brand-home:hover{opacity:.72}
+html[data-theme="dark"] .cookie-landing{background:#111;color:#f2f2ef}
+html[data-theme="dark"] .cookie-landing-signin{background:#1d1d1b;border-color:#3a3a36;color:#eee}
+html[data-theme="dark"] .cookie-landing-showcase,html[data-theme="dark"] .cookie-landing-footer{border-color:#30302d}
+html[data-theme="dark"] .cookie-landing-showcase-copy>span,.html[data-theme="dark"] .cookie-landing-note{color:#777}
+html[data-theme="dark"] .cookie-landing-hero p,html[data-theme="dark"] .cookie-landing-showcase p,html[data-theme="dark"] .cookie-landing-features p,.html[data-theme="dark"] .cookie-landing-bottom p{color:#999}
+html[data-theme="dark"] .cookie-landing-line{border-color:#30302d;color:#ddd}
+html[data-theme="dark"] .cookie-landing-line i{background:#eee}
+html[data-theme="dark"] .cookie-landing-feature-icon{border-color:#3a3a36}
+html[data-theme="dark"] .cookie-landing-footer{color:#70716c}
+@media(max-width:700px){
+  .cookie-landing-nav{width:calc(100% - 32px);height:64px}
+  .cookie-landing-hero{width:calc(100% - 32px);padding:78px 0 82px}
+  .cookie-landing-hero h1{font-size:clamp(45px,14vw,70px)}
+  .cookie-landing-hero p{font-size:13px}
+  .cookie-landing-actions{flex-direction:column;gap:14px}
+  .cookie-landing-primary{width:100%;max-width:300px}
+  .cookie-landing-showcase{width:calc(100% - 32px);grid-template-columns:1fr;gap:38px;padding:58px 0}
+  .cookie-landing-features{width:calc(100% - 32px);grid-template-columns:1fr;gap:38px;padding:62px 0}
+  .cookie-landing-bottom{padding:76px 0 82px}
+  .cookie-landing-footer{width:calc(100% - 32px);gap:12px;flex-direction:column}
+}
