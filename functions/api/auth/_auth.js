@@ -60,93 +60,7 @@ export function withCookies(response, cookies = []) {
   headers.set("Cache-Control", "no-store");
   return new Response(response.body, { status: response.status, headers });
 }
-const d1SchemaPromises = new WeakMap();
-
-export function isNativeD1(env) {
-  return Boolean(env?.DB && typeof env.DB.prepare === "function" && !env.DB.__cookieNeon);
-}
-
-export async function ensureD1AuthSchema(env) {
-  if (!isNativeD1(env)) return;
-  const db = env.DB;
-  let ready = d1SchemaPromises.get(db);
-  if (!ready) {
-    ready = (async () => {
-      await db.prepare(`CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        email_verified INTEGER NOT NULL DEFAULT 0,
-        name TEXT NOT NULL DEFAULT '',
-        username TEXT NOT NULL DEFAULT '',
-        avatar_url TEXT NOT NULL DEFAULT '',
-        password_hash TEXT,
-        password_salt TEXT,
-        plan TEXT NOT NULL DEFAULT 'free',
-        credits_remaining INTEGER NOT NULL DEFAULT 100,
-        login_failures INTEGER NOT NULL DEFAULT 0,
-        locked_until INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0
-      )`).run();
-
-      const info = await db.prepare("PRAGMA table_info(users)").all();
-      const existing = new Set((info.results || []).map(column => String(column.name)));
-      const optionalColumns = [
-        ["plan_expires_at", "BIGINT NOT NULL DEFAULT 0"],
-        ["role", "TEXT NOT NULL DEFAULT 'user'"],
-        ["account_status", "TEXT NOT NULL DEFAULT 'active'"],
-        ["suspended_until", "BIGINT NOT NULL DEFAULT 0"],
-        ["moderation_note", "TEXT NOT NULL DEFAULT ''"]
-      ];
-      for (const [name, definition] of optionalColumns) {
-        if (!existing.has(name)) {
-          await db.prepare("ALTER TABLE users ADD COLUMN " + name + " " + definition).run();
-        }
-      }
-
-      await db.prepare(`CREATE TABLE IF NOT EXISTS oauth_accounts (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        provider TEXT NOT NULL,
-        provider_user_id TEXT NOT NULL,
-        provider_email TEXT,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL DEFAULT 0,
-        UNIQUE(provider, provider_user_id)
-      )`).run();
-
-      await db.prepare(`CREATE TABLE IF NOT EXISTS sessions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        token_hash TEXT NOT NULL UNIQUE,
-        created_at INTEGER NOT NULL DEFAULT 0,
-        expires_at INTEGER NOT NULL DEFAULT 0
-      )`).run();
-
-      await db.prepare(`CREATE TABLE IF NOT EXISTS email_tokens (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        email TEXT NOT NULL DEFAULT '',
-        purpose TEXT NOT NULL DEFAULT 'signup',
-        code_hash TEXT,
-        token_hash TEXT UNIQUE,
-        attempts INTEGER NOT NULL DEFAULT 0,
-        expires_at INTEGER NOT NULL DEFAULT 0,
-        used_at INTEGER,
-        created_at INTEGER NOT NULL DEFAULT 0
-      )`).run();
-    })().catch(error => {
-      d1SchemaPromises.delete(db);
-      throw error;
-    });
-    d1SchemaPromises.set(db, ready);
-  }
-  await ready;
-}
-
 export function dbAvailable(env) {
-  if (isNativeD1(env)) return true;
-
   const neonUrl = String(env?.NEON_DATABASE_URL || env?.DATABASE_URL || "").trim();
   if (!neonUrl) return false;
   if (!env.DB || !env.DB.__cookieNeon || env.DB.__cookieNeonUrl !== neonUrl) {
@@ -171,7 +85,6 @@ export function publicUser(row) {
 }
 export async function getSessionUser(request, env) {
   if (!dbAvailable(env)) return null;
-  await ensureD1AuthSchema(env);
   const cookies = parseCookies(request);
   const token = cookies["__Host-cookie_session"] || cookies["cookie_session"];
   if (!token) return null;
@@ -185,7 +98,6 @@ export async function getSessionUser(request, env) {
   return row ? { ...publicUser(row), _row: row } : null;
 }
 export async function createSession(env, userId, remember = true) {
-  await ensureD1AuthSchema(env);
   // Repair production session schemas that predate the auth workspace migration.
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)").run();
   const info = await env.DB.prepare("PRAGMA table_info(sessions)").all();
