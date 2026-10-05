@@ -7,7 +7,7 @@ const REPO="premiummaster156-cmd/cookie";
 const BRANCH="main";
 const MAX_FILE_BYTES=1000000;
 const MAX_REVIEW_CHARS=140000;
-const PROTECTED_PATHS=new Set(["functions/api/codebase.js","src/CodeStudioPage.tsx","src/App.tsx","src/main.tsx","src/styles.css","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
+const PROTECTED_PATHS=new Set(["functions/api/admin.js","functions/api/_db.js","functions/api/auth/_auth.js","functions/api/chat.js","functions/api/codebase.js","src/CodeStudioPage.tsx","src/App.tsx","src/main.tsx","src/styles.css","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
 function isHiddenPath(path){
   const p=cleanPath(path);
   if(!p)return true;
@@ -45,14 +45,16 @@ async function access(request,env){
   // The Neon compatibility layer initializes the complete shared schema once
   // per database connection. Do not run per-request CREATE/ALTER statements here.
   const email=normalizeEmail(user.email);
+  const accountRole=String(user.role||"user").toLowerCase();
+  const privileged=["owner","admin","staff"].includes(accountRole)||email===OWNER_EMAIL;
   const member=await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
   if(email===ILLU_EMAIL&&!member){
     const t=now();
     await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("illu-developer",ILLU_EMAIL,"frontend-developer",1,t,t).run();
   }
   const effectiveMember=member||await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
-  if(email!==OWNER_EMAIL&&!effectiveMember?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
-  return {user,owner:email===OWNER_EMAIL,member:{...(effectiveMember||{}),role:email===OWNER_EMAIL?"owner":effectiveMember?.role||"developer"}}
+  if(!privileged&&!effectiveMember?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
+  return {user,owner:email===OWNER_EMAIL,accountRole,member:{...(effectiveMember||{}),role:email===OWNER_EMAIL?"owner":effectiveMember?.role||accountRole||"developer"}}
 }
 async function githubJson(url,token="",options={}){
   const headers={Accept:"application/vnd.github+json","User-Agent":"Cookie-Code-Studio","X-GitHub-Api-Version":"2026-03-10",...(token?{Authorization:"Bearer "+token}:{})};
