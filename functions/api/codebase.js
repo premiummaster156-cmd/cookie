@@ -53,7 +53,7 @@ async function access(request,env){
     await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("illu-developer",ILLU_EMAIL,"frontend-developer",1,t,t).run();
   }
   const effectiveMember=member||await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
-  if(!privileged&&!effectiveMember?.active)return {error:json({error:"You are not a Code Studio member.",code:"CODEBASE_FORBIDDEN"},403)};
+  if(!privileged)return {error:json({error:"Code Studio is restricted to owner, admin, and staff accounts.",code:"CODEBASE_FORBIDDEN"},403)};
   return {user,owner:email===OWNER_EMAIL,accountRole,member:{...(effectiveMember||{}),role:email===OWNER_EMAIL?"owner":effectiveMember?.role||accountRole||"developer"}}
 }
 async function githubJson(url,token="",options={}){
