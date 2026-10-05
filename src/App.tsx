@@ -35,8 +35,17 @@ function modelRank(id:string){return id==="ultra"?2:id==="max"?1:0}
 const LANG_CODES = ["en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
 const LANGUAGES = ["English","Uzbek","Russian","Turkish","Kazakh","Kyrgyz","Tajik","Arabic","Persian","Hindi","Urdu","Chinese","Japanese","Korean","Spanish","French","German","Italian","Portuguese","Indonesian"];
 const PERSONALITIES = ["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
+const COOKIE_SKILLS = [
+  {id:"deep-research",name:"Deep Research",detail:"Break a question into research angles and compare evidence.",icon:"research",instruction:"Use a research-first workflow: identify the key subquestions, distinguish facts from assumptions, compare evidence, and surface uncertainty. Prefer current sources when web access is available."},
+  {id:"ship-code",name:"Ship Code",detail:"Plan, implement, review, and harden production code.",icon:"code",instruction:"Act as a production engineer. Before changing code, understand the existing architecture and dependencies. Prefer complete, compatible changes, check edge cases and security, and finish with a concise validation summary."},
+  {id:"study-mode",name:"Study Mode",detail:"Teach interactively instead of only giving answers.",icon:"study",instruction:"Teach actively. Start from the learner's level, explain concepts simply, use examples, ask occasional focused questions, and check understanding before moving on."},
+  {id:"creative-director",name:"Creative Director",detail:"Develop polished concepts and iterate toward the strongest direction.",icon:"creative",instruction:"Think like a senior creative director. Generate several distinct directions, evaluate them against the brief, then refine the strongest one into an executable concept."},
+  {id:"data-investigator",name:"Data Investigator",detail:"Inspect data quality before drawing conclusions.",icon:"data",instruction:"Analyze data rigorously. Check assumptions and data quality, distinguish correlation from causation, identify anomalies, and never invent missing measurements."}
+] as const;
+
 
 type ToolMode = "calculator"|"file-analysis"|"data-analysis"|"url-fetch"|"code-analysis"|"deep-research"|null;
+type SkillId = typeof COOKIE_SKILLS[number]["id"] | null;
 type ToolSpec = {id:Exclude<ToolMode,null>;name:string;detail:string;plan:"free"|"pro"|"max";icon:React.ReactNode};
 
 type GPTDefinition = {id:string;name:string;description:string;category:string;icon:"study"|"code"|"writer"|"research"|"data"|"creative";system:string;plan:"free"|"pro"|"max"};
@@ -163,7 +172,7 @@ function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:
   return <div ref={ref} className={"chat-row "+(active?"active":"")}><button className="chat-row-main" onClick={onOpen}><MessageSquare size={16}/><span>{chat.title}</span></button><button className="chat-row-more" onClick={()=>{window.dispatchEvent(new Event("cookie:close-chat-menus"));setOpen(v=>!v)}}><MoreHorizontal size={16}/></button>{open&&<div className="row-menu popover-pop"><button onClick={()=>{onAction("pin");setOpen(false)}}><Pin size={15}/>{chat.pinned?"Unpin":"Pin"}</button><button onClick={()=>{onAction("archive");setOpen(false)}}><Archive size={15}/>Archive</button><button className="danger" onClick={()=>{onAction("delete");setOpen(false)}}><Trash2 size={15}/>Delete</button></div>}</div>;
 }
 
-function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void}){
+function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void;skillId?:SkillId;setSkillId?:(id:SkillId)=>void;spatialMode?:boolean;onSpatialMode?:()=>void}){
   const [open,setOpen]=useState(false),[toolsOpen,setToolsOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
   const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
@@ -187,7 +196,8 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     
   };
   return <div className="composer-wrap">
-    {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
+    {!!skillId&&<div className="tool-chip skill-chip"><span><Sparkles size={13}/>{COOKIE_SKILLS.find(x=>x.id===skillId)?.name||"Skill"}</span><button onClick={()=>setSkillId?.(null)} aria-label="Remove skill"><X size={13}/></button></div>}
+      {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
     {webSearch&&<div className="search-chip"><Globe2 size={13}/><span>Web research enabled</span><button onClick={()=>setWebSearch(false)} aria-label="Turn off web research"><X size={13}/></button></div>}
     {!!attachments.length&&<div className="attachment-strip">{attachments.map(a=><div className="attachment-card" key={a.id}>{a.kind==="image"?<img src={a.data} alt=""/>:<div className="file-icon"><FileIcon size={18}/></div>}<div><b>{a.name}</b><span>{Math.max(1,Math.round(a.size/1024))} KB</span></div><button onClick={()=>setAttachments(p=>p.filter(x=>x.id!==a.id))}><X size={14}/></button></div>)}</div>}
     <div className="composer" data-liquid-glass="composer"><LiquidGlassBackdrop className="composer-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:22,backdropSource:".cookie-ambient-scene"}}/>
@@ -204,7 +214,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button className={"composer-icon tool-button "+(toolsOpen?"active":"")} aria-label="Tools" onClick={()=>{setToolsOpen(v=>!v);setOpen(false)}}><Wrench size={18}/></button>
         {toolsOpen&&<div className="attach-menu tools-menu popover-pop">
           <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:14,backdropSource:".cookie-ambient-scene"}}/>
-          <div className="tools-menu-head"><span>Tools</span><small>Choose an action</small></div>
+          <div className="tools-menu-head"><span>Tools</span><small>Choose an action</small></div><div className="tools-section-label"><span>Skills</span><small>Reusable workflows</small></div>{COOKIE_SKILLS.map(skill=><button key={skill.id} className={skillId===skill.id?"active":""} onClick={()=>{setSkillId?.(skillId===skill.id?null:skill.id);setToolsOpen(false)}}><span className="tool-icon"><Sparkles size={17}/></span><span className="tool-copy"><b>{skill.name}</b><small>{skill.detail}</small></span>{skillId===skill.id?<Check size={14}/>:null}</button>)}<div className="tools-divider"/>
           {tools.map(tool=><button key={tool.id} className={toolMode===tool.id?"active":""} onClick={()=>chooseTool(tool)}><span className="tool-icon">{tool.icon}</span><span className="tool-copy"><b>{tool.name}</b><small>{tool.detail}</small></span>{(tool.plan!=="free"&&rank<(tool.plan==="max"?2:1))?<><LockKeyhole size={14}/><em>{tool.plan.toUpperCase()}</em></>:toolMode===tool.id?<Check size={14}/>:null}</button>)}
           <div className="tools-divider"/>
           <button className={memoryEnabled?"active":""} onClick={()=>{setMemoryEnabled(!memoryEnabled);setToolsOpen(false)}}><span className="tool-icon"><Brain size={18}/></span><span className="tool-copy"><b>Memory</b><small>{memoryEnabled?"Use saved preferences":"Memory is off"}</small></span></button>
@@ -816,6 +826,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const streamEventsRef=useRef<ActivityStep[]>([]);
   const streamStartedAtRef=useRef(0);
   const [toolMode,setToolMode]=useState<ToolMode>(null);
+  const [skillId,setSkillId]=useState<SkillId>(()=>readJSON<SkillId>("cookie_skill",null));
+  const [spatialMode,setSpatialMode]=useState(false);
   const [selectedGPT,setSelectedGPT]=useState<GPTDefinition|null>(null);
   const [profile,setProfile]=useState({name:authUser.name||"Cookie user",username:authUser.username||"cookie-user",email:authUser.email||""});
   // Code Studio is an owner/developer control surface, not a normal user feature.
@@ -953,6 +965,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           instructions:settings.instructions||"",
           webSearch,
           tool:toolMode,
+          skill:skillId,
           gptId:activeGptId,
           profile
         }
@@ -1121,7 +1134,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     <span><b>{x.name}</b><small>{available?x.detail:x.detail+" · "+x.requiredPlan.toUpperCase()}</small></span>{x.id===model&&<Check size={16}/>}
   </button>
 })}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><PenLine size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
-      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify}/></div>}
+      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify} skillId={skillId} setSkillId={setSkillId} spatialMode={spatialMode} onSpatialMode={()=>setSpatialMode(v=>!v)}/></div>}
       {view!=="chat"&&main}
     </main>
     {voice&&<VoiceOverlay onClose={()=>setVoice(false)}/>}<InstallAppExperience authUser={authUser}/>{toast&&<div className="toast" role="status">{toast}</div>}
