@@ -12,6 +12,14 @@ function roleOf(user){
 }
 function canManage(user){ return ["owner","admin","staff"].includes(roleOf(user)); }
 function canChangeRoles(user){ return ["owner","admin"].includes(roleOf(user)); }
+function canManageAccounts(user){ return ["owner","admin"].includes(roleOf(user)); }
+function canModerateTarget(actor,target){
+  const a=roleOf(actor),t=roleOf(target);
+  if(String(target?.email||"").toLowerCase()===OWNER_EMAIL)return false;
+  if(a==="staff")return t==="user"||t==="vip";
+  if(a==="admin")return t!=="owner";
+  return a==="owner";
+}
 function now(){ return Math.floor(Date.now()/1000); }
 function cleanEmail(v){ return normalizeEmail(v).slice(0,240); }
 function clampInt(v,min,max,fallback){
@@ -42,6 +50,13 @@ export async function onRequestGet({request,env}){
   const ctx=await requireAdmin(request,env);
   if(ctx.error)return ctx.error;
   try{
+    const mode=new URL(request.url).searchParams.get("mode")||"";
+    if(mode==="moderation"){
+      const rows=await env.DB.prepare("SELECT id,email,name,username,role,COALESCE(account_status,'active') AS account_status,COALESCE(suspended_until,0) AS suspended_until,COALESCE(moderation_note,'') AS moderation_note,updated_at FROM users ORDER BY updated_at DESC LIMIT 300").all();
+      return json({ok:true,actorRole:ctx.role,users:(rows?.results||[]).map(x=>({id:x.id,email:x.email||"",name:x.name||"",username:x.username||"",role:x.role||"user",status:String(x.account_status||"active"),suspendedUntil:Number(x.suspended_until||0),note:x.moderation_note||"",updatedAt:Number(x.updated_at||0)}))});
+    }
+    if(ctx.role==="staff")return json({ok:true,actorRole:"staff",users:[]});
+
     const [total,plans,roles,recent,usage,limits]=await Promise.all([
       env.DB.prepare("SELECT COUNT(*) AS count FROM users").first(),
       env.DB.prepare("SELECT plan,COUNT(*) AS count FROM users GROUP BY plan ORDER BY plan").all(),
@@ -88,6 +103,38 @@ export async function onRequestPost({request,env}){
   try{
     const body=await readJson(request);
     const action=String(body?.action||"").trim();
+
+    if(["user","gift","credit","limits"].includes(action)&&!canManageAccounts(ctx.user))return json({error:"Staff accounts can only perform moderation actions."},403);
+
+    if(["warn","suspend","ban","unsuspend","unban"].includes(action)){
+      if(!["owner","admin","staff"].includes(ctx.role))return json({error:"Moderation permission required."},403);
+      const target=await findUser(env,body?.email);
+      if(!target)return json({error:"User not found."},404);
+      if(!canModerateTarget(ctx.user,target))return json({error:"You cannot moderate this account."},403);
+      const reason=String(body?.reason||"").trim().slice(0,500);
+      if(!reason&&["warn","suspend","ban"].includes(action))return json({error:"A moderation reason is required."},400);
+      const t=now();
+      let status=String(target.account_status||"active");
+      let until=Number(target.suspended_until||0);
+      if(action==="warn"){
+        await env.DB.prepare("UPDATE users SET moderation_note=?,updated_at=? WHERE id=?").bind(reason,t,target.id).run();
+      }else if(action==="suspend"){
+        const days=clampInt(body?.days,1,365,1);
+        status="suspended";until=t+days*86400;
+        await env.DB.prepare("UPDATE users SET account_status='suspended',suspended_until=?,moderation_note=?,updated_at=? WHERE id=?").bind(until,reason,t,target.id).run();
+        await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(target.id).run().catch(()=>{});
+      }else if(action==="ban"){
+        status="banned";until=0;
+        await env.DB.prepare("UPDATE users SET account_status='banned',suspended_until=0,moderation_note=?,updated_at=? WHERE id=?").bind(reason,t,target.id).run();
+        await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(target.id).run().catch(()=>{});
+      }else{
+        status="active";until=0;
+        await env.DB.prepare("UPDATE users SET account_status='active',suspended_until=0,moderation_note=?,updated_at=? WHERE id=?").bind(reason,t,target.id).run();
+      }
+      await env.DB.prepare("INSERT INTO moderation_events (id,target_user_id,actor_user_id,action,reason,duration_seconds,created_at) VALUES (?,?,?,?,?,?,?)")
+        .bind(randomToken(16),target.id,ctx.user.id,action,reason,action==="suspend"?Math.max(0,until-t):0,t).run();
+      return json({ok:true,status,until});
+    }
 
     if(action==="user"){
       const user=await findUser(env,body?.email);
