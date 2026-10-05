@@ -23,7 +23,7 @@ type ActivityStep = { id:string; label:string; detail:string; stage:string; done
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
-const ICON = "/cookie-ai-icon.svg";
+const ICON = "/cookie-ai-icon.svg?v=3";
 function CookieIcon({size=24}:{size?:number}) {
   return <img className="cookie-icon" src={ICON} width={size} height={size} alt="Cookie AI" draggable={false}/>;
 }
