@@ -248,6 +248,48 @@ async function aiReview(env,changes,checks){
   if(concern)return {...concern,model:valid.map(x=>x.model).join(" + ")};
   return {ok:true,model:valid.map(x=>x.model).join(" + "),status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
 }
+async function aiWorkspaceChat(env,user,message,history=[]){
+  const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"OLLAMA_API_KEY is not configured."};
+  const endpoint=String(env.OLLAMA_URL||"https://ollama.com/api/chat").trim();
+  const files=await loadVirtual(env);
+  const context=files.filter(x=>!x.deleted&&!isHiddenPath(x.path)).slice(0,220).map(f=>"FILE "+f.path+"\n"+text(f.content,9000)).join("\n\n");
+  const cleanHistory=Array.isArray(history)?history.slice(-10).map(m=>({role:m?.role==="assistant"?"assistant":"user",content:text(m?.content,6000)})):[];
+  const prompt=[
+    "You are Cookie Dev AI inside Cookie Code Studio.",
+    "Work from the exact virtual workspace below. You may propose or apply file edits.",
+    "Return ONLY valid JSON with keys reply and edits.",
+    "reply is a concise developer-facing message.",
+    "edits is an array of {path,content}. Include only files that must change.",
+    "Never claim a file was changed unless it appears in edits.",
+    "Preserve unrelated content and inspect the exact workspace before editing.",
+    "Do not modify hidden/protected files, .env files, secrets, or markdown files.",
+    "When fixing code, return complete replacement content for each edited file.",
+    "WORKSPACE:\n"+context.slice(0,90000),
+    "CONVERSATION:\n"+JSON.stringify(cleanHistory),
+    "REQUEST:\n"+text(message,12000)
+  ].join("\n\n");
+  const models=["gemma4:cloud","gpt-oss:20b-cloud","qwen3-coder:480b-cloud"];
+  for(const model of models){
+    try{
+      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.08,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only."},{role:"user",content:prompt}]})});
+      const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
+      if(!r.ok)continue;
+      let out=String(data?.message?.content||data?.response||"").trim();
+      out=out.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^\x60\x60\x60(?:json)?/i,"").replace(/\x60\x60\x60$/,"").trim();
+      const first=out.indexOf("{"),last=out.lastIndexOf("}");
+      if(first>=0&&last>first)out=out.slice(first,last+1);
+      const parsed=JSON.parse(out);
+      const edits=[];
+      for(const edit of (Array.isArray(parsed.edits)?parsed.edits:[]).slice(0,12)){
+        const p=cleanPath(edit?.path),body=String(edit?.content??"");
+        if(p&&!isHiddenPath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
+      }
+      return {ok:true,model,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
+    }catch(error){console.error("[Cookie Dev AI]",error)}
+  }
+  return {ok:false,error:"Cookie Dev AI could not return a valid response."};
+}
+
 async function deploymentState(sha,token=""){
   if(!sha)return {status:"not_started",checks:[]};
   try{
@@ -452,6 +494,28 @@ async function handlePost({request,env}){
   if(action==="sync"){if(!a.owner)return json({error:"Only the owner can sync the GitHub codebase."},403);const count=await seedFromGithub(env,a.user.email);return json({ok:true,count})}
   if(action==="member"){if(!a.owner)return json({error:"Only the owner can manage Code Studio members."},403);const email=normalizeEmail(body?.email);if(!/^\S+@\S+\.\S+$/.test(email))return json({error:"Enter a valid email address."},400);const t=now();await env.DB.prepare("INSERT INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(email) DO UPDATE SET role=excluded.role,active=1,updated_at=excluded.updated_at").bind(randomToken(16),email,"frontend-developer",1,t,t).run();return json({ok:true})}
   if(action==="review"){const result=await reviewWorkspace(env,a.user);const id=await saveReview(env,a.user,result);return json({ok:true,reviewId:id,...result})}
+  if(action==="ai-chat"){
+    const message=text(body?.message,12000).trim();
+    if(!message)return json({error:"Enter a message for Cookie Dev AI."},400);
+    const result=await aiWorkspaceChat(env,a.user,message,body?.history||[]);
+    if(!result.ok)return json(result,503);
+    const applied=[];
+    for(const edit of result.edits||[]){
+      const previous=await env.DB.prepare("SELECT content,mime,github_sha,deleted FROM codebase_files WHERE path=? LIMIT 1").bind(edit.path).first();
+      if(previous&&!Number(previous.deleted||0)&&String(previous.content)===edit.content)continue;
+      const t=now(),size=new TextEncoder().encode(edit.content).byteLength;
+      let revisionId=null;
+      if(previous&&!Number(previous.deleted||0)){
+        revisionId=randomToken(16);
+        await env.DB.prepare("INSERT INTO codebase_revisions (id,path,content,mime,editor_email,created_at) VALUES (?,?,?,?,?,?)").bind(revisionId,edit.path,previous.content,previous.mime,a.user.email,t).run();
+      }
+      await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=excluded.github_sha,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
+        .bind(edit.path,edit.content,mimeFor(edit.path),0,size,previous?.github_sha||null,a.user.email,t,t).run();
+      await recordAudit(env,{action:previous&&!Number(previous.deleted||0)?"edit":"create",path:edit.path,beforeRevisionId:revisionId,meta:{source:"cookie-dev-ai"},editorEmail:a.user.email});
+      applied.push(edit.path);
+    }
+    return json({ok:true,model:result.model,reply:result.reply,edits:applied});
+  }
   if(action==="undo"){
     const auditId=String(body?.auditId||"").trim();
     const latest=auditId?null:await env.DB.prepare("SELECT id FROM codebase_audit WHERE editor_email=? AND undone=0 ORDER BY created_at DESC,id DESC LIMIT 1").bind(a.user.email).first();
