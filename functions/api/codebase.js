@@ -409,6 +409,7 @@ async function handleGet({request,env}){
   const a=await access(request,env);if(a.error)return a.error;
   const url=new URL(request.url),requested=cleanPath(url.searchParams.get("path")),action=String(url.searchParams.get("action")||"");
   if(requested&&isHiddenPath(requested))return json({error:"This file is hidden from Code Studio for security."},404);
+  if(action==="access")return json({ok:true,owner:a.owner,role:a.member.role,canEdit:true});
   const t=now();await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("cookie-owner",OWNER_EMAIL,"owner",1,t,t).run();
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();
   // Seed only an empty workspace. Re-seeding on every state request caused
