@@ -1,8 +1,9 @@
 import { json, readJson } from "../_lib.js";
-import { createSession, dbAvailable, normalizeEmail, publicUser, verifyPassword, withCookies } from "./_auth.js";
+import { createSession, dbAvailable, ensureD1AuthSchema, normalizeEmail, publicUser, verifyPassword, withCookies } from "./_auth.js";
 
 export async function onRequestPost({ request, env }) {
-  if (!dbAvailable(env)) return json({ error: "Cookie auth database is not connected. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
+  if (!dbAvailable(env)) return json({ error: "Cookie account database is not connected." }, 503);
+  await ensureD1AuthSchema(env);
   const body = await readJson(request);
   const email = normalizeEmail(body?.email);
   const password = String(body?.password || "");
