@@ -9,7 +9,7 @@ import {
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
-  Volume2, X, Zap, AppWindow, Smartphone, Monitor
+  Volume2, X, Zap, AppWindow, Smartphone, Monitor, TerminalSquare
 } from "lucide-react";
 
 type Role = "user" | "assistant";
@@ -19,11 +19,11 @@ type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; da
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
 type GeneratedImage = { dataUrl:string; prompt:string; model?:string };
 type SourceRef = { title:string; url:string; domain?:string; snippet?:string };
-type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean };
+type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean; tool?:string; command?:string; output?:string; domain?:string; meta?:string };
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
-const ICON = "https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
+const ICON = "/cookie-ai-icon.svg";
 const MODELS = [
   { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
   { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
@@ -221,8 +221,20 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     <input hidden ref={fileRef} type="file" multiple onChange={e=>{add(e.target.files);e.currentTarget.value=""}}/>
   </div>;
 }
+function activityIcon(stage:string,tool?:string){
+  const t=String(tool||"").toLowerCase();
+  if(stage==="command"||t.includes("terminal")||t.includes("command")) return <TerminalSquare size={13}/>;
+  if(t.includes("web")||stage==="search") return <Globe2 size={13}/>;
+  if(t.includes("image")) return <ImagePlus size={13}/>;
+  if(t.includes("file")) return <FileSearch size={13}/>;
+  if(t.includes("memory")) return <Brain size={13}/>;
+  if(stage==="provider") return <Zap size={13}/>;
+  if(stage==="thinking") return <Brain size={13}/>;
+  return <Wrench size={13}/>;
+}
 function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elapsed:number;live?:boolean}){
   const [open,setOpen]=useState(true);
+  const [expanded,setExpanded]=useState<string|null>(null);
   if(!steps.length)return null;
   const mins=Math.floor(elapsed/60000);
   const secs=Math.floor((elapsed%60000)/1000);
@@ -230,14 +242,27 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   return <div className="activity-timeline">
     <button className="activity-summary" onClick={()=>setOpen(v=>!v)} type="button">
       <span className={"activity-spinner "+(!live?"complete":"")}/>
-      <span><b>{live?"Cookie is working":"Worked for "+duration}</b><small>{steps.length} task step{steps.length===1?"":"s"}</small></span>
+      <span><b>{live?"Working…":"Worked for "+duration}</b><small>{steps.length} step{steps.length===1?"":"s"}</small></span>
       <ChevronDown size={15} className={open?"rot":""}/>
     </button>
     {open&&<div className="activity-steps">
-      {steps.map((s,i)=><div className="activity-step" key={s.id||i}>
-        <span className={"activity-step-icon "+((s.done||(!live&&i<steps.length))?"done":"")}><Check size={12}/></span>
-        <span><b>{s.label}</b><small>{s.detail}</small></span>
-      </div>)}
+      {steps.map((s,i)=>{
+        const hasBlock=Boolean(s.command||s.output||s.meta);
+        const isOpen=expanded===s.id;
+        return <div className={"activity-step-wrap "+(hasBlock?"has-block":"")} key={s.id||i}>
+          <button className="activity-step" type="button" onClick={()=>hasBlock&&setExpanded(isOpen?null:s.id)}>
+            <span className={"activity-step-icon "+(s.done?"done":"")}>{s.done?<Check size={12}/>:activityIcon(s.stage,s.tool)}</span>
+            <span><b>{s.label}</b><small>{s.detail}</small></span>
+            {hasBlock&&<ChevronDown size={12} className={isOpen?"rot":""}/>}
+          </button>
+          {isOpen&&<div className="activity-detail">
+            {s.domain&&<span className="activity-domain">{s.domain}</span>}
+            {s.command&&<pre className="activity-terminal"><code>{s.command}</code></pre>}
+            {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"\n"}{s.output}</pre>}
+            {s.meta&&<div className="activity-meta">{s.meta}</div>}
+          </div>}
+        </div>;
+      })}
     </div>}
   </div>;
 }
