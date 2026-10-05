@@ -13,12 +13,16 @@ const SCHEMA = [
     password_hash TEXT,
     password_salt TEXT,
     plan TEXT NOT NULL DEFAULT 'free',
+    plan_expires_at BIGINT NOT NULL DEFAULT 0,
+    role TEXT NOT NULL DEFAULT 'user',
     credits_remaining INTEGER NOT NULL DEFAULT 100,
     login_failures INTEGER NOT NULL DEFAULT 0,
     locked_until INTEGER NOT NULL DEFAULT 0,
     created_at BIGINT NOT NULL DEFAULT 0,
     updated_at BIGINT NOT NULL DEFAULT 0
   )`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires_at BIGINT NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`,
   `CREATE TABLE IF NOT EXISTS oauth_accounts (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
