@@ -552,7 +552,9 @@ export async function onRequestPost({ request, env }) {
     const profileEmail = String(sessionUser.email || "").slice(0,160);
     const memoryEnabled = preferences.memory !== false;
     const persistentMemories = memoryEnabled ? await loadMemories(env, sessionUser.id) : [];
-    const reasoning = ["auto","fast","deep"].includes(preferences.reasoning) ? preferences.reasoning : "auto";
+    const requestedEffort = ["light","standard","high","ultra"].includes(preferences.effort) ? preferences.effort : "standard";
+    const effortReasoning = requestedEffort==="light" ? "fast" : requestedEffort==="high" || requestedEffort==="ultra" ? "deep" : "auto";
+    const reasoning = ["auto","fast","deep"].includes(preferences.reasoning) && preferences.reasoning!=="auto" ? preferences.reasoning : effortReasoning;
     const customInstructions = typeof preferences.instructions === "string" ? preferences.instructions.slice(0,6000).trim() : "";
     const skillInstructions = {
       "deep-research":"Use a research-first workflow: identify key subquestions, compare evidence, distinguish facts from assumptions, and surface uncertainty. Prefer current sources when available.",
