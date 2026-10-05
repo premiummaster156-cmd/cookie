@@ -205,8 +205,19 @@ function normalizeFiles(input) {
     .filter(f => f.path && !f.path.includes(".."));
 }
 
-async function executeImageTool(env, args, generatedImages) {
+async function executeImageTool(env, args, generatedImages, userId="", plan="free") {
   const prompt = String(args?.prompt || "").trim().slice(0, 2048);
+  if (env?.DB && userId) {
+    const imageLimit = plan === "max" ? 50 : planRank(plan) >= 1 ? 20 : 3;
+    try {
+      const usage = await env.DB.prepare(
+        "SELECT COUNT(*) AS count FROM usage_events WHERE user_id=? AND kind='image_generation' AND created_at>?"
+      ).bind(userId, nowSeconds() - 86400).first();
+      if (Number(usage?.count || 0) >= imageLimit) {
+        return {ok:false,error:"Daily image-generation limit reached ("+imageLimit+")."};
+      }
+    } catch {}
+  }
   if (!prompt) return {ok:false,error:"An image prompt is required."};
 
   const model = "@cf/black-forest-labs/flux-2-klein-4b";
@@ -278,6 +289,12 @@ async function executeImageTool(env, args, generatedImages) {
       model:"FLUX.2 [klein] 4B"
     });
 
+    if (env?.DB && userId) {
+      try {
+        await env.DB.prepare("INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)")
+          .bind(randomToken(16),userId,"image_generation","FLUX.2 [klein] 4B",1,nowSeconds()).run();
+      } catch {}
+    }
     return {ok:true,prompt,model:"FLUX.2 [klein] 4B",index:generatedImages.length};
   } catch (error) {
     console.error("[Cookie image generation]", error);
@@ -320,25 +337,78 @@ function inferModel({mode, text, attachments, gptProfile, requestedTool}) {
   const codeLike = /\b(code|coding|program|programming|debug|bug|stack trace|typescript|javascript|react|next\.js|python|java|swift|kotlin|rust|go|sql|api|sdk|git|github|css|html|regex|function|class|component|repository|repo|pull request|commit)\b/i.test(q);
   const researchLike = requestedTool === "deep-research" || /\b(research|sources?|cite|citation|latest|current|today|news|compare evidence|look up|investigate)\b/i.test(q);
   if (hasImages) return "kimi-k2.6:cloud";
-  if (gptProfile?.id === "code-expert" || codeLike) return "qwen3-coder:480b-cloud";
-  if (mode === "ultra") return "kimi-k2.6:cloud";
-  if (mode === "max" || researchLike) return "gpt-oss:120b-cloud";
+  if (gptProfile?.id === "code-expert" || codeLike) return "kimi-k2.7-code:cloud";
+  if (mode === "ultra") return "kimi-k2.7-code:cloud";
+  if (mode === "max" || researchLike) return "deepseek-v4-pro:cloud";
   return "deepseek-v4-flash:cloud";
 }
 
 function modelContext(model) {
-  if (/deepseek-v4-flash/i.test(model)) return 262144;
-  if (/qwen3-coder|kimi-k2\.6/i.test(model)) return 262144;
+  if (/deepseek-v4/i.test(model)) return 1048576;
+  if (/glm-5\.3/i.test(model)) return 1048576;
+  if (/kimi-k2\.7|kimi-k2\.6|qwen3\.8/i.test(model)) return 262144;
   if (/gpt-oss/i.test(model)) return 131072;
   return 131072;
 }
 
 function thinkingFor(mode, reasoning, model) {
   if (reasoning === "fast") return false;
-  if (reasoning === "deep") return true;
-  if (/qwen3-coder|kimi-k2\.6|gpt-oss/i.test(model)) return true;
-  if (/deepseek-v4-flash/i.test(model)) return mode !== "standard";
-  return Boolean(mode !== "standard");
+  if (/deepseek-v4-pro/i.test(model) && (reasoning === "deep" || mode === "ultra")) return "max";
+  if (/glm-5\.3/i.test(model)) return "max";
+  if (/kimi-k2\.7|kimi-k2\.6|gpt-oss/i.test(model)) return "high";
+  return reasoning === "deep" || mode !== "standard";
+}
+
+function providerModelFallbacks(model) {
+  const ordered = [
+    "glm-5.3:cloud",
+    "deepseek-v4-pro:cloud",
+    "kimi-k2.7-code:cloud",
+    "minimax-m2.7:cloud",
+    "gpt-oss:120b-cloud",
+    "deepseek-v4-flash:cloud",
+    "qwen3-coder:480b-cloud"
+  ];
+  return [model, ...ordered.filter(x => x !== model)];
+}
+
+function safeOllamaUrl(value) {
+  const fallback = "https://ollama.com/api/chat";
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:") return fallback;
+    if (!/(^|\.)ollama\.com$/i.test(u.hostname)) return fallback;
+    return u.href;
+  } catch {
+    return fallback;
+  }
+}
+
+function nowSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
+async function rateLimitChat(env, user, plan) {
+  const limits = plan === "max" ? 60 : planRank(plan) >= 1 ? 30 : 10;
+  const since = nowSeconds() - 60;
+  const row = await env.DB.prepare(
+    "SELECT COUNT(*) AS count FROM usage_events WHERE user_id=? AND kind='chat_request' AND created_at>?"
+  ).bind(user.id, since).first();
+  const count = Number(row?.count || 0);
+  if (count >= limits) {
+    const retry = 60;
+    return json(
+      {error:"Cookie is busy for this account. Please try again in a moment.",code:"RATE_LIMITED",limit:limits,retryAfter:retry},
+      429,
+      {"Retry-After":String(retry)}
+    );
+  }
+  await env.DB.prepare(
+    "INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)"
+  ).bind(randomToken(16), user.id, "chat_request", plan, 1, nowSeconds()).run();
+  return null;
 }
 
 function appendWebSources(target, result) {
@@ -367,21 +437,21 @@ function appendWebSources(target, result) {
 const profiles = {
   standard: {
     name: "CPT-1",
-    model: "deepseek-v4-flash:cloud",
+    model: "glm-5.3:cloud",
     temperature: 0.48,
     instructions: "Be fast, clear, practical, natural, and accurate. Spend reasoning effort where it materially improves the answer; do not over-explain simple tasks.",
     thinking: true
   },
   max: {
     name: "CPT-2 MAX",
-    model: "gpt-oss:120b-cloud",
+    model: "deepseek-v4-pro:cloud",
     temperature: 0.56,
     instructions: "Handle difficult reasoning, coding, code review, architecture, debugging, planning, analysis, and multi-step engineering tasks with extra care. Prefer verification, explicit assumptions, robust edge-case handling, and complete production-quality solutions.",
     thinking: true
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "kimi-k2.6:cloud",
+    model: "kimi-k2.7-code:cloud",
     temperature: 0.58,
     instructions: "Operate as Cookie's highest-capability multimodal and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Use long-horizon planning, strong code/design judgment, tool use, and rigorous self-review. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
@@ -396,6 +466,8 @@ export async function onRequestPost({ request, env }) {
 
     const credits = Number(sessionUser.credits ?? 0);
     const plan = String(sessionUser.plan || "free");
+    const rateLimited = await rateLimitChat(env,sessionUser,plan);
+    if (rateLimited) return rateLimited;
     if (plan === "free" && credits <= 0) {
       return json({ error:"Your free Cookie credits are used up. Add a paid plan before continuing." }, 402);
     }
@@ -404,7 +476,7 @@ export async function onRequestPost({ request, env }) {
     const provider = "ollama";
     const apiKey = String(env.OLLAMA_API_KEY || "").trim();
     let model = "gpt-oss:20b-cloud";
-    const ollamaUrl = String(env.OLLAMA_URL || "https://ollama.com/api/chat").trim();
+    const ollamaUrl = safeOllamaUrl(env.OLLAMA_URL);
 
     if (!apiKey) {
       return json({ error: "Cookie AI is not configured yet. Add OLLAMA_API_KEY in Pages secrets." }, 503);
@@ -508,6 +580,7 @@ export async function onRequestPost({ request, env }) {
       "For complex tasks, reason carefully internally and give the user the useful result, assumptions, and conclusions without exposing private chain-of-thought.",
       "Do not invent facts, files, tool results, tests, or actions you did not actually perform.",
       "Do not restate the user's request unless a tiny confirmation removes ambiguity. Start with the useful answer or next action.",
+      "SAFETY STYLE: Never emit a canned policy paragraph or repetitive stock refusal. When a request contains an unsafe portion, decline only that portion naturally, answer any benign portion, and offer the closest safe alternative. Do not provide harmful operational instructions or claim a policy reason that is not actually relevant.",
       "For current information, prefer live evidence when web research is enabled; distinguish verified facts from inference.",
       "For coding, inspect every supplied file and dependency context that matters, preserve existing conventions, and avoid placeholder code unless the user asks for a sketch.",
       "For long tasks, keep working through the problem instead of stopping after the first plausible idea. Re-check integration points and edge cases before finalizing.",
@@ -692,18 +765,19 @@ export async function onRequestPost({ request, env }) {
           try {
             for (let turn = 0; turn < 12; turn++) {
               push({type:"status",status:"Thinking…"});
+              push({type:"activity",stage:"thinking",label:"Thinking",detail:"Analyzing the request"});
               let upstream = null;
               let data = null;
               let assistantMessage = null;
 
-              for (const candidate of [model, ...modelFallbacks.filter(x => x !== model)]) {
+              for (const candidate of providerModelFallbacks(model)) {
                 try {
                   const requestBody = {
                     model: candidate,
                     stream: true,
                     messages: liveMessages,
                     tools: availableTools,
-                    think,
+                    think: thinkingFor(mode,reasoning,candidate),
                     options: {
                       temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
                       top_p: 0.95,
@@ -778,8 +852,43 @@ export async function onRequestPost({ request, env }) {
               }
 
               if (!upstream?.ok || !assistantMessage) {
-                throw new Error("Cookie could not reach the AI provider.");
+                if (env?.AI && typeof env.AI.run === "function") {
+                  try {
+                    push({type:"activity",stage:"provider",label:"Cloud fallback",detail:"Switching to Cloudflare Workers AI"});
+                    const fallback = await env.AI.run("@cf/zai-org/glm-4.7-flash", {messages:liveMessages,stream:true});
+                    const reader2 = fallback?.getReader?.();
+                    if (reader2) {
+                      const decoder2 = new TextDecoder();
+                      let buf2 = "";
+                      let combined = "";
+                      while (true) {
+                        const chunk = await reader2.read();
+                        if (chunk.done) break;
+                        buf2 += decoder2.decode(chunk.value,{stream:true});
+                        const lines2 = buf2.split("\n");
+                        buf2 = lines2.pop() || "";
+                        for (const line2 of lines2) {
+                          const t=line2.replace(/^data:\s*/,"").trim();
+                          if(!t)continue;
+                          try{
+                            const part=JSON.parse(t);
+                            const delta=String(part?.response||part?.result?.response||part?.message?.content||"");
+                            if(delta){combined+=delta;push({type:"delta",delta});}
+                          }catch{}
+                        }
+                      }
+                      if(combined.trim()){
+                        assistantMessage={role:"assistant",content:combined};
+                        data={message:assistantMessage};
+                        usedModel="@cf/zai-org/glm-4.7-flash";
+                        upstream={ok:true,status:200};
+                      }
+                    }
+                  }catch(fallbackError){console.error("[Cookie Workers AI fallback]",fallbackError);}
+                }
               }
+              if (!upstream?.ok || !assistantMessage) {
+                throw new Error("AI provider unavailable. Ollama Cloud and the Cloudflare AI fallback both failed.");}
 
               liveMessages.push(assistantMessage);
               const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
@@ -795,9 +904,10 @@ export async function onRequestPost({ request, env }) {
                 if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
                 if (!name) continue;
                 push({type:"status",status:statusForTool(name)});
+                push({type:"activity",stage:"tool",label:statusForTool(name).replace("…",""),detail:"Using a tool for this task"});
                 let executed;
                 if (name === "image_generate") {
-                  executed = {files:liveFiles,result:JSON.stringify(await executeImageTool(env,args,liveImages))};
+                  executed = {files:liveFiles,result:JSON.stringify(await executeImageTool(env,args,liveImages,sessionUser.id,plan))};
                 } else if (name === "web_search" || name === "web_fetch") {
                   const webResult = await executeWebTool(name,args,apiKey);
                   appendWebSources(liveSources, webResult);
@@ -868,7 +978,7 @@ export async function onRequestPost({ request, env }) {
             stream: false,
             messages: agentMessages,
             tools: availableTools,
-            think,
+            think: thinkingFor(mode,reasoning,candidate),
             options: {
               temperature: Math.min(1, profile.temperature * 0.68 + creativity * 0.32),
               top_p:0.95,
@@ -900,9 +1010,20 @@ export async function onRequestPost({ request, env }) {
       }
 
       if (!upstream?.ok) {
-        return json({
-          error: "Cookie could not reach Ollama Cloud. Check OLLAMA_API_KEY, Ollama Cloud availability, and the selected cloud model."
-        }, 502);
+        if (env?.AI && typeof env.AI.run === "function") {
+          try {
+            const fallback=await env.AI.run("@cf/zai-org/glm-4.7-flash",{messages:agentMessages});
+            const content=String(fallback?.response||fallback?.result?.response||fallback?.message?.content||"").trim();
+            if(content){
+              successfulModel="@cf/zai-org/glm-4.7-flash";
+              data={message:{role:"assistant",content}};
+              upstream={ok:true,status:200};
+            }
+          }catch(fallbackError){console.error("[Cookie Workers AI fallback]",fallbackError);}
+        }
+      }
+      if (!upstream?.ok) {
+        return json({error:"AI provider unavailable. Ollama Cloud and the Cloudflare AI fallback both failed."},502);
       }
 
       model = successfulModel;
@@ -926,7 +1047,7 @@ export async function onRequestPost({ request, env }) {
         if(typeof args==="string"){try{args=JSON.parse(args)}catch{args={}}}
         let executed;
         if(name === "image_generate") {
-          executed = {files:generatedFiles,result:JSON.stringify(await executeImageTool(env,args,generatedImages))};
+          executed = {files:generatedFiles,result:JSON.stringify(await executeImageTool(env,args,generatedImages,sessionUser.id,plan))};
         } else if(name === "web_search" || name === "web_fetch") {
           const webResult = await executeWebTool(name,args,apiKey);
           appendWebSources(webSources, webResult);
