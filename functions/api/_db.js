@@ -229,14 +229,14 @@ function replaceQuestionMarks(query) {
 
 function compile(query) {
   const source = String(query || "").trim();
-  const pragma = source.match(/^PRAGMA\\s+table_info\\s*\\(\\s*["']?([A-Za-z0-9_]+)["']?\\s*\\)$/i);
+  const pragma = source.match(/^PRAGMA\s+table_info\s*\(\s*["']?([A-Za-z0-9_]+)["']?\s*\)$/i);
   if (pragma) return { type: "pragma_table_info", table: pragma[1] };
 
-  const ignore = /^INSERT\\s+OR\\s+IGNORE\\s+INTO\\s+/i.test(source);
-  let text = source.replace(/^INSERT\\s+OR\\s+IGNORE\\s+INTO\\s+/i, "INSERT INTO ");
-  text = text.replace(/MAX\\(\\s*credits_remaining\\s*-\\s*1\\s*,\\s*0\\s*\\)/gi, "GREATEST(credits_remaining - 1, 0)");
+  const ignore = /^INSERT\s+OR\s+IGNORE\s+INTO\s+/i.test(source);
+  let text = source.replace(/^INSERT\s+OR\s+IGNORE\s+INTO\s+/i, "INSERT INTO ");
+  text = text.replace(/MAX\(\s*credits_remaining\s*-\s*1\s*,\s*0\s*\)/gi, "GREATEST(credits_remaining - 1, 0)");
   text = replaceQuestionMarks(text);
-  if (ignore && !/\\bON\\s+CONFLICT\\b/i.test(text)) text += " ON CONFLICT DO NOTHING";
+  if (ignore && !/\bON\s+CONFLICT\b/i.test(text)) text += " ON CONFLICT DO NOTHING";
   return { type: "query", text };
 }
 
