@@ -309,9 +309,21 @@ export function createNeonD1Compat(env) {
       return new Statement(compiled);
     },
     async batch(statements = []) {
-      const output = [];
-      for (const statement of statements) output.push(await statement.run());
-      return output;
+      if (!statements.length) return [];
+      // Neon HTTP can execute a transaction as one network request. The old
+      // compatibility loop issued one fetch per statement, which could exhaust
+      // Cloudflare's 50 external-subrequest Free limit during Code Studio
+      // workspace seeding.
+      await ready;
+      const queries = statements.map(statement =>
+        sql.query(statement.compiled.text, statement.values, { fullResults: true })
+      );
+      const results = await sql.transaction(queries);
+      return results.map(result => ({
+        success: true,
+        meta: { changes: Number(result?.rowCount || 0) },
+        results: result?.rows || []
+      }));
     }
   };
 }
