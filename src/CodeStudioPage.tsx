@@ -3,7 +3,7 @@ import {
   Activity,AlertCircle,Archive,ArrowDownToLine,ArrowLeft,ArrowRight,Bot,Braces,Check,ChevronDown,ChevronRight,
   CircleDot,Code2,Copy,FileCode2,FileJson,FilePlus2,FileText,Folder,FolderOpen,GitBranch,GitCommitHorizontal,
   GitCompare,History,Keyboard,LayoutPanelLeft,Loader2,Menu,MoreHorizontal,PanelBottom,Play,Plus,RefreshCw,
-  Search,Settings2,ShieldAlert,ShieldCheck,SquareTerminal,Trash2,UploadCloud,UserPlus,Users,X,Zap
+  Search,Settings2,ShieldAlert,ShieldCheck,SquareTerminal,Trash2,UploadCloud,UserPlus,Users,X,Zap,CreditCard,SlidersHorizontal,UserRound
 } from "lucide-react";
 
 type CodeFile={path:string;mime:string;is_binary:number;size:number;github_sha?:string|null;updated_by?:string;updated_at:number;deleted?:number};
@@ -48,8 +48,84 @@ function highlightCode(source:string,path:string){
 async function parseApiResponse(r:Response){const raw=await r.text();if(!raw.trim())return {};try{return JSON.parse(raw)}catch{return {error:raw.slice(0,500)||("Request failed ("+r.status+").")}}}
 
 
+function AdminControlPanel({role,onClose,onNotice,onError}:{role:string;onClose:()=>void;onNotice:(x:string)=>void;onError:(x:string)=>void}){
+  const [data,setData]=useState<any>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[query,setQuery]=useState("");
+  const [email,setEmail]=useState(""),[credits,setCredits]=useState("100"),[plan,setPlan]=useState("pro"),[days,setDays]=useState("30"),[userRole,setUserRole]=useState("vip");
+  const [limits,setLimits]=useState<any>({chat_limit_free:10,chat_limit_pro:30,chat_limit_max:60,image_limit_free:3,image_limit_pro:20,image_limit_max:50});
+  const load=async()=>{
+    setLoading(true);
+    try{
+      const r=await fetch("/api/admin",{credentials:"same-origin",cache:"no-store"});
+      const d=await parseApiResponse(r);
+      if(!r.ok)throw new Error(d?.error||"Could not load account control.");
+      setData(d);setLimits(d.limits||limits);
+    }catch(e:any){onError(e?.message||"Could not load account control.");}
+    finally{setLoading(false);}
+  };
+  useEffect(()=>{load()},[]);
+  const act=async(body:any)=>{
+    setBusy(true);
+    try{
+      const r=await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(body)});
+      const d=await parseApiResponse(r);
+      if(!r.ok)throw new Error(d?.error||"Account action failed.");
+      onNotice("Account changes saved");
+      await load();
+    }catch(e:any){onError(e?.message||"Account action failed.");}
+    finally{setBusy(false);}
+  };
+  const choose=(u:any)=>{
+    setEmail(String(u.email||""));setPlan(String(u.plan||"free"));setUserRole(String(u.role||"user"));setCredits(String(u.credits??0));setDays("30");
+  };
+  const users=(data?.users||[]).filter((u:any)=>{
+    const q=query.trim().toLowerCase();
+    return !q||String(u.email||"").toLowerCase().includes(q)||String(u.name||"").toLowerCase().includes(q)||String(u.username||"").toLowerCase().includes(q);
+  }).slice(0,100);
+  return <div className="cs-admin-panel">
+    <div className="cs-admin-head">
+      <div><span className="cs-admin-kicker"><ShieldCheck size={13}/>Privileged control</span><h2>Cookie Account Control</h2><p>Manage accounts, credits, subscriptions, model access and AI limits. Server-side permissions remain authoritative.</p></div>
+      <div className="cs-admin-head-actions"><span className="cs-admin-role">{role}</span><button onClick={onClose} aria-label="Close account control"><X size={15}/></button></div>
+    </div>
+    {loading?<div className="cs-admin-loading"><Loader2 className="spin" size={18}/>Loading accounts…</div>:<>
+      <div className="cs-admin-stats">{[["Users",data?.stats?.users||0],["Free",data?.stats?.plans?.find((x:any)=>x.plan==="free")?.count||0],["Pro",data?.stats?.plans?.find((x:any)=>x.plan==="pro")?.count||0],["MAX",data?.stats?.plans?.find((x:any)=>x.plan==="max")?.count||0]].map(([a,b])=><div key={String(a)}><span>{a}</span><strong>{b}</strong></div>)}</div>
+      <section className="cs-admin-section">
+        <div className="cs-admin-section-title"><UserRound size={15}/>Account controls</div>
+        <div className="cs-admin-form">
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="user@example.com" autoComplete="off"/>
+          <input value={credits} onChange={e=>setCredits(e.target.value)} placeholder="Credits" inputMode="numeric"/>
+          <select value={plan} onChange={e=>setPlan(e.target.value)}><option value="free">Free</option><option value="pro">Pro</option><option value="max">MAX</option></select>
+          <input value={days} onChange={e=>setDays(e.target.value)} placeholder="Days" inputMode="numeric"/>
+          <select value={userRole} onChange={e=>setUserRole(e.target.value)}>
+            <option value="user">User</option><option value="vip">VIP</option><option value="staff">Staff</option>
+            {role!=="staff"&&<option value="admin">Admin</option>}
+            {role==="owner"&&<option value="owner">Owner</option>}
+          </select>
+        </div>
+        <div className="cs-admin-actions">
+          <button disabled={busy||!email.trim()} onClick={()=>act({action:"credit",email,delta:Number(credits||0)})}><CreditCard size={14}/>Adjust credits</button>
+          <button disabled={busy||!email.trim()} onClick={()=>act({action:"gift",email,plan,days:Number(days||30),credits:Number(credits||0)})}><Zap size={14}/>Gift plan + credits</button>
+          <button disabled={busy||!email.trim()} onClick={()=>act({action:"user",email,plan,role:userRole,credits:Number(credits||0)})}><Users size={14}/>Save account</button>
+        </div>
+        <small className="cs-admin-hint">“Gift plan + credits” grants the selected model tier for the selected number of days.</small>
+      </section>
+      <section className="cs-admin-section">
+        <div className="cs-admin-section-title"><SlidersHorizontal size={15}/>AI limits</div>
+        <div className="cs-admin-limits">{Object.entries(limits).map(([k,v])=><label key={k}><span>{k.replaceAll("_"," ")}</span><input value={String(v)} inputMode="numeric" onChange={e=>setLimits((x:any)=>({...x,[k]:Number(e.target.value)}))}/></label>)}</div>
+        <button className="primary" disabled={busy||role==="staff"} onClick={()=>act({action:"limits",limits})}><SlidersHorizontal size={14}/>Save limits</button>
+        {role==="staff"&&<small className="cs-admin-hint">Staff can manage accounts but only owner/admin can change global AI limits.</small>}
+      </section>
+      <section className="cs-admin-section">
+        <div className="cs-admin-section-title"><Users size={15}/>Accounts</div>
+        <div className="cs-admin-search"><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search accounts"/></div>
+        <div className="cs-admin-users">{users.map((u:any)=><button key={u.id} onClick={()=>choose(u)}><span><strong>{u.name||u.username||u.email}</strong><small>{u.email}</small></span><span><b>{String(u.plan||"free").toUpperCase()}</b><small>{u.credits} credits · {u.role}</small></span></button>)}</div>
+        {!users.length&&<div className="cs-admin-empty">No accounts match this search.</div>}
+      </section>
+    </>}
+  </div>;
+}
+
 export default function CodeStudioPage({onExit=()=>{}}:{onExit?:()=>void}){
- const [files,setFiles]=useState<CodeFile[]>([]),[members,setMembers]=useState<Member[]>([]),[audits,setAudits]=useState<Audit[]>([]),[selected,setSelected]=useState(""),[content,setContent]=useState(""),[saved,setSaved]=useState(""),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[syncing,setSyncing]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[search,setSearch]=useState(""),[tabs,setTabs]=useState<string[]>([]),[activePanel,setActivePanel]=useState<"problems"|"output"|"terminal"|"review"|"deployment">("review"),[panelOpen,setPanelOpen]=useState(true),[explorer,setExplorer]=useState(true),[activity,setActivity]=useState<"explorer"|"search"|"source"|"run">("explorer"),[commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState(""),[quickOpen,setQuickOpen]=useState(false),[newPath,setNewPath]=useState(""),[newOpen,setNewOpen]=useState(false),[memberOpen,setMemberOpen]=useState(false),[memberEmail,setMemberEmail]=useState(""),[owner,setOwner]=useState(false),[role,setRole]=useState(""),[branchSha,setBranchSha]=useState(""),[review,setReview]=useState<Review|null>(null),[changes,setChanges]=useState<Change[]>([]),[deployment,setDeployment]=useState<any>({status:"not_started",checks:[]}),[reviewing,setReviewing]=useState(false),[committing,setCommitting]=useState(false),[autoReview,setAutoReview]=useState(true),[autoCommit,setAutoCommit]=useState(false),[terminal,setTerminal]=useState<string[]>(["Cookie Code Studio terminal","Ready. Safe project commands are available through the server.","$ npm run build"]),[renaming,setRenaming]=useState(false),[renameTo,setRenameTo]=useState("");
+ const [files,setFiles]=useState<CodeFile[]>([]),[members,setMembers]=useState<Member[]>([]),[audits,setAudits]=useState<Audit[]>([]),[selected,setSelected]=useState(""),[content,setContent]=useState(""),[saved,setSaved]=useState(""),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[syncing,setSyncing]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[search,setSearch]=useState(""),[tabs,setTabs]=useState<string[]>([]),[activePanel,setActivePanel]=useState<"problems"|"output"|"terminal"|"review"|"deployment">("review"),[panelOpen,setPanelOpen]=useState(true),[explorer,setExplorer]=useState(true),[activity,setActivity]=useState<"explorer"|"search"|"source"|"run">("explorer"),[commandOpen,setCommandOpen]=useState(false),[commandQuery,setCommandQuery]=useState(""),[quickOpen,setQuickOpen]=useState(false),[newPath,setNewPath]=useState(""),[newOpen,setNewOpen]=useState(false),[memberOpen,setMemberOpen]=useState(false),[memberEmail,setMemberEmail]=useState(""),[adminOpen,setAdminOpen]=useState(false),[owner,setOwner]=useState(false),[role,setRole]=useState(""),[branchSha,setBranchSha]=useState(""),[review,setReview]=useState<Review|null>(null),[changes,setChanges]=useState<Change[]>([]),[deployment,setDeployment]=useState<any>({status:"not_started",checks:[]}),[reviewing,setReviewing]=useState(false),[committing,setCommitting]=useState(false),[autoReview,setAutoReview]=useState(true),[autoCommit,setAutoCommit]=useState(false),[terminal,setTerminal]=useState<string[]>(["Cookie Code Studio terminal","Ready. Safe project commands are available through the server.","$ npm run build"]),[renaming,setRenaming]=useState(false),[renameTo,setRenameTo]=useState("");
  const saveTimer=useRef<any>(null),editorRef=useRef<HTMLTextAreaElement|null>(null),searchRef=useRef<HTMLInputElement|null>(null);
  useEffect(()=>{const previous=document.title;document.title="Cookie Code Studio";return()=>{document.title=previous}},[]);
 
@@ -96,6 +172,7 @@ export default function CodeStudioPage({onExit=()=>{}}:{onExit?:()=>void}){
     <div className="cs-activity-spacer"/>
     <button onClick={()=>setMemberOpen(true)} title="Members"><Users size={18}/></button>
     <button onClick={()=>setActivePanel("terminal")} title="Terminal"><SquareTerminal size={18}/></button>
+    {["owner","admin","staff"].includes(String(role||"").toLowerCase())&&<button onClick={()=>setAdminOpen(true)} title="Account control"><SlidersHorizontal size={18}/></button>
    </nav>
    {explorer&&<aside className="cs-explorer">
     <div className="cs-pane-head"><strong>{activity==="search"?"SEARCH":activity==="source"?"SOURCE CONTROL":activity==="run"?"RUN / BUILD":"EXPLORER"}</strong><div><button onClick={()=>setExplorer(false)} className="mobile-only"><X size={15}/></button><button onClick={()=>setNewOpen(true)}><Plus size={15}/></button></div></div>
@@ -130,6 +207,7 @@ export default function CodeStudioPage({onExit=()=>{}}:{onExit?:()=>void}){
   {renaming&&<div className="cs-modal-backdrop" onMouseDown={()=>setRenaming(false)}><div className="cs-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><strong>Rename file</strong><button onClick={()=>setRenaming(false)}><X size={15}/></button></div><input autoFocus value={renameTo} onChange={e=>setRenameTo(e.target.value)} onKeyDown={e=>e.key==="Enter"&&rename()}/><button className="primary" onClick={rename}>Rename</button></div></div>}
   {memberOpen&&<div className="cs-modal-backdrop" onMouseDown={()=>setMemberOpen(false)}><div className="cs-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><strong>Code Studio control</strong><button onClick={()=>setMemberOpen(false)}><X size={15}/></button></div><div className="member-list">{members.map(m=><div key={m.email}><span><strong>{m.email}</strong><small>{m.role}</small></span><CircleDot size={13}/></div>)}</div>{owner&&<><div className="cs-automation"><div><strong>Automation</strong><small>Server-side gates always remain active.</small></div><label><input type="checkbox" checked={autoReview} onChange={e=>setting("auto_review",e.target.checked)}/><span>Auto Review</span></label><label><input type="checkbox" checked={autoCommit} onChange={e=>setting("auto_commit",e.target.checked)}/><span>Auto Review + Auto Commit</span></label><p>Auto commit still requires deterministic checks, AI approval, and GitHub branch-divergence protection.</p></div><input value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} placeholder="developer@example.com"/><button className="primary" onClick={addMember}><UserPlus size={15}/>Add developer</button></>}</div></div>}
   {commandOpen&&<div className="cs-modal-backdrop" onMouseDown={()=>setCommandOpen(false)}><div className="cs-command" onMouseDown={e=>e.stopPropagation()}><div className="command-input"><Search size={16}/><input autoFocus value={commandQuery} onChange={e=>setCommandQuery(e.target.value)} placeholder="Type a command…"/></div>{commands.map(c=><button key={c[1]} onClick={()=>runCommand(c[1])}><span>{c[0]}</span><kbd>{c[2]}</kbd></button>)}</div></div>}
+  {adminOpen&&<div className="cs-modal-backdrop" onMouseDown={()=>setAdminOpen(false)}><div className="cs-admin-modal" onMouseDown={e=>e.stopPropagation()}><AdminControlPanel role={role||"staff"} onClose={()=>setAdminOpen(false)} onNotice={x=>{setNotice(x);setTimeout(()=>setNotice(""),1800)}} onError={x=>setError(x)}/></div></div>}
   {quickOpen&&<div className="cs-modal-backdrop" onMouseDown={()=>setQuickOpen(false)}><div className="cs-command" onMouseDown={e=>e.stopPropagation()}><div className="command-input"><Search size={16}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Open file…"/></div>{filtered.slice(0,40).map(f=><button key={f.path} onClick={()=>{setQuickOpen(false);open(f.path)}}>{iconFor(f.path)}<span>{f.path}</span><kbd>{languageLabel(f.path)}</kbd></button>)}</div></div>}
  </div>
 }
