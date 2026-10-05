@@ -492,12 +492,12 @@ export async function onRequestPost({ request, env }) {
 
     const credits = Number(sessionUser.credits ?? 0);
     const plan = String(sessionUser.plan || "free");
-    const aiLimits = await loadAiLimits(env);
-    const rateLimited = await rateLimitChat(env,sessionUser,plan,aiLimits);
-    if (rateLimited) return rateLimited;
     if (plan === "free" && credits <= 0) {
       return json({ error:"Your free Cookie credits are used up. Add a paid plan before continuing." }, 402);
     }
+    const aiLimits = await loadAiLimits(env);
+    const rateLimited = await rateLimitChat(env,sessionUser,plan,aiLimits);
+    if (rateLimited) return rateLimited;
 
     // Cookie runs directly on Ollama Cloud. OpenRouter is intentionally not used.
     const provider = "ollama";
@@ -1116,7 +1116,6 @@ export async function onRequestPost({ request, env }) {
       message: limitResponse(String(finalMessage).trim()),
       model: profile.name,
       demo: true,
-      demoNotice: "Cookie is currently in free preview. All model profiles are free during the demo.",
       generatedFiles: generatedFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
       generatedImages: generatedImages,
       sources: webSources.slice(0,10),
