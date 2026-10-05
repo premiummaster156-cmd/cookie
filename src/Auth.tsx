@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, Eye, EyeOff, KeyRound, Loader2, Mail, ShieldCheck, UserRound } from "lucide-react";
 
 const ICON = "https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
@@ -32,63 +32,198 @@ async function api(path:string, body:Record<string,unknown>) {
 }
 
 function CookieLanding({onStart,onSignIn}:{onStart:()=>void;onSignIn:()=>void}) {
-  const features = [
-    {icon:ArrowRight,title:"One place for real work",text:"Write, learn, research, code, analyze files, and build projects without jumping between tools."},
-    {icon:ShieldCheck,title:"Built around your work",text:"Your chats, projects, files, and account stay together instead of feeling like a collection of disconnected AI demos."},
-    {icon:KeyRound,title:"Start simple",text:"No forced subscription wall or complicated setup. Try Cookie first, then decide how you want to use it."}
+  const [active,setActive]=useState("Research");
+  const [rotation,setRotation]=useState({x:-11,y:18});
+  const dragRef=useRef({dragging:false,pointerId:0,startX:0,startY:0,startXRot:-11,startYRot:18});
+
+  const orbitItems=[
+    {name:"Chat",tag:"THINK",detail:"Fast, focused conversation"},
+    {name:"Research",tag:"DISCOVER",detail:"Compare sources and build context"},
+    {name:"Code",tag:"BUILD",detail:"Plan, write, review, ship"},
+    {name:"Files",tag:"UNDERSTAND",detail:"Read documents and data"},
+    {name:"Projects",tag:"CREATE",detail:"Keep work connected over time"}
   ];
+
+  const activeItem=orbitItems.find(item=>item.name===active)||orbitItems[1];
+
+  const startDrag=(e:React.PointerEvent<HTMLDivElement>)=>{
+    dragRef.current={
+      dragging:true,
+      pointerId:e.pointerId,
+      startX:e.clientX,
+      startY:e.clientY,
+      startXRot:rotation.x,
+      startYRot:rotation.y
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const moveDrag=(e:React.PointerEvent<HTMLDivElement>)=>{
+    const d=dragRef.current;
+    if(!d.dragging||d.pointerId!==e.pointerId)return;
+    const nextX=Math.max(-34,Math.min(22,d.startXRot-(e.clientY-d.startY)*0.18));
+    const nextY=d.startYRot+(e.clientX-d.startX)*0.2;
+    setRotation({x:nextX,y:nextY});
+  };
+  const endDrag=(e:React.PointerEvent<HTMLDivElement>)=>{
+    if(dragRef.current.pointerId===e.pointerId){
+      dragRef.current.dragging=false;
+      try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}
+    }
+  };
+
   return <div className="cookie-landing">
     <header className="cookie-landing-nav">
       <button className="cookie-landing-brand" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} aria-label="Cookie home">
         <img src={ICON} alt="" draggable={false}/><span>Cookie</span>
       </button>
-      <button className="cookie-landing-signin" onClick={onSignIn}>Sign in</button>
+      <nav className="cookie-landing-navlinks" aria-label="Landing page">
+        <a href="#capabilities">Capabilities</a>
+        <a href="#space">Cookie Space</a>
+        <a href="#principles">Why Cookie</a>
+      </nav>
+      <button className="cookie-landing-signin" onClick={onSignIn}>Sign in <ArrowRight size={14}/></button>
     </header>
 
     <main>
       <section className="cookie-landing-hero">
-        <div className="cookie-landing-eyebrow"><img src={ICON} alt="" draggable={false}/> COOKIE AI</div>
-        <h1>An AI workspace<br/><em>made for doing.</em></h1>
-        <p>Write better. Learn faster. Research deeply. Build real things. Cookie brings the tools together without getting in your way.</p>
-        <div className="cookie-landing-actions">
-          <button className="cookie-landing-primary" onClick={onStart}>Start using Cookie <ArrowRight size={17}/></button>
-          <button className="cookie-landing-text" onClick={onSignIn}>I already have an account</button>
+        <div className="cookie-landing-hero-copy">
+          <div className="cookie-landing-kicker"><span className="cookie-kicker-line"/><span>COOKIE AI · A MODERN AI WORKSPACE</span></div>
+          <h1>Intelligence<br/><em>that moves with you.</em></h1>
+          <p>Think, research, code, create, and work with your files in one continuous space. Cookie stays close to the task instead of making you manage the tool.</p>
+          <div className="cookie-landing-actions">
+            <button className="cookie-landing-primary" onClick={onStart}>Start with Cookie <ArrowRight size={17}/></button>
+            <a className="cookie-landing-text" href="#capabilities">Explore the workspace</a>
+          </div>
+          <div className="cookie-landing-proof">
+            <span>FREE TO START</span><i/> <span>WEB + MOBILE + DESKTOP</span><i/> <span>BUILT FOR REAL WORK</span>
+          </div>
         </div>
-        <div className="cookie-landing-note">Free to start · Works on iPhone, desktop, and web</div>
+
+        <div className="cookie-landing-hero-visual">
+          <div className="cookie-hero-grid" aria-hidden="true"/>
+          <div className="cookie-hero-halo halo-one" aria-hidden="true"/>
+          <div className="cookie-hero-halo halo-two" aria-hidden="true"/>
+          <div
+            className="cookie-orbit-scene"
+            style={{transform:`perspective(1200px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`}}
+            onPointerDown={startDrag}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            role="img"
+            aria-label="Interactive Cookie AI workspace constellation. Drag to rotate."
+          >
+            <div className="cookie-orbit-plane plane-back" aria-hidden="true"/>
+            <div className="cookie-orbit-plane plane-mid" aria-hidden="true"/>
+            <div className="cookie-orbit-ring ring-a" aria-hidden="true"/>
+            <div className="cookie-orbit-ring ring-b" aria-hidden="true"/>
+            <div className="cookie-orbit-ring ring-c" aria-hidden="true"/>
+            <div className="cookie-orbit-center">
+              <div className="cookie-orbit-center-glow" aria-hidden="true"/>
+              <div className="cookie-orbit-core"><img src={ICON} alt="" draggable={false}/></div>
+              <strong>Cookie AI</strong>
+              <span>ONE INTELLIGENT SPACE</span>
+            </div>
+            {orbitItems.map((item,i)=><button
+              key={item.name}
+              type="button"
+              className={`cookie-orbit-node node-${i} ${active===item.name?"is-active":""}`}
+              onClick={(e)=>{e.stopPropagation();setActive(item.name)}}
+              aria-pressed={active===item.name}
+              aria-label={item.name+" capability"}
+            >
+              <span className="cookie-orbit-node-dot" aria-hidden="true"/>
+              <b>{item.name}</b>
+              <small>{item.tag}</small>
+            </button>)}
+          </div>
+          <div className="cookie-hero-visual-note"><span>DRAG</span><i/> <span>ROTATE</span><i/> <span>SELECT A CAPABILITY</span></div>
+        </div>
       </section>
 
-      <section className="cookie-landing-showcase" aria-label="Cookie capabilities">
-        <div className="cookie-landing-showcase-copy">
-          <span>ONE WORKSPACE</span>
-          <h2>From a blank page<br/>to something <em>useful.</em></h2>
-          <p>Cookie is designed around the task in front of you—not around a wall of AI buttons.</p>
+      <section className="cookie-landing-focus" aria-live="polite">
+        <div className="cookie-focus-label">IN FOCUS · {activeItem.tag}</div>
+        <div className="cookie-focus-name">{activeItem.name}</div>
+        <p>{activeItem.detail}</p>
+        <button type="button" onClick={onStart}>Try it in Cookie <ArrowRight size={15}/></button>
+      </section>
+
+      <section className="cookie-landing-capabilities" id="capabilities">
+        <div className="cookie-section-intro">
+          <span>01 / CAPABILITIES</span>
+          <h2>Less tool switching.<br/><em>More momentum.</em></h2>
+          <p>Cookie brings the pieces of real work closer together, so the workflow can stay in one place.</p>
         </div>
-        <div className="cookie-landing-activity">
-          <div className="cookie-landing-line"><i/>Ask a question <b>→</b></div>
-          <div className="cookie-landing-line"><i/>Research & compare <b>→</b></div>
-          <div className="cookie-landing-line"><i/>Attach a file <b>→</b></div>
-          <div className="cookie-landing-line"><i/>Build & ship <b>→</b></div>
+        <div className="cookie-capability-list">
+          <button type="button" onClick={()=>{setActive("Chat");onStart()}} className="cookie-capability-row">
+            <span className="cookie-capability-index">01</span><span><b>Chat</b><small>Ask, plan, explain, brainstorm.</small></span><ArrowRight size={17}/>
+          </button>
+          <button type="button" onClick={()=>{setActive("Research");onStart()}} className="cookie-capability-row">
+            <span className="cookie-capability-index">02</span><span><b>Research</b><small>Search, compare evidence, synthesize findings.</small></span><ArrowRight size={17}/>
+          </button>
+          <button type="button" onClick={()=>{setActive("Code");onStart()}} className="cookie-capability-row">
+            <span className="cookie-capability-index">03</span><span><b>Code</b><small>Build with a production-minded workflow.</small></span><ArrowRight size={17}/>
+          </button>
+          <button type="button" onClick={()=>{setActive("Files");onStart()}} className="cookie-capability-row">
+            <span className="cookie-capability-index">04</span><span><b>Files</b><small>Bring documents, images, and data into context.</small></span><ArrowRight size={17}/>
+          </button>
+          <button type="button" onClick={()=>{setActive("Projects");onStart()}} className="cookie-capability-row">
+            <span className="cookie-capability-index">05</span><span><b>Projects</b><small>Keep longer-running work connected.</small></span><ArrowRight size={17}/>
+          </button>
         </div>
       </section>
 
-      <section className="cookie-landing-features">
-        {features.map(({icon:Icon,title,text})=><article key={title}>
-          <div className="cookie-landing-feature-icon"><Icon size={18}/></div>
-          <h3>{title}</h3>
-          <p>{text}</p>
-        </article>)}
+      <section className="cookie-landing-space" id="space">
+        <div className="cookie-space-copy">
+          <span>02 / COOKIE SPACE</span>
+          <h2>A workspace<br/><em>with depth.</em></h2>
+          <p>Cookie Space gives your work room to spread out. Move through connected areas instead of forcing every task into a single flat view.</p>
+          <button className="cookie-landing-text" type="button" onClick={onStart}>Enter Cookie Space <ArrowRight size={15}/></button>
+        </div>
+        <div className="cookie-space-stage" aria-label="Cookie Space concept preview">
+          <div className="cookie-space-backdrop" aria-hidden="true"/>
+          <div className="cookie-space-axis axis-x" aria-hidden="true"/>
+          <div className="cookie-space-axis axis-y" aria-hidden="true"/>
+          <div className="cookie-space-word word-chat" onClick={()=>setActive("Chat")}>CHAT</div>
+          <div className="cookie-space-word word-research" onClick={()=>setActive("Research")}>RESEARCH</div>
+          <div className="cookie-space-word word-code" onClick={()=>setActive("Code")}>CODE</div>
+          <div className="cookie-space-word word-files" onClick={()=>setActive("Files")}>FILES</div>
+          <div className="cookie-space-word word-projects" onClick={()=>setActive("Projects")}>PROJECTS</div>
+          <div className="cookie-space-core"><img src={ICON} alt="" draggable={false}/><span>COOKIE</span></div>
+        </div>
+      </section>
+
+      <section className="cookie-landing-principles" id="principles">
+        <div className="cookie-principle">
+          <span>03 / CALM BY DEFAULT</span>
+          <h3>Quiet when you are thinking.<br/><em>Powerful when you are working.</em></h3>
+        </div>
+        <div className="cookie-principle">
+          <span>04 / DESIGNED FOR DEPTH</span>
+          <h3>Beautiful surfaces matter.<br/><em>But the work stays in front.</em></h3>
+        </div>
+        <div className="cookie-principle">
+          <span>05 / EVERY SCREEN</span>
+          <h3>Responsive from a phone<br/><em>to a wide desktop.</em></h3>
+        </div>
       </section>
 
       <section className="cookie-landing-bottom">
         <img src={ICON} alt="" draggable={false}/>
-        <h2>Ready when you are.</h2>
-        <p>Open Cookie and start with the thing you actually want to do.</p>
+        <h2>Start with the work.</h2>
+        <p>Cookie is ready when you are.</p>
         <button onClick={onStart}>Get started <ArrowRight size={16}/></button>
       </section>
     </main>
 
-    <footer className="cookie-landing-footer"><span>© {new Date().getFullYear()} Cookie AI</span><span>Built for people who make things.</span></footer>
+    <footer className="cookie-landing-footer">
+      <span>© {new Date().getFullYear()} Cookie AI</span>
+      <span>Think · Research · Build · Create</span>
+    </footer>
   </div>;
+}
+
+iv>;
 }
 
 export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:(user:AuthUser)=>void;configError?:string}) {
