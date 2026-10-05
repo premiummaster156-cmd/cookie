@@ -15,7 +15,7 @@
   "categories":["productivity","utilities","education"],
   "prefer_related_applications":false,
   "icons":[
-    {"src":"/icons/cookie-192.svg","sizes":"192x192","type":"image/svg+xml","purpose":"any"},
-    {"src":"/icons/cookie-512.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any"}
+    {"src":"/cookie-ai-icon.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/cookie-ai-icon.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ]
 }
