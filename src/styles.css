@@ -5629,3 +5629,82 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
   font-size:10px;
   line-height:1.45;
 }
+
+/* ===== Code Studio + moderation mobile polish ===== */
+.cs-dev-ai-btn{color:#d9e0ef!important}
+.cs-ai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:220;display:flex;justify-content:flex-end}
+.cs-ai-drawer{width:min(430px,100vw);height:100%;background:#101216;border-left:1px solid rgba(255,255,255,.1);box-shadow:-18px 0 60px rgba(0,0,0,.42);display:flex;flex-direction:column}
+.cs-ai-head{padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:12px;align-items:flex-start}
+.cs-ai-head>div{min-width:0;display:flex;flex-direction:column;gap:3px;flex:1}
+.cs-ai-kicker{display:flex;align-items:center;gap:6px;color:#99a8c5;font:9px ui-monospace;text-transform:uppercase;letter-spacing:.08em}
+.cs-ai-head strong{font:600 13px system-ui;color:#e1e5eb}
+.cs-ai-head small{font:10px/1.4 ui-monospace;color:#707a89}
+.cs-ai-head>button{width:30px;height:30px;border:0;background:transparent;color:#858f9f;display:grid;place-items:center;cursor:pointer}
+.cs-ai-messages{min-height:0;flex:1;overflow:auto;padding:14px}
+.cs-ai-empty{min-height:100%;display:grid;place-content:center;justify-items:center;text-align:center;gap:7px;color:#667080;padding:25px}
+.cs-ai-empty svg{opacity:.35}
+.cs-ai-empty strong{font:600 14px system-ui;color:#b8c0cc}
+.cs-ai-empty span{font:10px/1.5 ui-monospace;max-width:280px}
+.cs-ai-message{max-width:92%;margin:0 0 12px;display:flex;flex-direction:column;gap:4px}
+.cs-ai-message.user{margin-left:auto;align-items:flex-end}
+.cs-ai-author{font:9px ui-monospace;color:#667181}
+.cs-ai-message p{margin:0;padding:9px 10px;background:#171b20;border:1px solid rgba(255,255,255,.07);color:#cbd2db;font:10px/1.5 ui-monospace;white-space:pre-wrap;word-break:break-word}
+.cs-ai-message.user p{background:#1d2430;color:#e2e7ee}
+.cs-ai-edits{display:flex;flex-wrap:wrap;gap:5px}
+.cs-ai-edits span{padding:4px 6px;border:1px solid rgba(126,211,157,.2);color:#79c99c;background:rgba(126,211,157,.05);font:8px ui-monospace}
+.cs-ai-composer{padding:10px;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr auto;gap:7px}
+.cs-ai-composer textarea{min-height:66px;max-height:150px;resize:vertical;border:1px solid rgba(255,255,255,.1);background:#0b0d10;color:#dce1e8;padding:9px;font:10px/1.45 ui-monospace;outline:0}
+.cs-ai-composer button{height:34px;align-self:end;padding:0 11px;border:1px solid rgba(255,255,255,.12);background:#dfe6ff;color:#111722;font:10px ui-monospace;display:flex;align-items:center;gap:6px;cursor:pointer}
+.cs-ai-composer button:disabled{opacity:.45;cursor:not-allowed}
+.moderation-page{height:100%;overflow:auto;padding:28px;box-sizing:border-box}
+.moderation-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}
+.moderation-head h1{margin:5px 0 5px;font-size:25px;letter-spacing:-.03em}
+.moderation-head p{margin:0;color:var(--muted);font-size:12px}
+.moderation-role{padding:5px 8px;border:1px solid var(--line2);border-radius:8px;color:var(--muted);font:10px ui-monospace;text-transform:uppercase}
+.moderation-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:16px;max-width:1000px}
+.moderation-users,.moderation-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.moderation-search{height:42px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--muted)}
+.moderation-search input{flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:12px}
+.moderation-list{max-height:62vh;overflow:auto}
+.moderation-list button{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);padding:10px 12px;display:flex;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}
+.moderation-list button:hover,.moderation-list button.selected{background:var(--hover)}
+.moderation-list span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.moderation-list b{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.moderation-list small{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.moderation-list strong{font-size:9px;color:var(--muted);text-transform:uppercase;text-align:right}
+.moderation-card{padding:18px}
+.moderation-empty{height:100%;min-height:280px;display:grid;place-content:center;justify-items:center;gap:7px;text-align:center;color:var(--muted)}
+.moderation-empty strong{color:var(--text);font-size:13px}
+.moderation-empty span{font-size:11px;max-width:240px;line-height:1.5}
+.moderation-target{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.moderation-target>div{min-width:0}
+.moderation-target span:first-child{color:var(--muted);font-size:10px}
+.moderation-target h2{margin:4px 0;font-size:16px}
+.moderation-target small{color:var(--muted);font-size:10px}
+.moderation-status{padding:5px 7px;border-radius:7px;background:var(--hover);color:var(--muted);font:9px ui-monospace;text-transform:uppercase}
+.moderation-status.banned{color:#df8d8d}.moderation-status.suspended{color:#d9b96f}.moderation-status.active{color:#79c99c}
+.moderation-card label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:10px;margin-bottom:10px}
+.moderation-card textarea,.moderation-card input{border:1px solid var(--line2);background:var(--bg);color:var(--text);outline:0;padding:9px;font:11px/1.45 ui-monospace;border-radius:8px}
+.moderation-card textarea{min-height:90px;resize:vertical}
+.moderation-days{max-width:150px}
+.moderation-actions{display:flex;flex-wrap:wrap;gap:7px}
+.moderation-actions button{height:34px;border:1px solid var(--line2);background:var(--hover);color:var(--text);padding:0 11px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}
+.moderation-actions .danger{background:rgba(180,70,70,.12);color:#e39a9a;border-color:rgba(220,119,119,.25)}
+.moderation-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:760px){
+  .cs-title-actions .cs-dev-ai-btn{display:flex!important;font-size:0!important;width:30px!important;padding:0!important;border:0!important;background:transparent!important}
+  .cs-title-actions .cs-dev-ai-btn svg{width:17px;height:17px}
+  .cs-explorer{width:100vw!important;max-width:none!important;box-shadow:16px 0 50px rgba(0,0,0,.52)}
+  .cs-editor-area{width:100%!important}
+  .cs-tree{overscroll-behavior:contain}
+  .moderation-page{padding:18px 12px 28px}
+  .moderation-head{margin-bottom:14px}
+  .moderation-head h1{font-size:21px}
+  .moderation-head p{font-size:11px}
+  .moderation-layout{grid-template-columns:1fr;gap:10px}
+  .moderation-list{max-height:42vh}
+  .moderation-card{min-height:330px}
+  .cs-ai-backdrop{background:rgba(0,0,0,.62)}
+  .cs-ai-drawer{width:100vw;border-left:0}
+  .cs-ai-composer{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+}
