@@ -231,7 +231,7 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
 }
 function activityIcon(stage:string,tool?:string){
   const t=String(tool||"").toLowerCase();
-  if(stage==="command"||t.includes("terminal")||t.includes("command")) return <TerminalSquare size={13}/>;
+  if(stage==="command"||t.includes("terminal")||t.includes("command")) return <SquareTerminal size={13}/>;
   if(t.includes("web")||stage==="search") return <Globe2 size={13}/>;
   if(t.includes("image")) return <ImagePlus size={13}/>;
   if(t.includes("file")) return <FileSearch size={13}/>;
