@@ -1098,16 +1098,27 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
             throw new Error(String(event.error||"Cookie could not answer right now."));
           }
         };
-        while(true){
+        // The server's "done" event is authoritative. Do not wait for the HTTP
+        // connection to close before rendering the completed answer; some proxies
+        // keep the stream open briefly after sending the final SSE event.
+        while(!doneData){
           const chunk=await reader.read();
           if(chunk.done)break;
           buffer+=decoder.decode(chunk.value,{stream:true});
           const lines=buffer.split("\n");
           buffer=lines.pop()||"";
-          for(const line of lines)processLine(line);
+          for(const line of lines){
+            processLine(line);
+            if(doneData)break;
+          }
         }
-        buffer+=decoder.decode();
-        if(buffer.trim())processLine(buffer);
+        if(!doneData){
+          buffer+=decoder.decode();
+          if(buffer.trim())processLine(buffer);
+        }
+        if(doneData&&reader.cancel){
+          try{await reader.cancel()}catch{}
+        }
         const finalText=String(doneData?.message||assembled||"").trim();
         if(!finalText)throw new Error("Cookie returned an empty response.");
         const finalActivity=streamEventsRef.current.length?streamEventsRef.current.map(x=>({...x,done:true})):[{id:"thinking-final",stage:"thinking",label:"Thinking",detail:"Analyzed the request",done:true}];
