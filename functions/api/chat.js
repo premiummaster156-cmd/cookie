@@ -983,16 +983,38 @@ export async function onRequestPost({ request, env }) {
                 }
                 liveFiles = executed.files;
                 let domain="";
+                let completedLabel=label;
+                let completedDetail=toolDetail(name,args,executed.result);
                 if(name==="web_search"){
                   try{
                     const parsed=JSON.parse(executed.result||"{}");
-                    const urls=[...(Array.isArray(parsed.results)?parsed.results:[]),...(Array.isArray(parsed.pages)?parsed.pages:[])].map(x=>x?.url).filter(Boolean).slice(0,3);
-                    domain=urls.map(u=>{try{return new URL(u).hostname}catch{return ""}}).filter(Boolean).join(" · ");
+                    const rows=[...(Array.isArray(parsed.results)?parsed.results:[]),...(Array.isArray(parsed.pages)?parsed.pages:[])];
+                    const urls=rows.map(x=>x?.url).filter(Boolean);
+                    const domains=[...new Set(urls.map(u=>{try{return new URL(u).hostname.replace(/^www\\./i,"")}catch{return ""}}).filter(Boolean))].slice(0,6);
+                    domain=domains.join(" · ");
+                    completedLabel="Searched "+urls.length+" website"+(urls.length===1?"":"s");
+                    completedDetail=String(args?.query||"Live web search").replace(/\\s+/g," ").trim().slice(0,180);
                   }catch{}
+                } else if(name==="web_fetch"){
+                  try {
+                    const host=new URL(String(args?.url||"")).hostname.replace(/^www\\./i,"");
+                    completedLabel="Read "+host;
+                    completedDetail=String(args?.url||host).slice(0,180);
+                  } catch {}
+                } else if(name==="file_create") {
+                  completedLabel="Created "+String(args?.path||"file").slice(0,120);
+                } else if(name==="file_read") {
+                  completedLabel="Opened "+String(args?.path||"file").slice(0,120);
+                } else if(name==="file_update") {
+                  completedLabel="Updated "+String(args?.path||"file").slice(0,120);
+                } else if(name==="file_delete") {
+                  completedLabel="Removed "+String(args?.path||"file").slice(0,120);
+                } else if(name==="image_generate") {
+                  completedLabel="Created the image";
                 }
                 push({
                   type:"activity",id:activityId,stage:name==="web_search"||name==="web_fetch"?"search":name==="image_generate"?"image":"tool",
-                  tool:name,label,detail:toolDetail(name,args,executed.result),domain,done:true,
+                  tool:name,label:completedLabel,detail:completedDetail,domain,done:true,
                   meta:name.startsWith("file_")?String(args?.path||""):undefined
                 });
                 liveMessages.push({role:"tool",tool_name:name,content:executed.result});
