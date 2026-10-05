@@ -7,7 +7,7 @@ export async function onRequestPost({ request, env }) {
   console.log("[Cookie register] entered");
   if (!dbAvailable(env)) {
     console.error("[Cookie register] DB binding unavailable");
-    return json({ error: "Cookie auth database is not connected. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
+    return json({ error: "Cookie Neon database is not connected. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
   }
 
   const body = await readJson(request);
@@ -21,7 +21,7 @@ export async function onRequestPost({ request, env }) {
   const now = Math.floor(Date.now() / 1000);
 
   try {
-    // Keep production D1 auth resilient when an older users table exists.
+    // Keep the Neon auth schema resilient when an older users table exists.
     // Add only columns that are actually missing, then continue normally.
     const info = await env.DB.prepare("PRAGMA table_info(users)").all();
     const existing = new Set((info.results || []).map(column => String(column.name)));
@@ -110,7 +110,7 @@ export async function onRequestPost({ request, env }) {
 
     if (message.includes("no such column") || message.includes("SQLITE_ERROR") || code === "D1_ERROR") {
       return json({
-        error: "Cookie database schema is out of date. Apply the latest D1 migrations, then try again."
+        error: "Cookie Neon database schema is out of date. Restart the request after the schema is initialized."
       }, 503);
     }
 
