@@ -290,6 +290,55 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
   return <div className="chat-view"><div className="chat-scroll" ref={ref}>{!messages.length?<div className="empty"><div className="empty-cookie"><CookieIcon size={34}/></div><h1>What can I help with?</h1><p>Ask anything, or start with one of these.</p><div className="starter-prompts">{starters.map(([label,prompt,Icon])=>{const I=Icon as React.ComponentType<{size?:number}>;return <button key={String(label)} onClick={()=>onSend(String(prompt))}><span><I size={16}/><b>{String(label)}</b></span><ChevronRight size={15}/></button>})}</div></div>:<div className="messages">{messages.map(m=><div className={"message-row "+m.role} key={m.id}><div className="message-body">{m.role==="assistant"&&m.activity?.length?<ActivityTimeline steps={m.activity} elapsed={m.activityDuration||0}/>:null}{m.attachments?.length?<div className="sent-files">{m.attachments.map(a=><div className="sent-file" key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileIcon size={17}/>}<span>{a.name}</span></div>)}</div>:null}{m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}{m.images?.length?<div className="generated-images">{m.images.map((img,i)=><a className="generated-image" key={img.dataUrl+i} href={img.dataUrl} target="_blank" rel="noreferrer" download={"cookie-image-"+(i+1)+".png"}><img src={img.dataUrl} alt={img.prompt||"Generated image"}/><span>Open image</span></a>)}</div>:null}{m.files?.length?<div className="generated-list">{m.files.map(f=><button key={f.path} className="generated-file" onClick={()=>onDownload(f)}><FileIcon size={18}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:null}{m.sources?.length?<div className="message-sources"><div className="message-sources-head"><Globe2 size={13}/><span>Sources</span><b>{m.sources.length}</b></div><div className="message-sources-list">{m.sources.slice(0,6).map((src,i)=><a key={src.url+i} href={src.url} target="_blank" rel="noreferrer"><span className="source-domain">{src.domain||"web"}</span><strong>{src.title||src.domain||"Source"}</strong></a>)}</div></div>:null}<div className="message-tools"><span>{fmt(m.createdAt)}</span><button onClick={()=>onCopy(m)} aria-label="Copy"><Copy size={14}/></button>{m.role==="assistant"&&<button onClick={()=>onRetry(m)} aria-label="Retry"><RotateCcw size={14}/></button>}<button onClick={onShare} aria-label="Share"><Share2 size={14}/></button><button onClick={()=>onDelete(m)} aria-label="Delete"><Trash2 size={14}/></button></div></div></div>)}{loading&&<div className="message-row assistant streaming-row"><div className="message-body"><ActivityTimeline steps={streamEvents||[]} elapsed={streamElapsed||0} live/>{streamText&&<div className="stream-reply"><Rich text={streamText}/><span className="stream-caret" aria-hidden="true"/></div>}</div></div>}</div>}</div></div>;
 }
 
+function ModerationPage({actorRole,onNotice,onError}:{actorRole:string;onNotice:(x:string)=>void;onError:(x:string)=>void}){
+  const [users,setUsers]=useState<any[]>([]),[query,setQuery]=useState(""),[selected,setSelected]=useState<any|null>(null),[reason,setReason]=useState(""),[days,setDays]=useState("1"),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
+  const load=async()=>{
+    setLoading(true);
+    try{
+      const r=await fetch("/api/admin?mode=moderation",{credentials:"same-origin",cache:"no-store"}),d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d?.error||"Could not load moderation users.");
+      setUsers(Array.isArray(d.users)?d.users:[]);
+    }catch(e:any){onError(e?.message||"Could not load moderation users.");}
+    finally{setLoading(false)}
+  };
+  useEffect(()=>{load()},[]);
+  const act=async(action:string)=>{
+    if(!selected||busy)return;
+    if(["warn","suspend","ban"].includes(action)&&!reason.trim()){onError("Add a moderation reason first.");return}
+    setBusy(true);
+    try{
+      const r=await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({action,email:selected.email,reason:reason.trim(),days:Number(days||1)})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d?.error||"Moderation action failed.");
+      onNotice(action==="warn"?"Warning recorded":action==="suspend"?"Account suspended":action==="ban"?"Account banned":"Account restored");
+      setReason("");await load();setSelected(null);
+    }catch(e:any){onError(e?.message||"Moderation action failed.")}finally{setBusy(false)}
+  };
+  const filtered=users.filter(u=>{const q=query.trim().toLowerCase();return !q||[u.email,u.name,u.username,u.role,u.status].some(v=>String(v||"").toLowerCase().includes(q))}).slice(0,120);
+  return <div className="moderation-page">
+    <div className="moderation-head"><div><span className="section-kicker"><ShieldAlert size={15}/>Moderation</span><h1>Moderation Panel</h1><p>Warn, suspend and ban accounts. Staff cannot change plans, credits or roles.</p></div><span className="moderation-role">{actorRole}</span></div>
+    <div className="moderation-layout">
+      <section className="moderation-users">
+        <div className="moderation-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search users"/></div>
+        <div className="moderation-list">{loading?<div className="page-empty">Loading users…</div>:filtered.map(u=><button key={u.id} className={selected?.id===u.id?"selected":""} onClick={()=>setSelected(u)}><span><b>{u.name||u.username||u.email}</b><small>{u.email}</small></span><span><strong>{String(u.status||"active").toUpperCase()}</strong><small>{u.role}</small></span></button>)}</div>
+        {!loading&&!filtered.length&&<div className="page-empty">No users found.</div>}
+      </section>
+      <section className="moderation-card">
+        {!selected?<div className="moderation-empty"><ShieldCheck size={30}/><strong>Select an account</strong><span>Choose a user to see the moderation actions available to you.</span></div>:<>
+          <div className="moderation-target"><div><span>Selected account</span><h2>{selected.name||selected.username||selected.email}</h2><small>{selected.email}</small></div><span className={"moderation-status "+String(selected.status||"active")}>{String(selected.status||"active")}</span></div>
+          <label>Reason<textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why are you taking this action?"/></label>
+          <label className="moderation-days">Suspension days<input inputMode="numeric" value={days} onChange={e=>setDays(e.target.value.replace(/\D/g,"").slice(0,3)||"1")}/></label>
+          <div className="moderation-actions">
+            <button onClick={()=>act("warn")} disabled={busy}><ShieldAlert size={15}/>Warn</button>
+            {selected.status==="suspended"?<button onClick={()=>act("unsuspend")} disabled={busy}><Check size={15}/>Unsuspend</button>:<button onClick={()=>act("suspend")} disabled={busy}><Archive size={15}/>Suspend</button>}
+            {selected.status==="banned"?<button onClick={()=>act("unban")} disabled={busy}><Check size={15}/>Unban</button>:<button className="danger" onClick={()=>act("ban")} disabled={busy}><Trash2 size={15}/>Ban</button>}
+          </div>
+        </>}
+      </section>
+    </div>
+  </div>;
+}
+
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser}){
   const tabs:[SettingsTab,string,React.ReactNode][]=[
     ["general","General",<SettingsIcon size={17}/>],
