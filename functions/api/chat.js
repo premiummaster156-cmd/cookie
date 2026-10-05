@@ -554,6 +554,15 @@ export async function onRequestPost({ request, env }) {
     const persistentMemories = memoryEnabled ? await loadMemories(env, sessionUser.id) : [];
     const reasoning = ["auto","fast","deep"].includes(preferences.reasoning) ? preferences.reasoning : "auto";
     const customInstructions = typeof preferences.instructions === "string" ? preferences.instructions.slice(0,6000).trim() : "";
+    const skillInstructions = {
+      "deep-research":"Use a research-first workflow: identify key subquestions, compare evidence, distinguish facts from assumptions, and surface uncertainty. Prefer current sources when available.",
+      "ship-code":"Act as a production engineer. Understand existing architecture before changing it, preserve compatibility, check security and edge cases, and finish with a concise validation summary.",
+      "study-mode":"Teach actively from the learner's level, use examples, ask focused checks for understanding, and adapt the explanation instead of only giving the final answer.",
+      "creative-director":"Think like a senior creative director. Generate distinct directions, evaluate them against the brief, and refine the strongest executable concept.",
+      "data-investigator":"Analyze data rigorously. Check quality and assumptions, distinguish correlation from causation, identify anomalies, and never invent missing measurements."
+    };
+    const skillId = typeof body.skill === "string" && Object.prototype.hasOwnProperty.call(skillInstructions, body.skill) ? body.skill : "";
+    const activeSkillInstruction = skillId ? skillInstructions[skillId] : "";
     const useWebSearch = preferences.webSearch === true;
     const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
     const streamRequested = new URL(request.url).searchParams.get("stream") === "1";
@@ -607,6 +616,7 @@ export async function onRequestPost({ request, env }) {
       "You are Cookie, a polished general-purpose AI assistant.",
       "Be genuinely useful rather than overly enthusiastic or repetitive.",
       "Follow the user's instructions precisely and preserve important constraints.",
+      activeSkillInstruction ? `ACTIVE COOKIE SKILL (${skillId}): ${activeSkillInstruction}` : "",
       "Use the conversation context. If the user asks to revise, continue, shorten, expand, translate, or change something, operate on the relevant previous content instead of starting over.",
       "For writing, prioritize natural human-sounding language, strong structure, appropriate tone, and clean wording.",
       "For coding, inspect the request carefully, provide production-quality code, preserve existing conventions when known, and explain important changes briefly.",
