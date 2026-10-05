@@ -5759,3 +5759,5 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 @media(prefers-reduced-motion:reduce){
   .space-node{transition:none}
 }
+
+.cookie-viz{margin:14px 0 16px;width:min(720px,100%);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:11px 0 8px}.cookie-viz figcaption{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}.cookie-viz figcaption strong{font-size:12px}.cookie-viz figcaption small{font:9px ui-monospace;color:var(--muted)}.cookie-viz-scroll{width:100%;overflow-x:auto;overflow-y:hidden}.cookie-viz svg{display:block;width:100%;min-width:520px;height:auto;overflow:visible}.viz-axis{stroke:rgba(255,255,255,.11);stroke-width:1}.viz-label{fill:#727b87;font:9px ui-monospace}.viz-value{fill:#b8c0ca;font:9px ui-monospace}.viz-bar{fill:currentColor;opacity:.78}.viz-line{stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.viz-dot{fill:var(--bg);stroke:currentColor;stroke-width:2}
