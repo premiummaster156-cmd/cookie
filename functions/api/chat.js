@@ -107,6 +107,14 @@ function planRank(plan) {
   const p=String(plan||"free").toLowerCase();
   return p==="max" ? 2 : (p==="pro"||p==="plus") ? 1 : 0;
 }
+function modelRequiredRank(mode){
+  return mode==="ultra"?2:mode==="max"?1:0;
+}
+function isPrivilegedUser(user){
+  const email=String(user?.email||"").trim().toLowerCase();
+  const role=String(user?.role||"user").toLowerCase();
+  return email==="cookie.ai.noreply@gmail.com"||["owner","admin","staff"].includes(role);
+}
 
 function safeCalculate(expression) {
   const normalized=String(expression||"").replace(/,/g,"").replace(/\^/g,"**").trim().slice(0,300);
@@ -338,7 +346,7 @@ function inferModel({mode, text, attachments, gptProfile, requestedTool}) {
   const hasImages = Array.isArray(attachments) && attachments.some(a => a && a.kind === "image");
   const codeLike = /\b(code|coding|program|programming|debug|bug|stack trace|typescript|javascript|react|next\.js|python|java|swift|kotlin|rust|go|sql|api|sdk|git|github|css|html|regex|function|class|component|repository|repo|pull request|commit)\b/i.test(q);
   const researchLike = requestedTool === "deep-research" || /\b(research|sources?|cite|citation|latest|current|today|news|compare evidence|look up|investigate)\b/i.test(q);
-  if (hasImages) return "kimi-k2.7-code:cloud";
+  if (hasImages) return mode==="ultra" ? "kimi-k2.7-code:cloud" : "glm-5.3-flash:cloud";
   if (gptProfile?.id === "code-expert" || codeLike) return "kimi-k2.7-code:cloud";
   if (mode === "ultra") return "kimi-k2.7-code:cloud";
   if (mode === "max" || researchLike) return "deepseek-v4-pro:cloud";
@@ -363,6 +371,7 @@ function thinkingFor(mode, reasoning, model) {
 
 function providerModelFallbacks(model) {
   const ordered = [
+    "glm-5.3-flash:cloud",
     "glm-5.3:cloud",
     "deepseek-v4-pro:cloud",
     "kimi-k2.7-code:cloud",
@@ -506,6 +515,9 @@ export async function onRequestPost({ request, env }) {
       ? preferences.responseMode
       : "standard";
     const profile = profiles[mode];
+    if(!isPrivilegedUser(sessionUser) && modelRequiredRank(mode)>planRank(plan)){
+      return json({error:(mode==="ultra"?"CPT-3 ULTRA requires a MAX plan.":"CPT-2 MAX requires a PRO or MAX plan."),code:"MODEL_PLAN_REQUIRED",requiredPlan:mode==="ultra"?"max":"pro"},402);
+    }
     model = profile.model;
     const attachments = Array.isArray(body?.attachments) ? body.attachments.slice(0,10) : [];
     let generatedFiles = [];
