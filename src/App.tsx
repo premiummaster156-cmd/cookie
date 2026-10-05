@@ -9,12 +9,12 @@ import {
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine,
-  AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
+  AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound, ShieldAlert, ShieldCheck,
   Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal
 } from "lucide-react";
 
 type Role = "user" | "assistant";
-type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "settings" | "help";
+type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "settings" | "help" | "moderation";
 type SettingsTab = "general" | "personalization" | "data" | "notifications" | "voice" | "account" | "about";
 type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; data:string; size:number };
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
@@ -580,7 +580,6 @@ function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Cha
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
   if(view==="code") return <CodeStudioPage/>;
-  if(view==="moderation") return <ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>;
   if(view==="projects") return <ProjectsPage/>;
   if(view==="gpts") return <GPTsPage onOpen={()=>{}} plan="free"/>;
   if(view==="work") return <WorkPage onStart={onPrompt}/>;
@@ -1104,7 +1103,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>;
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="moderation"?<ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
   if(String(view)==="code"&&canSeeCodeStudio) return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <div className="cookie-app"><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
