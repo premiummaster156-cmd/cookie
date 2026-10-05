@@ -379,7 +379,8 @@ function providerModelFallbacks(model) {
     "minimax-m3:cloud",
     "gpt-oss:120b-cloud",
     "deepseek-v4-flash:cloud",
-    "qwen3-coder:480b-cloud"
+    "qwen3-coder:480b-cloud",
+    "gemma4:cloud"
   ];
   return [model, ...ordered.filter(x => x !== model)];
 }
@@ -792,18 +793,20 @@ export async function onRequestPost({ request, env }) {
             name.startsWith("memory_") ? "Using memory…" :
             name.startsWith("file_") ? "Preparing files…" :
             "Working…";
-          const toolLabel = name =>
-            name === "image_generate" ? "Generate image" :
-            name === "web_search" ? "Search the web" :
-            name === "web_fetch" ? "Read webpage" :
-            name === "memory_search" ? "Search memory" :
-            name === "memory_save" ? "Save memory" :
-            name === "memory_delete" ? "Delete memory" :
-            name === "file_create" ? "Create file" :
-            name === "file_read" ? "Read file" :
-            name === "file_update" ? "Update file" :
-            name === "file_delete" ? "Delete file" :
-            String(name || "Use tool");
+          const toolLabel = (name,args) => {
+            const a=args && typeof args==="object" ? args : {};
+            if(name==="image_generate") return "Creating the image";
+            if(name==="web_search") return "Searching for “"+String(a.query||"what you need").replace(/\s+/g," ").trim().slice(0,110)+"”";
+            if(name==="web_fetch") { try { return "Reading "+new URL(String(a.url||"")).hostname.replace(/^www\./i,""); } catch { return "Reading the webpage"; } }
+            if(name==="memory_search") return "Checking Cookie memory";
+            if(name==="memory_save") return "Saving this to memory";
+            if(name==="memory_delete") return "Updating Cookie memory";
+            if(name==="file_create") return "Creating "+String(a.path||"the file").slice(0,120);
+            if(name==="file_read") return "Opening "+String(a.path||"the file").slice(0,120);
+            if(name==="file_update") return "Updating "+String(a.path||"the file").slice(0,120);
+            if(name==="file_delete") return "Removing "+String(a.path||"the file").slice(0,120);
+            return "Working on "+String(name||"the task").replace(/_/g," ").slice(0,120);
+          };
           const toolDetail = (name,args,result) => {
             const a=args && typeof args==="object" ? args : {};
             if(name==="web_search") return String(a.query||"Searching live web").slice(0,180);
@@ -817,10 +820,10 @@ export async function onRequestPost({ request, env }) {
           try {
             let thinkingShown = false;
             if (useWebSearch) {
-              push({type:"activity",id:"research",stage:"search",label:"Searched the web",detail:"Live web research was used for this request",tool:"web_search",done:true});
+              push({type:"activity",id:"research",stage:"search",label:"Searching the web",detail:"Looking for current information",tool:"web_search",done:false});
             }
             if (requestedTool==="deep-research") {
-              push({type:"activity",id:"research-tool",stage:"search",label:"Deep research",detail:"Collected live research before answering",tool:"web_search",done:true});
+              push({type:"activity",id:"research-tool",stage:"search",label:"Starting deep research",detail:"Preparing live sources",tool:"web_search",done:false});
             }
             for (let turn = 0; turn < 12; turn++) {
               push({type:"status",status:turn===0?"Thinking…":"Continuing…"});
@@ -859,7 +862,7 @@ export async function onRequestPost({ request, env }) {
                     let errorData = null;
                     try { errorData = raw ? JSON.parse(raw) : null; } catch {}
                     console.error("[Cookie stream "+candidate+"]", upstream.status, errorData?.error || raw?.slice(0,300));
-                    push({type:"activity",id:"provider-"+candidate.replace(/[^a-z0-9]+/gi,"-"),stage:"provider",label:"Model unavailable",detail:candidate+" returned "+upstream.status,done:true,tool:"provider"});
+                    // Keep provider retries out of the user-facing activity stream; show one concise fallback step below if needed.
                     continue;
                   }
 
@@ -917,7 +920,7 @@ export async function onRequestPost({ request, env }) {
               if (!upstream?.ok || !assistantMessage) {
                 if (env?.AI && typeof env.AI.run === "function") {
                   try {
-                    push({type:"activity",id:"provider-fallback",stage:"provider",label:"Cloud fallback",detail:"Switching to Cloudflare Workers AI",done:false});
+                    push({type:"activity",id:"provider-fallback",stage:"provider",label:"Switching to Cookie fallback",detail:"Ollama Cloud was unavailable, so Cookie is switching providers",done:false});
                     const fallback = await env.AI.run("@cf/zai-org/glm-4.7-flash", {messages:liveMessages,stream:true});
                     const reader2 = fallback?.getReader?.();
                     if (reader2) {
@@ -967,7 +970,7 @@ export async function onRequestPost({ request, env }) {
                 if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
                 if (!name) continue;
                 const activityId="tool-"+turn+"-"+Math.random().toString(36).slice(2,8);
-                const label=toolLabel(name);
+                const label=toolLabel(name,args);
                 push({type:"status",status:statusForTool(name)});
                 push({type:"activity",id:activityId,stage:name==="web_search"||name==="web_fetch"?"search":name==="image_generate"?"image":"tool",tool:name,label,detail:toolDetail(name,args),done:false});
                 let executed;
