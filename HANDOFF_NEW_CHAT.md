@@ -3,46 +3,50 @@
 Updated: 2026-10-05
 Repository: premiummaster156-cmd/cookie
 Branch: main
-Latest main HEAD verified before this handoff: 375dbc0c55038b6e6889bfa31891693bb6e06225
+Current main HEAD: 6234d3cf7fadda907d51c64472b8656026ee6737
 Production: https://cookie-8bi.pages.dev
 
-## READ THIS FIRST
+## READ FIRST
 
-This is the ONLY handoff file. There are no other handoff files currently in the repository.
+This is the ONLY handoff file. Do not create additional handoff files unless the user explicitly asks.
 
-User wants direct implementation, not long explanations. Always fetch the latest file and SHA before editing. Never claim a build/deployment succeeded without checking CI/deployment evidence.
+User wants direct implementation, short progress updates, and concrete results. Do not repeat project history unless needed.
 
-Technical work is normally in English.
+Always refetch the current file + SHA before editing. Never claim a build/deployment succeeded without checking actual CI/deployment evidence.
 
-FREE-ONLY RULE:
-- Do not add paid OpenAI/Anthropic/etc APIs or paid dependencies unless the user explicitly asks.
-- Do not expose secrets.
-- Do not invent functionality or fake terminal output.
-- Do not silently introduce D1 where the core application is Neon-backed.
+FREE-ONLY:
+- Do not introduce paid APIs/services unless explicitly requested.
+- Never expose secrets.
+- Never fake tools, terminal output, AI review, execution, or deployment.
+- Core database is Neon PostgreSQL. Do not silently introduce D1.
 
-## PERMANENT “UPGRADING TIME” RULE
+---
 
-Whenever the user says “upgrading time”, interpret it as a new Cookie AI product release.
+# PERMANENT “UPGRADING TIME” RULE
+
+When the user says “upgrading time”, treat it as a new Cookie AI release.
 
 Every upgrade must:
-1. Add at least 2 meaningful new features or substantial improvements.
-2. Do deep current research into the newest AI/product/UI capabilities before choosing upgrades when research is relevant.
-3. Include backend/system improvements AND UI/UX/interaction improvements when appropriate.
-4. Study current leading AI products and catch up to useful modern capabilities.
-5. Keep every subsystem isolated so new work does not break existing work.
-6. Keep one coherent Cookie design system.
-7. Support desktop, laptop/tablet, Android, iPhone/iPad, and major browsers. Do not optimize only for iPhone.
-8. Explore genuinely useful 3D/spatial UI opportunities. Do not add fake decorative 3D.
-9. Test/build affected systems before calling the upgrade complete.
-10. Never fake an AI capability, tool execution, terminal result, review result, or deployment.
-11. Preserve exact Cookie branding/artwork.
-12. Prefer real reusable infrastructure over duplicate one-off systems.
+1. Add at least 2 meaningful features/substantial improvements.
+2. Do deep current research into leading AI products, newest releases, agent UX, UI/3D/spatial patterns, and developer tooling when relevant.
+3. Include UI/UX + interaction logic, not only backend.
+4. Catch Cookie up to useful modern capabilities.
+5. Keep systems isolated and avoid regressions.
+6. Preserve one coherent Cookie design system.
+7. Support desktop, laptop/tablet, Android, iPhone/iPad, and major browsers.
+8. Explore useful real 3D/spatial UI; never add decorative fake 3D just for appearance.
+9. Test/build affected systems before calling the release complete.
+10. Never fake an AI capability or execution result.
+11. Preserve the exact Cookie branding artwork.
+12. Prefer reusable infrastructure over duplicate one-off implementations.
 
-The user recently asked for deep research for 20 minutes and actions/upgrades in 15 minutes. Time estimates should never be fabricated; perform as much research/action as tools allow and report what was actually verified.
+User previously asked for “deep search for 20 minutes and actions/upgrades in 15 minutes.” Do not fabricate time spent. Research/action as deeply as available tools permit and report what was actually verified.
 
-## PRODUCT DIRECTION
+---
 
-Cookie is a React + Vite + TypeScript AI assistant with:
+# PRODUCT
+
+Cookie AI is a React + Vite + TypeScript AI assistant with:
 - Chat
 - Work
 - Search
@@ -54,43 +58,49 @@ Cookie is a React + Vite + TypeScript AI assistant with:
 - Settings
 - Auth
 - Sharing
-- AI web research/tools
-- Spatial UI (“Cookie Space”)
+- Web research/tools
+- Cookie Space / spatial UI
 
-Design goals:
-- premium, modern, coherent
-- not generic “AI-generated dashboard” design
-- avoid excessive cards
+Design direction:
+- premium and coherent
+- not generic AI-generated dashboard
+- avoid excessive rectangular cards
 - avoid random glowing blobs/orbs
-- avoid fake blur pretending to be Liquid Glass
-- functional controls can have glass/material treatment; content should remain readable and comparatively clean
-- hierarchy, spacing, typography and interaction must remain consistent
-- responsive/adaptive, not separate ugly platform versions
+- avoid fake blur marketed as Liquid Glass
+- useful spatial/3D UI
+- functional controls can use material/glass treatment
+- clean typography/hierarchy
+- responsive/adaptive across platforms
 
-## CURRENT ARCHITECTURE
+---
 
-Core application:
-React/Vite/TypeScript.
+# CURRENT ARCHITECTURE
 
-Core application database:
-Neon PostgreSQL through @neondatabase/serverless in functions/api/_db.js.
+Frontend:
+React + Vite + TypeScript.
 
-Important Neon files:
+Backend:
+Cloudflare Pages Functions.
+
+Database:
+Neon PostgreSQL through @neondatabase/serverless.
+Important:
 - functions/api/_db.js
 - functions/api/auth/_auth.js
 
-IMPORTANT CURRENT STATE:
-Code Studio’s functions/api/codebase.js still directly uses env.DB/D1-style prepared statements and its own codebase schema. Do NOT assume Code Studio has been migrated to Neon just because the core auth/chat database is Neon. Inspect before changing this boundary.
-
 Workers AI:
-- wrangler.toml has an AI binding.
-- Used for image generation/AI capabilities where the current implementation requires it.
-- Do not add paid APIs merely to replace free infrastructure.
+- wrangler.toml contains AI binding.
+- Used for supported image/AI capabilities.
+- Do not replace free infrastructure with paid providers.
 
-## AUTH
+IMPORTANT:
+Code Studio backend has its own legacy D1-style/env.DB boundary in functions/api/codebase.js. Do not assume Code Studio is Neon-backed just because auth/core database is Neon. Inspect before changing this.
 
-Auth is email/password + verification/reset flows.
-No Google OAuth requirement.
+---
+
+# AUTH / ACCOUNT MODEL
+
+Auth includes email/password, verification and reset/session flows.
 
 Users include:
 - id
@@ -109,17 +119,19 @@ Users include:
 - moderation_note
 - login_failures
 - locked_until
-- created_at/updated_at
+- timestamps
 
-Do not casually change production auth schema.
-
-Owner email:
+Owner:
 cookie.ai.noreply@gmail.com
 
-Developer email:
+Developer:
 illu.dev.official@gmail.com
 
-## ROLES / PERMISSIONS
+Do not casually alter production auth schema.
+
+---
+
+# ROLES / PERMISSIONS
 
 Roles:
 - user
@@ -127,11 +139,12 @@ Roles:
 - staff
 - admin
 - owner
-- developer/member roles in Code Studio
+- separate Code Studio developer/member permissions
 
-User’s explicit rule:
+USER'S EXPLICIT RULE:
 STAFF MUST NOT GET CODE STUDIO.
-Staff should only have moderation actions such as:
+
+Staff may only perform moderation actions such as:
 - warn
 - suspend
 - ban
@@ -139,43 +152,38 @@ Staff should only have moderation actions such as:
 - moderation notes/audit
 
 Staff must NOT:
-- change another account’s plan
+- change another account's plan
 - change credits
 - change AI limits
-- change account roles
+- change roles
+- edit codebase/projects
 - use Code Studio
-- edit project/codebase
 
 Owner/admin retain account-management capabilities.
-Developer access is separate and should be limited to Code Studio/workspace capabilities actually granted.
+Developer/member access is separate and must only grant explicitly permitted workspace/code capabilities.
 
-Current admin.js has:
-- roleOf()
-- canManage()
-- canChangeRoles()
-- canManageAccounts()
-- canModerateTarget()
-The backend must remain stricter than the UI.
+Backend permissions must be stricter than frontend visibility.
 
-## CODE STUDIO
+---
+
+# CODE STUDIO
 
 Frontend:
-- src/CodeStudioPage.tsx
+src/CodeStudioPage.tsx
+Current SHA:
+c337f7672e4591dc54f7acfce3ee848696add119
+
 Backend:
-- functions/api/codebase.js
+functions/api/codebase.js
+Current SHA:
+531da917b878434bdf9d214f5f5e317475e5b5ce
 
-Current verified source SHAs:
-- src/CodeStudioPage.tsx: c337f7672e4591dc54f7acfce3ee848696add119
-- functions/api/codebase.js: 531da917b878434bdf9d214f5f5e317475e5b5ce
-
-Current Code Studio capabilities:
-- standalone surface
-- Back to Cookie AI
+Existing capabilities:
+- standalone Code Studio
 - workspace sync
-- file tree
+- file explorer
 - file CRUD/rename/duplicate/delete
-- revisions
-- diff
+- revisions/diffs
 - deterministic checks
 - AI review
 - review persistence
@@ -189,92 +197,107 @@ Current Code Studio capabilities:
 - privileged account controls
 - protected internals hidden
 - .env/.dev.vars hidden
-- .md files hidden in Code Studio explorer
+- .md files hidden in explorer
 
-IMPORTANT RECENT FIX:
-Folder tree now has local open state per folder. Opening one folder must NOT recursively open every other folder.
+Recent fixes:
+- folder open state is local per folder; opening one folder must NOT open nested folders automatically.
+- selecting a file on mobile should close Explorer/sidebar so editor gets available space.
+- fake terminal execution was removed. Never fabricate terminal output.
+- staff account-control access was removed; only owner/admin should have account-management controls.
+- Code Studio should be hidden from non-privileged users.
 
-MOBILE FILE SELECTION RULE:
-Selecting a file on mobile should close the Explorer/sidebar so the editor gets the available screen.
+## CODE STUDIO AI REVIEW — HIGH PRIORITY
 
-CODE STUDIO AI REVIEW:
-User intentionally changed a correct file into a broken file and the system previously said “approved.” This is unacceptable.
-Review must fail closed when uncertain and combine deterministic checks with actual AI review. Never show “Approved” if the review could not actually validate the change.
+User deliberately broke a correct file and the system previously said “Approved.” This is unacceptable.
 
-FAKE TERMINAL:
-Removed fake terminal execution. Do not display fabricated command output.
-A real terminal requires an actual execution backend; do not pretend.
+Review must:
+- run real deterministic checks
+- run actual AI review when configured
+- fail closed when review cannot reliably validate the change
+- never display Approved when AI review did not actually happen
+- preserve review evidence
+- catch obvious TS/JS/JSX syntax/semantic problems
+- never bypass protected paths
 
-## CODE STUDIO DEV AI
+## DEV AI
 
-Required direction:
+Required product direction:
 Developers should be able to chat with a Cookie Dev AI inside Code Studio.
 
-The Dev AI should:
-- understand workspace files
-- inspect relevant files
+Dev AI should:
+- inspect workspace files
+- understand relevant code
 - explain changes
 - make requested workspace edits
 - respect protected files/permissions
-- create revisions/audit records
-- send changes through review/safety checks
+- create revisions/audit entries
+- send edits through review/safety checks
 - never bypass protected internals
-- never give staff Code Studio access
+- never grant staff Code Studio access
 
-If this is not fully implemented in current main, it is an unfinished task.
+If current main does not fully implement this, it remains unfinished.
 
-## SPATIAL UI / COOKIE SPACE
+---
 
-A new “Space” view was added.
+# COOKIE SPACE / SPATIAL UI
 
-Current verified implementation in src/App.tsx includes:
-- Chat
-- Work
-- Projects
-- Search
-- Library
-- GPTs
-- Code Studio only when allowed
-- Moderation only when allowed
+Cookie Space was introduced and repeatedly redesigned based on user feedback.
 
-Current Space behavior:
-- full available page, no cards underneath
-- no giant boxed dashboard
-- spatial markers rather than rectangular cards
-- CSS 3D perspective
-- translateZ depth
+Rejected first design:
+- giant box
+- generic AI dashboard
+- cards below the map
+- looked AI-generated
+- not actually navigable
+
+Current direction:
+- full-page spatial surface
+- no cards underneath
+- spatial markers
+- CSS 3D perspective/depth
+- translateZ
 - orbit layers
 - spatial floor/grid
-- movable camera layer
+- camera layer
 - pointer/touch drag
-- desktop mouse drag
-- wheel/trackpad movement
-- Center button
-- access-aware nodes
+- mouse drag
+- wheel/trackpad
+- Center control
+- only show workspaces the current account can access
 
-Current SpatialHub implementation uses:
-- camera {x,y,rx,ry}
-- drag state
-- pointer capture
-- bounded camera pan
-- wheel updates
-- nodes positioned in a 3D scene
+Current implementation uses camera state:
+- x
+- y
+- rx
+- ry
 
-USER FEEDBACK:
-The user wants to drag the SCREEN/view sideways/up/down so off-screen workspace objects can be reached. The current camera is better than rotating the objects, but it is still bounded. Next improvement should be a genuinely camera/world-space implementation:
+Current source:
+src/App.tsx SHA 17f2433962bf6210f4be67c4d0c01b09f220a32e
+src/styles.css SHA e154afc2e15c58088014ab63fa583a090df55584
+
+## LATEST USER FEEDBACK
+
+User wants to move the SCREEN/view sideways/up/down so objects off-screen can be reached.
+
+We added a camera/pan layer, but it is still bounded and should be improved.
+
+Next Space upgrade:
+- true world coordinates
+- effectively infinite/free camera
 - smooth/inertial panning
-- zoom
-- focus/select object
-- optional double-tap/enter-to-focus
-- world coordinates rather than arbitrary screen bounds
-- preserve object positions
-- no forced “fit everything” layout
+- pinch/scroll zoom
+- mouse wheel/trackpad zoom
+- object selection/focus
+- double tap/click or Enter to focus
+- preserve spatial object positions
+- optional keyboard navigation
 - desktop + Android + iPhone/iPad touch
-- keyboard/mouse/trackpad support
+- no forced “fit everything”
+- no return to generic card dashboard
 
-Do not return to the previous generic card layout.
+---
 
-## ADAPTIVE AI EFFORT
+# ADAPTIVE AI EFFORT
 
 Added:
 - Light
@@ -282,26 +305,28 @@ Added:
 - High
 - Ultra
 
-Frontend persists effort locally and sends it with chat preferences.
-Backend chat routing maps effort to reasoning behavior.
+Frontend persists effort and sends it with chat preferences.
+Backend maps effort to reasoning behavior.
 
-Do not make effort cosmetic. It should affect actual routing/reasoning where the provider supports it.
+Do not make this cosmetic.
 
-## CHAT / AI SYSTEM
+---
 
-Current functions/api/chat.js SHA:
+# CHAT / AI
+
+functions/api/chat.js current SHA:
 bcd46de497a8b4c6a2346bf3694c8d84fdbbd380
 
-Current chat tools include:
+Current tools include:
 - file_create
 - file_read
 - file_update
 - file_delete
 - web_search
 - web_fetch
-- memory-related functionality where already present
+- memory functionality where already present
 
-Current GPT profiles:
+GPT profiles:
 - Study Coach
 - Code Expert
 - Writing Partner
@@ -309,102 +334,115 @@ Current GPT profiles:
 - Data Analyst
 - Creative Studio
 
-GPTs must use Cookie’s existing model pipeline. Do not reintroduce external GPT-5.1/OpenAI API branding.
+GPTs use Cookie's existing model pipeline.
+Do not reintroduce external GPT-5.1/OpenAI API branding.
 
-User’s free-only requirement remains strict.
+Free-only remains strict.
 
-## IMPORTANT CURRENT UI BUG — CONTINUE HERE
+---
 
-The user reported:
+# CRITICAL UNRESOLVED CHAT BUG — CONTINUE HERE FIRST
+
+User reported:
 “you finished ur msg but it’s still loading to me i don’t see ur message”
 
-Meaning the Cookie UI can apparently finish/receive the assistant response but still visually remain in a loading state or fail to reveal the final assistant message.
+Screenshot shows a Cookie/ChatGPT-like state where a blue loading dot remains even though the assistant response appears to have completed/been generated.
 
-This is a HIGH PRIORITY unresolved bug.
+Treat this as a real state-machine bug, NOT a spinner styling problem.
 
-Next chat must inspect:
+Inspect:
 - chat streaming lifecycle
-- loading state transitions
-- abort controller
+- loading state
+- AbortController
 - SSE completion event
 - final message insertion
 - streamText clearing
 - streamStatus clearing
-- assistant message activity completion
-- render conditions in ChatView
-- any race between final SSE event and setLoading(false)
-- stale state closures
-- error/fallback completion paths
-
-Do not merely change the spinner CSS. Trace the state machine and fix the actual lifecycle.
+- activity completion
+- render conditions
+- stale React state closures
+- race between final SSE event and setLoading(false)
+- provider fallback completion
+- error completion
+- abort completion
+- cleanup on chat switch/unmount
 
 ChatView currently renders:
-- ActivityTimeline for assistant activity
+- ActivityTimeline
 - Rich assistant content
 - generated images/files/sources
 - user content
 - composer
 
-Test:
+Required tests:
 1. short response
 2. long response
 3. provider fallback
 4. web tool response
 5. file tool response
-6. aborted response
-7. error response
-8. mobile Safari
-9. desktop Chromium
-10. reopening the chat after response
+6. abort
+7. error
+8. iPhone Safari
+9. Android Chrome
+10. desktop Chromium
+11. reopen chat after response
 
-## MOBILE COMPOSER
+Do not declare fixed until the actual state transition is verified.
 
-Known fixes:
-- composer width fixed
-- textarea starts around 52px
-- submit resets height
-- Enter send behavior
-- outside row-menu click closes menus
-- only one row menu open at a time
+---
 
-Relevant commits:
-- f423f1ad043d0c87ee2bd0cb4af29da602145b4a
-- 9dfe41d5e4dcc18b8351caefa339608d67e016e1
+# UI / UX RULES
 
-Still verify real behavior on:
-- iPhone Safari
-- Android Chrome
-- desktop
-- keyboard open/close
-- long text
-- send/clear
-- rotation
-- safe-area bottom
+User specifically dislikes:
+- generic AI-generated dashboard
+- giant cards
+- too many rounded cards
+- fake blur
+- random glowing blobs
+- generic blue AI orb
+- overlapping controls
+- content bleeding through menus
+- cramped mobile composer
+- layouts that only work on iPhone
+- decorative 3D without real interaction
 
-## LIQUID GLASS
+Preferred:
+- premium
+- restrained
+- spatial when useful
+- strong typography/hierarchy
+- responsive/adaptive
+- real material/glass where appropriate
+- useful 3D
+- consistent Cookie identity
+- real interaction logic
 
-The user wants actual Liquid Glass-like behavior, not generic backdrop-filter blur.
+3D should communicate:
+- navigation
+- workspace relationships
+- depth
+- focus
+- object position
+not merely “floating cards.”
 
-Third-party library researched:
+---
+
+# LIQUID GLASS
+
+User wants actual Liquid Glass-like behavior, not generic backdrop-filter blur.
+
+Researched third-party project:
 Meapri/liquid-glass-web
 commit:
 1613f8311dbc31bc2331afcfe51a143c56dd6308
 version 0.1.0
 
-This is NOT Apple’s official web engine. Do not describe it as official.
+It is NOT Apple's official web engine.
 
-Important library concepts:
-- GPU/Chromium refraction
-- backdrop/filter processing
-- interactive material
-- auto enhancement
-- device profiles
-- CSS fallback
-- suspend/resume
+Vendor work was started under:
+src/vendor/liquid-glass/
 
-Vendoring was started, but full integration was not completed.
-
-Already-created source blobs included:
+Existing source blobs include some of:
 - types.ts
 - AutoProfile.ts
 - DeviceProfile.ts
@@ -415,7 +453,7 @@ Already-created source blobs included:
 - MapWorker.ts
 - MapWorkerClient.ts
 
-Other engine blobs may or may not exist. Check before creating duplicates:
+Check before adding duplicates:
 - FilterChain.ts
 - DisplacementMap.ts
 - SpecularMap.ts
@@ -427,83 +465,42 @@ Other engine blobs may or may not exist. Check before creating duplicates:
 - Interactive.ts
 - enhance.ts
 
-Target:
-src/vendor/liquid-glass/
-  core/
-  styles/
-  index.ts
-
-Next Liquid Glass tasks:
+Next:
 1. Finish dependency graph.
-2. Inspect WebGL/Safari feature detection.
-3. Verify iOS Safari fallback.
-4. Integrate into React without repeatedly calling autoEnhance().
-5. Track/destroy instances correctly.
-6. Apply material mainly to:
-   - top navigation
-   - sidebar
-   - menus/popovers
-   - composer/control layer
-   - GPT navigation/control layer
-   - Work controls
-7. Do NOT glass message content.
-8. Remove conflicting fake glass CSS once real engine works.
-9. Keep accessibility/reduced motion/transparency fallbacks.
+2. Verify WebGL/Safari detection.
+3. Verify iOS fallback.
+4. Integrate React lifecycle correctly.
+5. Avoid repeated autoEnhance calls.
+6. Destroy/unregister instances.
+7. Apply material mainly to nav/sidebar/popovers/composer/control surfaces.
+8. Do NOT glass message content.
+9. Remove conflicting fake glass CSS.
+10. Keep reduced-motion/accessibility fallbacks.
 
-## UI DESIGN RULES
+---
 
-User specifically dislikes:
-- generic AI-generated dashboard layouts
-- giant cards
-- excessive rounded cards
-- fake blur
-- random glowing blobs
-- generic blue AI orb
-- content bleeding through menus
-- cramped mobile composer
-- UI elements overlapping
-- platform-specific layouts that look unrelated
+# EXACT COOKIE BRANDING
 
-Preferred:
-- premium
-- restrained
-- spatial when useful
-- clean typography
-- strong hierarchy
-- responsive
-- functional-layer glass/material
-- useful 3D
-- coherent Cookie identity
-- actual interaction logic, not decoration
-
-3D must be meaningful:
-- spatial workspace
-- object depth
-- navigation
-- focus
-- workspace relationships
-Not just floating cards with a perspective transform.
-
-## EXACT COOKIE BRANDING
-
-The exact user-approved glossy Cookie artwork is:
+User-approved artwork:
 Glossy Chocolate Chip Cookie Icon_2.png
 
-Root repo asset:
+Root asset:
 cookie-ai-icon.png
 
-Do NOT replace it with:
+Never replace with:
 - emoji
 - generated cookie
 - SVG substitute
 - hand-drawn icon
 - generic icon
 
-Vite currently bundles the exact artwork.
+Vite bundles the exact artwork.
 
-## SHARE SYSTEM
+---
 
-Share links use a server-side snapshot ID, not full chat JSON in the URL.
+# SHARE
+
+Share links use server-side snapshot IDs.
 
 Backend:
 functions/api/chats.js
@@ -511,55 +508,96 @@ functions/api/chats.js
 - GET /api/chats?share=<id>
 
 Frontend:
-PublicShareView and native share/clipboard fallback.
+PublicShareView + native share/clipboard fallback.
 
-Do not regress to base64 full-chat URLs.
+Never regress to base64 full-chat URLs.
 
-## AUTH / EMAIL
+---
 
-Email verification and password reset use secure tokens/codes.
-Email delivery was previously verified.
+# ACTIVITY UI
 
-Do not casually change production schema or rerun obsolete migrations.
+Activity should show actual tool/action status, not hidden chain-of-thought.
 
-## FREE-TIER / PERFORMANCE RULES
+Initial:
+- Thinking…
 
-Cloudflare free-tier subrequest limits have caused real failures before.
+Then actual actions:
+- Searching for “query”
+- Reading hostname
+- Created/Updated/Opened path
+- Created the image
 
-Do not solve inefficient architecture by asking user to pay.
+Provider retry noise should stay server-side.
+Do not show fake terminal commands/output.
+
+---
+
+# MOBILE COMPOSER
+
+Previously fixed:
+- composer width
+- textarea starting height
+- submit height reset
+- Enter-to-send
+- outside row-menu click
+- one row menu at a time
+
+Relevant commits:
+- f423f1ad043d0c87ee2bd0cb4af29da602145b4a
+- 9dfe41d5e4dcc18b8351caefa339608d67e016e1
+
+Still verify:
+- iPhone Safari
+- Android Chrome
+- desktop
+- keyboard open/close
+- long text
+- send/clear
+- orientation
+- safe area
+
+---
+
+# DATABASE / PERFORMANCE
+
+Cloudflare free-tier subrequest limits have caused real failures.
 
 Optimize:
-- batching
-- lazy loading
+- Neon batching/transactions
+- lazy file hydration
 - GitHub tree metadata
-- file content hydration only when needed
-- avoiding one request per file
-- avoiding repeated schema initialization
-- avoiding redundant provider calls
+- no repeated schema initialization
+- no request-per-file architecture
+- no redundant provider calls
 
-## DEPLOYMENT / CI
+Core auth/database is Neon.
+Do not introduce D1 casually.
 
-Workflows include:
+---
+
+# CI / DEPLOYMENT
+
+Workflows:
 - .github/workflows/code-studio-checks.yml
 - .github/workflows/build-dist.yml
 
-Current verified source SHAs:
+Current source SHAs:
 - src/App.tsx: 17f2433962bf6210f4be67c4d0c01b09f220a32e
 - src/styles.css: e154afc2e15c58088014ab63fa583a090df55584
 - functions/api/chat.js: bcd46de497a8b4c6a2346bf3694c8d84fdbbd380
 - functions/api/codebase.js: 531da917b878434bdf9d214f5f5e317475e5b5ce
 - src/CodeStudioPage.tsx: c337f7672e4591dc54f7acfce3ee848696add119
-- package.json: fd878bfa5c43d8678d49fd83b9514591ad3f111e
-- wrangler.toml: 2d4f7e725485c8f350354d596c6380cf4cce029c
 
 Current main HEAD:
-375dbc0c55038b6e6889bfa31891693bb6e06225
+6234d3cf7fadda907d51c64472b8656026ee6737
 
-Never trust this handoff SHA for editing later; refetch current files first.
+Always refetch before editing.
 
-## PACKAGE
+---
 
-Current package has:
+# PACKAGE
+
+Current package includes:
 - react
 - react-dom
 - vite
@@ -573,117 +611,115 @@ Current package has:
 - nodemailer
 - relevant type packages
 
-Monaco was added as a dependency but is NOT fully integrated. Do not claim it is integrated.
+Monaco is a dependency but not necessarily fully integrated. Do not claim integration without checking.
 
-## KNOWN HISTORY / MAJOR COMPLETED WORK
+---
 
-### Auth
-- email verification auth
+# COMPLETED WORK SUMMARY
+
+## Auth
+- email/password auth
+- verification
 - sessions
 - password reset
-- Cloudflare-compatible mail path
-- legacy schema repair
+- Cloudflare-compatible mail
+- schema repair
 
-### Code Studio
-- standalone Code Studio
-- GitHub-backed workspace
+## Neon migration
+- core auth/database moved to Neon
+- Neon SQL compatibility fixes
+- transactional batch
+- production register syntax issue fixed
+
+## Code Studio
+- standalone workspace
+- GitHub tree/file operations
 - lazy file hydration
-- file editing
-- revisions/diffs
-- review
-- protected files
+- editing/revisions/diff
+- review system
+- protected paths
 - audit
 - undo
 - deployment status
-- role controls
+- account controls
+- role separation
 - staff restriction
-- mobile explorer improvements
-- folder local expand/collapse
+- mobile explorer behavior
+- local folder expand/collapse
+- fake terminal removed
 
-### GPTs
-- rebuilt GPT pages
-- removed external GPT-5.1 API approach
-- removed GPT-5.1 branding
-- GPTs use Cookie pipeline
-- no scripted prompt-card workflow
-
-### Work
-- changed to input-first
-- user describes their actual task
-- no canned prompt buttons
-
-### Chat UI
-- composer resizing/send reset
-- one row menu at a time
-- outside-click closing
-- responsive mobile shell fixes
+## AI
+- model tiers
+- adaptive model fallback
+- cloud model routing
+- effort modes
+- web research
+- file tools
+- image generation
 - activity timeline
-- actual tool action labels
-- provider retry noise hidden from user
+- GPT specialist pages
+- memory functionality where already implemented
 
-### Activity UI
-First visible state:
-- Thinking…
+## Chat UI
+- composer fixes
+- row-menu behavior
+- activity system
+- generated files/images/sources
+- responsive shell
+- exact Cookie icon bundling
+- sidebar/navigation improvements
 
-Then:
-- actual tool action, e.g. Searching for “query”
-- Reading hostname
-- Created/Updated/Opened path
-- Created the image
-
-Do not expose private chain-of-thought.
-Activity UI represents real tool/action status, not hidden reasoning.
-
-### AI provider fallback
-Current Cookie architecture has multiple cloud provider candidates/fallbacks. Provider-specific failures should not become a giant list of visible fake activity steps.
-
-## RECENT SPATIAL UPGRADE HISTORY
-
-The first Cookie Space version was intentionally rejected because it looked like generic AI-generated cards inside a box.
-
-It was then rebuilt:
-- removed outer box
-- removed cards below map
-- full-page spatial surface
-- spatial markers
-- CSS 3D depth
-- pointer drag
+## Spatial UI
+- initial Space
+- rejected generic card version
+- full-page redesign
+- actual CSS 3D depth
 - camera layer
-- Center control
+- pointer/touch panning
+- center control
+- access-aware workspaces
 
-Current implementation is better but still has bounded camera movement. Next step is free/inertial camera/world navigation.
+## Sharing
+- server snapshot share links
+- public share view
+- native share/clipboard fallback
 
-## IMPORTANT USER COMMUNICATION STYLE
+---
 
-User prefers:
-- short progress updates
-- direct action
-- no repeated history
-- no generic “I can help” filler
-- show concrete work/results
+# CURRENT USER PRIORITY
 
-When an implementation is incomplete, say exactly what remains.
+Latest request:
+“upgrading time — UI improvements + its logics”
 
-## NEXT CHAT — START HERE
+The latest concrete UI bug reported during that work:
+Cookie can visually remain loading even after the assistant response has finished/arrived.
 
-1. Fetch current main HEAD and latest source files.
-2. Do NOT assume old SHAs.
-3. Fix the HIGH PRIORITY chat bug where the final response is received/finished but UI still appears loading or fails to show the final message.
-4. Verify the full streaming state lifecycle on desktop + iPhone + Android.
-5. Continue the UI/logic upgrade from the user’s latest request if they say “upgrading time”.
-6. For “upgrading time”, research current AI/UI trends first, then implement at least 2 meaningful upgrades.
-7. Finish real Liquid Glass integration rather than another fake blur pass.
-8. Continue Cookie Space toward a true world/camera model with:
-   - free pan
-   - inertial movement
-   - zoom
-   - focus/select
-   - responsive input across desktop/mobile
-9. Keep role boundaries strict.
-10. Build and verify before reporting completion.
+The user also supplied screenshots showing the desired level of polish in other AI/chat interfaces. Use them as visual inspiration for interaction density and hierarchy, NOT as something to copy literally.
 
-## FINAL RULE
+---
 
-Do not simply describe what should be done.
+# NEXT CHAT — EXACT STARTING PLAN
 
-Inspect the current repository, implement the requested work, test it, commit it, verify CI/deployment, and then report the actual result.
+1. Fetch current main HEAD.
+2. Fetch current App.tsx and trace chat send/stream completion state.
+3. Fix the “finished response but still loading / final message not visible” bug at the state-machine level.
+4. Add robust cleanup/finalization for every SSE path.
+5. Test normal/fallback/tool/error/abort/reopen flows.
+6. Then continue the latest UI/logic upgrade:
+   - better navigation state
+   - cleaner composer
+   - smarter activity lifecycle
+   - menu/popover behavior
+   - responsive desktop/mobile consistency
+   - real spatial camera improvements
+7. Finish real Liquid Glass integration only where technically supported.
+8. Keep staff restricted to moderation.
+9. Keep Code Studio permissions strict.
+10. Run affected builds/checks and verify actual CI/deployment status.
+11. Report only what was actually implemented and verified.
+
+# FINAL RULE
+
+Do not merely describe future work.
+
+Inspect the repository, implement the requested work, test it, commit it, verify CI/deployment evidence, then report the actual result.
