@@ -1,15 +1,14 @@
 import { json, readJson } from "../_lib.js";
-import { dbAvailable, ensureD1AuthSchema, normalizeEmail, passwordHash, uniqueUsername, randomToken } from "./_auth.js";
+import { dbAvailable, normalizeEmail, passwordHash, uniqueUsername, randomToken } from "./_auth.js";
 import { issueEmailToken } from "./_tokens.js";
 import { sendVerificationEmail } from "./_email.js";
 
 export async function onRequestPost({ request, env }) {
   console.log("[Cookie register] entered");
   if (!dbAvailable(env)) {
-    console.error("[Cookie register] account database unavailable");
-    return json({ error: "Cookie account database is not connected." }, 503);
+    console.error("[Cookie register] DB binding unavailable");
+    return json({ error: "Cookie Neon database is not connected. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
   }
-  await ensureD1AuthSchema(env);
 
   const body = await readJson(request);
   const email = normalizeEmail(body?.email);
@@ -111,7 +110,7 @@ export async function onRequestPost({ request, env }) {
 
     if (message.includes("no such column") || message.includes("SQLITE_ERROR") || code === "D1_ERROR") {
       return json({
-        error: "Cookie account database schema could not be prepared. Please retry the request."
+        error: "Cookie Neon database schema is out of date. Restart the request after the schema is initialized."
       }, 503);
     }
 
