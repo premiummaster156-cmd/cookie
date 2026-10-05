@@ -77,7 +77,9 @@ export function publicUser(row) {
     name: row.name || "",
     username: row.username || "",
     avatarUrl: row.avatar_url || "",
-    plan: row.plan || "free",
+    plan: (Number(row.plan_expires_at || 0) > 0 && Number(row.plan_expires_at || 0) <= Math.floor(Date.now()/1000)) ? "free" : (row.plan || "free"),
+    planExpiresAt: Number(row.plan_expires_at || 0),
+    role: row.role || (String(row.email || "").toLowerCase() === "cookie.ai.noreply@gmail.com" ? "owner" : "user"),
     credits: Number(row.credits_remaining ?? 0)
   };
 }
@@ -89,7 +91,7 @@ export async function getSessionUser(request, env) {
   const hash = await sha256(token);
   const now = Math.floor(Date.now() / 1000);
   const row = await env.DB.prepare(
-    `SELECT u.id,u.email,u.email_verified,u.name,u.username,u.avatar_url,u.plan,u.credits_remaining
+    `SELECT u.id,u.email,u.email_verified,u.name,u.username,u.avatar_url,u.plan,u.plan_expires_at,u.role,u.credits_remaining
      FROM sessions s JOIN users u ON u.id=s.user_id
      WHERE s.token_hash=? AND s.expires_at>? LIMIT 1`
   ).bind(hash, now).first();
