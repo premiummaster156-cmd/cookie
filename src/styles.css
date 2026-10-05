@@ -5723,3 +5723,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 @keyframes spatial-float{0%,100%{transform:translateZ(34px) rotateY(-4deg)}50%{transform:translateZ(48px) rotateY(4deg)}}
 @media(prefers-reduced-motion:reduce){.spatial-core{animation:none}.spatial-hero i{display:none}}
 @media(max-width:760px){.spatial-hero{width:200px;height:125px}.spatial-core{width:62px;height:62px}.spatial-hero:before{width:125px;height:125px}}
+
+/* ===== Cookie AI vNext: effort controls + spatial command center ===== */
+.model-effort-section{border-top:1px solid rgba(255,255,255,.08);padding:8px 9px 9px}
+.model-effort-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px 7px}
+.model-effort-head span{font:9px ui-monospace;color:#b6beca;text-transform:uppercase;letter-spacing:.08em}
+.model-effort-head small{font:8px ui-monospace;color:#687381}
+.model-effort-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.model-effort-grid button{min-height:42px!important;width:auto!important;border:1px solid rgba(255,255,255,.06)!important;background:rgba(255,255,255,.02)!important;padding:6px 7px!important;display:flex!important;align-items:center;justify-content:space-between;gap:6px;text-align:left}
+.model-effort-grid button:hover,.model-effort-grid button.selected{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.13)!important}
+.model-effort-grid button span{display:flex;flex-direction:column;gap:2px}
+.model-effort-grid button b{font:10px system-ui;color:#d9dee6}
+.model-effort-grid button small{font:8px ui-monospace;color:#727d8a}
+.space-page{height:100%;overflow:auto;padding:30px 26px 40px;box-sizing:border-box}
+.space-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;max-width:1060px;margin:0 auto 18px}
+.space-header h1{margin:6px 0 5px;font-size:28px;letter-spacing:-.04em}
+.space-header p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+.space-model{padding:6px 8px;border:1px solid var(--line2);border-radius:9px;color:var(--muted);font:9px ui-monospace}
+.space-stage{width:min(940px,100%);height:min(56vh,520px);min-height:390px;margin:0 auto;position:relative;display:grid;place-items:center;perspective:1100px;transform-style:preserve-3d;overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:22px;background:radial-gradient(circle at 50% 46%,rgba(130,150,255,.10),transparent 36%),linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 90px rgba(0,0,0,.25);isolation:isolate}
+.space-stage:before{content:"";position:absolute;inset:12%;border:1px solid rgba(160,180,255,.08);border-radius:50%;transform:rotateX(66deg);pointer-events:none}
+.space-stage>*{transform-style:preserve-3d}
+.space-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:42px 42px;transform:translateZ(-80px) rotateX(66deg) scale(1.8);opacity:.32;mask-image:radial-gradient(circle at center,black,transparent 72%)}
+.space-ring{position:absolute;border:1px solid rgba(160,180,255,.13);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%) rotateX(68deg)}
+.ring-a{width:360px;height:360px}.ring-b{width:230px;height:230px;transform:translate(-50%,-50%) rotateX(68deg) rotateZ(28deg);border-color:rgba(255,255,255,.08)}
+.space-node{position:absolute;border:1px solid rgba(255,255,255,.12);background:rgba(22,25,31,.74);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);box-shadow:0 20px 55px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.06);color:#e1e5eb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:transform .25s ease,background .2s ease,border-color .2s ease}
+.space-node:hover{background:rgba(40,44,51,.82);border-color:rgba(255,255,255,.22);transform:translateZ(12px) scale(1.03)}
+.space-node strong{font:600 12px system-ui}.space-node small{font:8px ui-monospace;color:#727d8b}
+.node-core{width:150px;height:150px;border-radius:34px;left:50%;top:50%;transform:translate(-50%,-50%) translateZ(75px) rotateX(var(--space-rx)) rotateY(var(--space-ry));z-index:4}
+.node-work{width:125px;height:92px;border-radius:22px;left:11%;top:18%;transform:translateZ(30px) rotateX(calc(var(--space-rx) * .7)) rotateY(calc(var(--space-ry) * .7))}
+.node-projects{width:125px;height:92px;border-radius:22px;right:10%;top:20%;transform:translateZ(45px) rotateX(calc(var(--space-rx) * .7)) rotateY(calc(var(--space-ry) * .7))}
+.node-code{width:125px;height:92px;border-radius:22px;right:16%;bottom:13%;transform:translateZ(24px) rotateX(calc(var(--space-rx) * .7)) rotateY(calc(var(--space-ry) * .7))}
+.space-cookie{width:74px;height:74px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12);box-shadow:0 12px 35px rgba(0,0,0,.35)}
+.space-cookie svg{filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
+.space-quick{width:min(940px,100%);margin:12px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.space-quick button{min-height:56px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);display:flex;align-items:center;gap:10px;text-align:left}
+.space-quick button:hover{background:var(--hover)}
+.space-quick button>span{display:flex;flex-direction:column;gap:2px;flex:1}.space-quick b{font-size:11px}.space-quick small{font-size:9px;color:var(--muted)}
+@media(max-width:760px){
+  .space-page{padding:18px 12px 28px}
+  .space-header{margin-bottom:12px}.space-header h1{font-size:23px}.space-header p{font-size:10px}
+  .space-stage{min-height:360px;height:58vh;border-radius:18px}
+  .node-core{width:122px;height:122px;border-radius:28px}.space-cookie{width:62px;height:62px;border-radius:20px}
+  .node-work,.node-projects,.node-code{width:102px;height:78px}.node-work{left:6%;top:15%}.node-projects{right:5%;top:16%}.node-code{right:9%;bottom:10%}
+  .space-quick{grid-template-columns:1fr}
+  .space-quick button{min-height:50px}
+}
+@media(prefers-reduced-motion:reduce){
+  .space-node{transition:none}
+}
