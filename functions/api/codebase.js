@@ -175,6 +175,22 @@ function codeBalanceIssue(source){
   if(stack.length)return "Unclosed "+stack[stack.length-1]+" delimiter.";
   return "";
 }
+function securityChecks(changes){
+  const checks=[];
+  for(const c of changes){
+    if(c.status==="deleted")continue;
+    const p=String(c.path||""),after=String(c.after||"");
+    const lower=after.toLowerCase();
+    if(/(?:api[_-]?key|secret|password|token)\s*[:=]\s*["'\x60][^"'\x60]{12,}/i.test(after)&&!/(process\.env|env\.|import\.meta\.env)/.test(after))
+      checks.push({name:"Secret exposure",status:"fail",detail:p+": Possible hard-coded credential detected."});
+    if(/\.env(?:\.|$)/i.test(p))checks.push({name:"Environment file",status:"fail",detail:p+": Environment files must not be committed through Code Studio."});
+    if(/(?:eval\s*\(|new Function\s*\(|child_process|exec\s*\(|spawn\s*\()/i.test(after))
+      checks.push({name:"Dangerous execution",status:"warn",detail:p+": Dynamic or process execution requires explicit review."});
+    if(/(?:innerHTML\s*=|dangerouslySetInnerHTML)/.test(after))
+      checks.push({name:"HTML injection surface",status:"warn",detail:p+": Raw HTML rendering requires security review."});
+  }
+  return checks;
+}
 function syntaxChecks(changes){
   const checks=[];
   for(const c of changes){
@@ -313,7 +329,7 @@ async function reviewWorkspace(env,user){
   for(const f of candidates){
     const b=await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim());baseline.push({path:f.path,...b});
   }
-  const changes=changedFiles(files,baseline);const checks=[...deterministicChecks(changes),...syntaxChecks(changes)];
+  const changes=changedFiles(files,baseline);const checks=[...deterministicChecks(changes),...syntaxChecks(changes),...securityChecks(changes)];
   const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim());const diff=makeDiff(changes);const diffHash=await hashText(JSON.stringify(changes));
   if(!changes.length){
     return {status:"Approved",risk:"low",summary:"No changes are pending.",findings:[],required_fixes:[],checks,changes,baseSha:branch?.object?.sha||null,diffHash};
@@ -378,7 +394,7 @@ async function commitApproved(env,user,reviewId){
   }
   const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
   const changes=changedFiles(files,baseline);if(!changes.length)return {ok:false,error:"There are no changes to commit."};
-  const freshChecks=[...deterministicChecks(changes),...syntaxChecks(changes)];if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety or syntax check failed during commit."};
+  const freshChecks=[...deterministicChecks(changes),...syntaxChecks(changes),...securityChecks(changes)];if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety or syntax check failed during commit."};
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
   const treeEntries=changes.map(c=>c.status==="deleted"?{path:c.path,mode:"100644",type:"blob",sha:null}:{path:c.path,mode:"100644",type:"blob",content:String(c.after||"")});
   const newTree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_tree:parent.tree.sha,tree:treeEntries})});
