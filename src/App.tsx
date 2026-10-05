@@ -587,9 +587,9 @@ function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,on
   </div>;
 }
 function SpatialHub({chatCount,model,canCode,onNavigate}:{chatCount:number;model:string;canCode:boolean;onNavigate:(v:string)=>void}){
-  const [rotation,setRotation]=useState({x:-10,y:0});
+  const [camera,setCamera]=useState({x:0,y:0,rx:-10,ry:0});
   const [dragging,setDragging]=useState(false);
-  const drag=useRef({x:0,y:0,rx:0,ry:0});
+  const drag=useRef({x:0,y:0,cx:0,cy:0,rx:0,ry:0});
   const nodes=[
     {id:"chat",label:"Chat",detail:chatCount+" conversations",icon:<MessageSquare size={21}/>,x:0,y:0,z:90,core:true},
     {id:"work",label:"Work",detail:"Longer tasks",icon:<Zap size={20}/>,x:-31,y:-22,z:35},
@@ -601,23 +601,28 @@ function SpatialHub({chatCount,model,canCode,onNavigate}:{chatCount:number;model
   ];
   const onDown=(e:React.PointerEvent<HTMLDivElement>)=>{
     if((e.target as HTMLElement).closest(".space-marker"))return;
-    drag.current={x:e.clientX,y:e.clientY,rx:rotation.x,ry:rotation.y};
+    drag.current={x:e.clientX,y:e.clientY,cx:camera.x,cy:camera.y,rx:camera.rx,ry:camera.ry};
     setDragging(true); e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onMove=(e:React.PointerEvent<HTMLDivElement>)=>{
     if(!dragging)return;
-    setRotation({x:Math.max(-48,Math.min(48,drag.current.rx-(e.clientY-drag.current.y)*.22)),y:drag.current.ry+(e.clientX-drag.current.x)*.28});
+    const dx=e.clientX-drag.current.x, dy=e.clientY-drag.current.y;
+    setCamera({...camera,x:Math.max(-360,Math.min(360,drag.current.cx+dx)),y:Math.max(-260,Math.min(260,drag.current.cy+dy))});
   };
   const onUp=(e:React.PointerEvent<HTMLDivElement>)=>{setDragging(false);try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}};
+  const reset=()=>setCamera({x:0,y:0,rx:-10,ry:0});
   return <div className={"space-page "+(dragging?"is-dragging":"")}>
-    <div className="space-overlay-head"><div><span className="section-kicker"><Orbit size={14}/>Spatial workspace</span><h1>Cookie Space</h1><p>Drag to rotate · scroll to change depth · tap a workspace to open it.</p></div><span className="space-model">{model}</span></div>
-    <div className="space-map" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={e=>setRotation(v=>({...v,x:Math.max(-55,Math.min(55,v.x-e.deltaY*.025))}))} aria-label="Interactive Cookie spatial workspace">
+    <div className="space-overlay-head"><div><span className="section-kicker"><Orbit size={14}/>Spatial workspace</span><h1>Cookie Space</h1><p>Drag to move around · scroll to zoom · tap a workspace to open it.</p></div><span className="space-model">{model}</span></div>
+    <div className="space-map" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={e=>setCamera(v=>({...v,y:Math.max(-260,Math.min(260,v.y-e.deltaY*.35)),x:Math.max(-360,Math.min(360,v.x-e.deltaX*.35))}))} aria-label="Interactive Cookie spatial workspace">
       <div className="space-stars" aria-hidden="true"/><div className="space-floor" aria-hidden="true"/>
-      <div className="space-scene" style={{"--space-rx":rotation.x+"deg","--space-ry":rotation.y+"deg"} as React.CSSProperties}>
-        <div className="space-orbit orbit-1"/><div className="space-orbit orbit-2"/><div className="space-orbit orbit-3"/><div className="space-axis axis-a"/><div className="space-axis axis-b"/>
-        {nodes.map(n=><button key={n.id} className={"space-marker "+(n.core?"space-core":"")} style={{"--x":n.x+"%","--y":n.y+"%","--z":n.z+"px"} as React.CSSProperties} onClick={()=>onNavigate(n.id)}><span className="space-marker-icon">{n.core?<CookieIcon size={38}/>:n.icon}</span><span className="space-marker-name">{n.label}</span><span className="space-marker-detail">{n.detail}</span></button>)}
+      <div className="space-camera" style={{transform:`translate3d(${camera.x}px,${camera.y}px,0) rotateX(${camera.rx}deg) rotateY(${camera.ry}deg)`}}>
+        <div className="space-scene">
+          <div className="space-orbit orbit-1"/><div className="space-orbit orbit-2"/><div className="space-orbit orbit-3"/><div className="space-axis axis-a"/><div className="space-axis axis-b"/>
+          {nodes.map(n=><button key={n.id} className={"space-marker "+(n.core?"space-core":"")} style={{"--x":n.x+"%","--y":n.y+"%","--z":n.z+"px"} as React.CSSProperties} onClick={()=>onNavigate(n.id)}><span className="space-marker-icon">{n.core?<CookieIcon size={38}/>:n.icon}</span><span className="space-marker-name">{n.label}</span><span className="space-marker-detail">{n.detail}</span></button>)}
+        </div>
       </div>
-      <div className="space-hint">DRAG MAP</div>
+      <button className="space-reset" onClick={reset} aria-label="Center workspace">Center</button>
+      <div className="space-hint">DRAG TO PAN</div>
     </div>
   </div>;
 }
