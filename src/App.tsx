@@ -243,7 +243,7 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   const hasDetails=steps.some(s=>s.command||s.output||s.meta||s.domain);
   return <div className="activity-timeline">
     <button className="activity-summary" onClick={()=>setOpen(v=>!v)} type="button">
-      <span className={"activity-spinner "+(!live?"complete":"")}/>
+      {live&&<span className="activity-spinner"/>}
       <span className="activity-summary-copy"><b>{title}</b></span>
       {(open||hasDetails)&&<ChevronDown size={15} className={open?"rot":""}/>}
     </button>
