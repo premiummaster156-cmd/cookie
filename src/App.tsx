@@ -954,6 +954,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     return()=>{try{webkit?.messageHandlers?.cookieAuth?.postMessage(false)}catch{}};
   },[]);
   useEffect(()=>{if(view!=="chat")setSidebar(false)},[view]);
+  useEffect(()=>{if(!moreOpen)return;const close=(e:Event)=>{const el=e.target as HTMLElement|null;if(!el?.closest(".more-wrap"))setMoreOpen(false)};document.addEventListener("pointerdown",close);return()=>document.removeEventListener("pointerdown",close)},[moreOpen]);
   useEffect(()=>{
     if(!loading||!streamStartedAt)return;
     const tick=()=>setStreamElapsed(Date.now()-streamStartedAt);
