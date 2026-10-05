@@ -131,6 +131,24 @@ function CodeBlock({code,lang}:{code:string;lang:string}){
   const copy=async()=>{try{await navigator.clipboard.writeText(code)}catch{}setCopied(true);setTimeout(()=>setCopied(false),1400)};
   return <div className="code-block"><div className="code-head"><span>{lang||"code"}</span><button onClick={copy}>{copied?<><Check size={14}/>Copied</>:<><Copy size={14}/>Copy</>}</button></div><pre><code>{code}</code></pre></div>;
 }
+type VizDatum={label:string;value:number};
+type VizSpec={type:"bar"|"line";title?:string;unit?:string;data:VizDatum[]};
+function CookieViz({spec}:{spec:VizSpec}){
+  const rows=spec.data.slice(0,12).map(x=>({label:String(x.label||"").slice(0,28),value:Number(x.value)})).filter(x=>Number.isFinite(x.value));
+  if(rows.length<2)return null;
+  const width=620,height=240,pad={l:42,r:18,t:34,b:44},innerW=width-pad.l-pad.r,innerH=height-pad.t-pad.b;
+  const min=Math.min(0,...rows.map(x=>x.value)),max=Math.max(0,...rows.map(x=>x.value)),span=max-min||1;
+  const y=v=>pad.t+(max-v)/span*innerH;
+  return <figure className="cookie-viz"><figcaption><strong>{String(spec.title||"Visualization").slice(0,120)}</strong>{spec.unit&&<small>{String(spec.unit).slice(0,40)}</small>}</figcaption>
+    <div className="cookie-viz-scroll"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={String(spec.title||"Data visualization")}>
+      <line x1={pad.l} y1={y(0)} x2={width-pad.r} y2={y(0)} className="viz-axis"/>
+      <line x1={pad.l} y1={pad.t} x2={pad.l} y2={height-pad.b} className="viz-axis"/>
+      {spec.type==="bar" ? rows.map((d,i)=>{const slot=innerW/rows.length;const bw=Math.min(38,slot*.62);const x=pad.l+i*slot+(slot-bw)/2;const yy=d.value>=0?y(d.value):y(0);const hh=Math.abs(y(d.value)-y(0));return <g key={i}><rect x={x} y={yy} width={bw} height={Math.max(1,hh)} rx="5" className="viz-bar"/><text x={x+bw/2} y={height-16} textAnchor="middle" className="viz-label">{d.label}</text><text x={x+bw/2} y={Math.max(12,yy-6)} textAnchor="middle" className="viz-value">{d.value}</text></g>})
+      : <><polyline points={rows.map((d,i)=>`${pad.l+(innerW*i/Math.max(1,rows.length-1))},${y(d.value)}`).join(" ")} className="viz-line" fill="none"/>{rows.map((d,i)=>{const x=pad.l+(innerW*i/Math.max(1,rows.length-1));return <g key={i}><circle cx={x} cy={y(d.value)} r="4" className="viz-dot"/><text x={x} y={height-16} textAnchor="middle" className="viz-label">{d.label}</text><text x={x} y={Math.max(12,y(d.value)-8)} textAnchor="middle" className="viz-value">{d.value}</text></g>})}</>}
+    </svg></div>
+  </figure>;
+}
+
 function Rich({text}:{text:string}){
   const fence="```";
   return <div className="rich">{text.split(new RegExp("("+fence+"[^]*?"+fence+")","g")).map((part,pi)=>{
@@ -138,6 +156,7 @@ function Rich({text}:{text:string}){
       const nl=part.indexOf("\n");
       const lang=nl>3?part.slice(3,nl).trim():"";
       const code=part.slice(nl>=0?nl+1:3,-3).replace(/^\n|\n$/g,"");
+      if(/^cookie-(?:viz|chart)$/i.test(lang)){try{const spec=JSON.parse(code);if((spec?.type==="bar"||spec?.type==="line")&&Array.isArray(spec?.data))return <CookieViz key={pi} spec={{...spec,type:spec.type,data:spec.data as VizDatum[]}}/>}catch{}}
       return <CodeBlock key={pi} lang={lang} code={code}/>;
     }
     const lines=part.split("\n"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
