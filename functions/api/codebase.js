@@ -42,7 +42,8 @@ async function ensureSchema(env){
 async function access(request,env){
   if(!dbAvailable(env))return {error:json({error:"Cookie database is not connected."},503)};
   const user=await getSessionUser(request,env);if(!user)return {error:json({error:"Sign in required.",code:"AUTH_REQUIRED"},401)};
-  await ensureSchema(env);
+  // The Neon compatibility layer initializes the complete shared schema once
+  // per database connection. Do not run per-request CREATE/ALTER statements here.
   const email=normalizeEmail(user.email);
   const member=await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
   if(email===ILLU_EMAIL&&!member){
@@ -321,7 +322,12 @@ async function handleGet({request,env}){
   const url=new URL(request.url),requested=cleanPath(url.searchParams.get("path")),action=String(url.searchParams.get("action")||"");
   if(requested&&isHiddenPath(requested))return json({error:"This file is hidden from Code Studio for security."},404);
   const t=now();await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("cookie-owner",OWNER_EMAIL,"owner",1,t,t).run();
-  const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();if(Number(count?.count||0)===0||action==="state")await seedFromGithub(env,a.user.email);
+  const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM codebase_files").first();
+  // Seed only an empty workspace. Re-seeding on every state request caused
+  // hundreds of Neon statements for the repository and could exceed Cloudflare
+  // Free's 50 external-subrequest limit. Owner-triggered Sync performs the
+  // explicit refresh when the GitHub repository changes.
+  if(Number(count?.count||0)===0)await seedFromGithub(env,a.user.email);
   if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
   if(action==="diff"){
     const files=await loadVirtual(env),baseline=[],candidates=files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha));
