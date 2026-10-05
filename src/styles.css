@@ -5769,3 +5769,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 .cookie-app.focus-mode .sidebar{transform:translateX(-110%);opacity:0;pointer-events:none}.cookie-app.focus-mode .sidebar-overlay{display:none}.cookie-app.focus-mode .main-shell{margin-left:0}.cookie-app.focus-mode .mobile-nav-launcher{display:grid}.cookie-app.focus-mode .chat-scroll{max-width:920px}
 @media(min-width:761px){.cookie-app.focus-mode .mobile-nav-launcher{left:16px}}
 @media(max-width:760px){.recent-search{height:34px}.recent-filter-row button{min-height:30px;padding:0 8px}.top-more-menu{position:fixed;top:58px;right:10px;min-width:190px}.cookie-app.focus-mode .mobile-nav-launcher{display:grid}}
+/* Streaming/chat UX vNext */
+.chat-jump-latest{position:absolute;z-index:20;left:50%;bottom:92px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:7px 11px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(24,25,28,.9);color:#d8dbe0;font:10px system-ui;box-shadow:0 8px 28px rgba(0,0,0,.28);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.chat-jump-latest:hover{background:#2a2b2e;border-color:rgba(255,255,255,.2);color:#fff}.chat-jump-latest svg{margin-top:1px}
+.streaming-row{contain:layout paint}.stream-reply{contain:content}
+@media(max-width:760px){.chat-jump-latest{bottom:84px}.chat-jump-latest span{display:none}}
