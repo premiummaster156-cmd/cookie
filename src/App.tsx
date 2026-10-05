@@ -238,24 +238,28 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   const mins=Math.floor(elapsed/60000);
   const secs=Math.floor((elapsed%60000)/1000);
   const duration=(mins?mins+"m ":"")+String(secs).padStart(2,"0")+"s";
+  const hasWork=steps.some(s=>s.stage!=="thinking");
+  const title=live?(hasWork?"Working…":"Thinking…"):"Worked for "+duration;
   return <div className="activity-timeline">
     <button className="activity-summary" onClick={()=>setOpen(v=>!v)} type="button">
       <span className={"activity-spinner "+(!live?"complete":"")}/>
-      <span><b>{live?"Working…":"Worked for "+duration}</b><small>{steps.length} step{steps.length===1?"":"s"}</small></span>
+      <span><b>{title}</b><small>{steps.length} step{steps.length===1?"":"s"}</small></span>
       <ChevronDown size={15} className={open?"rot":""}/>
     </button>
     {open&&<div className="activity-steps">
       {steps.map((s,i)=>{
-        const hasBlock=Boolean(s.command||s.output||s.meta);
+        const hasBlock=Boolean(s.command||s.output||s.meta||s.domain);
         const isOpen=expanded===s.id;
         return <div className={"activity-step-wrap "+(hasBlock?"has-block":"")} key={s.id||i}>
           <button className="activity-step" type="button" onClick={()=>hasBlock&&setExpanded(isOpen?null:s.id)}>
-            <span className={"activity-step-icon "+(s.done?"done":"")}>{s.done?<Check size={12}/>:activityIcon(s.stage,s.tool)}</span>
+            <span className={"activity-step-icon "+(s.done?"done":"")}>
+              {s.done?<Check size={12}/>:<span className="activity-inline-spinner"/>}
+            </span>
             <span><b>{s.label}</b><small>{s.detail}</small></span>
             {hasBlock&&<ChevronDown size={12} className={isOpen?"rot":""}/>}
           </button>
           {isOpen&&<div className="activity-detail">
-            {s.domain&&<span className="activity-domain">{s.domain}</span>}
+            {s.domain&&<div className="activity-domains">{s.domain.split(" · ").filter(Boolean).map((d,j)=><span className="activity-domain" key={j}>{d}</span>)}</div>}
             {s.command&&<pre className="activity-terminal"><code>{s.command}</code></pre>}
             {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"\n"}{s.output}</pre>}
             {s.meta&&<div className="activity-meta">{s.meta}</div>}
@@ -863,7 +867,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
     setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
     const startedAt=Date.now();
-    const initialActivity:ActivityStep={id:"thinking",stage:"thinking",label:"Thinking",detail:"Reasoning about the request"};
+    const initialActivity:ActivityStep={id:"thinking",stage:"thinking",label:"Thinking…",detail:"Understanding the request"};
     streamEventsRef.current=[initialActivity];
     streamStartedAtRef.current=startedAt;
     setStreamEvents([initialActivity]);
