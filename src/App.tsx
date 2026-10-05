@@ -19,7 +19,8 @@ type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; da
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
 type GeneratedImage = { dataUrl:string; prompt:string; model?:string };
 type SourceRef = { title:string; url:string; domain?:string; snippet?:string };
-type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; createdAt:number };
+type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean };
+type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
 const ICON = "https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
@@ -58,37 +59,20 @@ function Avatar({size="sm"}:{size?:"sm"|"md"|"lg"}) {
 }
 
 function CookieBootLoader({failed,message,onRetry}:{failed:boolean;message:string;onRetry:()=>void}){
-  const [progress,setProgress]=useState(8);
+  const [progress,setProgress]=useState(4);
   useEffect(()=>{
     if(failed){setProgress(100);return}
-    setProgress(12);
-    const timers=[
-      window.setTimeout(()=>setProgress(28),180),
-      window.setTimeout(()=>setProgress(46),420),
-      window.setTimeout(()=>setProgress(67),760),
-      window.setTimeout(()=>setProgress(82),1120),
-      window.setTimeout(()=>setProgress(91),1550)
-    ];
-    return()=>timers.forEach(window.clearTimeout);
+    let value=4;
+    const timer=window.setInterval(()=>{
+      value=value>=94?8:Math.min(94,value+Math.random()*7+2);
+      setProgress(Math.round(value));
+    },240);
+    return()=>window.clearInterval(timer);
   },[failed]);
-  return <div className={"cookie-boot "+(failed?"failed":"")}>
-    <div className="cookie-boot-backdrop"/>
-    <div className="cookie-boot-card">
-      <div className="cookie-boot-brand">
-        <div className="cookie-boot-icon-wrap"><CookieIcon size={58}/><span className="cookie-boot-ring ring-a"/><span className="cookie-boot-ring ring-b"/></div>
-        <strong>{failed?"Cookie couldn't start":"Cookie AI"}</strong>
-        <span>{failed?"The app couldn't finish initializing.":"Preparing your workspace"}</span>
-      </div>
-      <div className="cookie-progress">
-        <div className="cookie-progress-track">
-          <div className="cookie-progress-fill" style={{width:progress+"%"}}><span/></div>
-          <div className="cookie-progress-glow" style={{left:progress+"%"}}/>
-        </div>
-        <div className="cookie-progress-meta"><span>{failed?"Startup failed":"Initializing Cookie AI"}</span><b>{failed?"ERROR":progress+"%"}</b></div>
-      </div>
-      {failed&&<div className="cookie-boot-error"><AlertCircle size={17}/><div><strong>Initialization error</strong><p>{message||"We couldn't connect to the account service."}</p></div></div>}
-      {failed&&<button className="cookie-boot-retry" onClick={onRetry}><RotateCcw size={15}/>Retry startup</button>}
-      {!failed&&<div className="cookie-boot-steps"><span className={progress>20?"done":""}>Secure session</span><i/> <span className={progress>55?"done":""}>Workspace</span><i/> <span className={progress>80?"done":""}>Ready</span></div>}
+  return <div className={"cookie-boot "+(failed?"failed":"")} onClick={failed?onRetry:undefined}>
+    <div className="cookie-boot-center" aria-label="Cookie AI loading">
+      <div className="cookie-boot-icon-wrap"><CookieIcon size={72}/></div>
+      <div className="cookie-progress-track" aria-hidden="true"><div className="cookie-progress-fill" style={{width:progress+"%"}}/></div>
     </div>
   </div>;
 }
@@ -106,7 +90,10 @@ function PublicShareView({chat,onOpenCookie}:{chat:Chat;onOpenCookie:()=>void}){
           <div className="public-share-avatar">{m.role==="assistant"?<CookieIcon size={21}/>:<Avatar/>}</div>
           <div className="public-share-body">
             <div className="public-share-author">{m.role==="assistant"?"Cookie":"You"}</div>
-            {m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}
+            {m.role==="assistant"?<>
+  {m.activity?.length&&<ActivityTimeline steps={m.activity} elapsed={m.activityDuration||0}/>}
+  <Rich text={m.content}/>
+</>:<div className="user-content">{m.content}</div>}
           </div>
         </div>)}
       </div>
@@ -232,7 +219,28 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     <input hidden ref={fileRef} type="file" multiple onChange={e=>{add(e.target.files);e.currentTarget.value=""}}/>
   </div>;
 }
-function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus=""}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string}){
+function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elapsed:number;live?:boolean}){
+  const [open,setOpen]=useState(true);
+  if(!steps.length)return null;
+  const mins=Math.floor(elapsed/60000);
+  const secs=Math.floor((elapsed%60000)/1000);
+  const duration=(mins?mins+"m ":"")+String(secs).padStart(2,"0")+"s";
+  return <div className="activity-timeline">
+    <button className="activity-summary" onClick={()=>setOpen(v=>!v)} type="button">
+      <span className={"activity-spinner "+(!live?"complete":"")}/>
+      <span><b>{live?"Cookie is working":"Worked for "+duration}</b><small>{steps.length} task step{steps.length===1?"":"s"}</small></span>
+      <ChevronDown size={15} className={open?"rot":""}/>
+    </button>
+    {open&&<div className="activity-steps">
+      {steps.map((s,i)=><div className="activity-step" key={s.id||i}>
+        <span className={"activity-step-icon "+((s.done||(!live&&i<steps.length))?"done":"")}><Check size={12}/></span>
+        <span><b>{s.label}</b><small>{s.detail}</small></span>
+      </div>)}
+    </div>}
+  </div>;
+}
+
+function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus=""}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number}){
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const el=ref.current;
@@ -247,7 +255,7 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
     ["Analyze a file","I’ll attach a file. Find the important points and explain them.",FileSearch],
     ["Build something","Help me build a production-ready solution step by step.",Code2]
   ];
-  return <div className="chat-view"><div className="chat-scroll" ref={ref}>{!messages.length?<div className="empty"><div className="empty-cookie"><CookieIcon size={34}/></div><h1>What can I help with?</h1><p>Ask anything, or start with one of these.</p><div className="starter-prompts">{starters.map(([label,prompt,Icon])=>{const I=Icon as React.ComponentType<{size?:number}>;return <button key={String(label)} onClick={()=>onSend(String(prompt))}><span><I size={16}/><b>{String(label)}</b></span><ChevronRight size={15}/></button>})}</div></div>:<div className="messages">{messages.map(m=><div className={"message-row "+m.role} key={m.id}><div className="message-avatar">{m.role==="assistant"?<CookieIcon size={23}/>:<Avatar/>}</div><div className="message-body"><div className="message-author">{m.role==="assistant"?"Cookie":"You"}</div>{m.attachments?.length?<div className="sent-files">{m.attachments.map(a=><div className="sent-file" key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileIcon size={17}/>}<span>{a.name}</span></div>)}</div>:null}{m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}{m.images?.length?<div className="generated-images">{m.images.map((img,i)=><a className="generated-image" key={img.dataUrl+i} href={img.dataUrl} target="_blank" rel="noreferrer" download={"cookie-image-"+(i+1)+".png"}><img src={img.dataUrl} alt={img.prompt||"Generated image"}/><span>Open image</span></a>)}</div>:null}{m.files?.length?<div className="generated-list">{m.files.map(f=><button key={f.path} className="generated-file" onClick={()=>onDownload(f)}><FileIcon size={18}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:null}{m.sources?.length?<div className="message-sources"><div className="message-sources-head"><Globe2 size={13}/><span>Sources</span><b>{m.sources.length}</b></div><div className="message-sources-list">{m.sources.slice(0,6).map((src,i)=><a key={src.url+i} href={src.url} target="_blank" rel="noreferrer"><span className="source-domain">{src.domain||"web"}</span><strong>{src.title||src.domain||"Source"}</strong></a>)}</div></div>:null}<div className="message-tools"><span>{fmt(m.createdAt)}</span><button onClick={()=>onCopy(m)} aria-label="Copy"><Copy size={14}/></button>{m.role==="assistant"&&<button onClick={()=>onRetry(m)} aria-label="Retry"><RotateCcw size={14}/></button>}<button onClick={onShare} aria-label="Share"><Share2 size={14}/></button><button onClick={()=>onDelete(m)} aria-label="Delete"><Trash2 size={14}/></button></div></div></div>)}{loading&&<div className="message-row assistant streaming-row"><div className="message-avatar"><CookieIcon size={23}/></div><div className="message-body"><div className="message-author">Cookie</div>{streamText?<div className="stream-reply"><Rich text={streamText}/><span className="stream-caret" aria-hidden="true"/></div>:<div className="thinking"><i/><i/><i/></div>}{streamStatus&&<div className="stream-status"><span className="stream-status-dot"/>{streamStatus}</div>}</div></div>}</div>}</div></div>;
+  return <div className="chat-view"><div className="chat-scroll" ref={ref}>{!messages.length?<div className="empty"><div className="empty-cookie"><CookieIcon size={34}/></div><h1>What can I help with?</h1><p>Ask anything, or start with one of these.</p><div className="starter-prompts">{starters.map(([label,prompt,Icon])=>{const I=Icon as React.ComponentType<{size?:number}>;return <button key={String(label)} onClick={()=>onSend(String(prompt))}><span><I size={16}/><b>{String(label)}</b></span><ChevronRight size={15}/></button>})}</div></div>:<div className="messages">{messages.map(m=><div className={"message-row "+m.role} key={m.id}><div className="message-avatar">{m.role==="assistant"?<CookieIcon size={23}/>:<Avatar/>}</div><div className="message-body"><div className="message-author">{m.role==="assistant"?"Cookie":"You"}</div>{m.attachments?.length?<div className="sent-files">{m.attachments.map(a=><div className="sent-file" key={a.id}>{a.kind==="image"?<img src={a.data} alt={a.name}/>:<FileIcon size={17}/>}<span>{a.name}</span></div>)}</div>:null}{m.role==="assistant"?<Rich text={m.content}/>:<div className="user-content">{m.content}</div>}{m.images?.length?<div className="generated-images">{m.images.map((img,i)=><a className="generated-image" key={img.dataUrl+i} href={img.dataUrl} target="_blank" rel="noreferrer" download={"cookie-image-"+(i+1)+".png"}><img src={img.dataUrl} alt={img.prompt||"Generated image"}/><span>Open image</span></a>)}</div>:null}{m.files?.length?<div className="generated-list">{m.files.map(f=><button key={f.path} className="generated-file" onClick={()=>onDownload(f)}><FileIcon size={18}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:null}{m.sources?.length?<div className="message-sources"><div className="message-sources-head"><Globe2 size={13}/><span>Sources</span><b>{m.sources.length}</b></div><div className="message-sources-list">{m.sources.slice(0,6).map((src,i)=><a key={src.url+i} href={src.url} target="_blank" rel="noreferrer"><span className="source-domain">{src.domain||"web"}</span><strong>{src.title||src.domain||"Source"}</strong></a>)}</div></div>:null}<div className="message-tools"><span>{fmt(m.createdAt)}</span><button onClick={()=>onCopy(m)} aria-label="Copy"><Copy size={14}/></button>{m.role==="assistant"&&<button onClick={()=>onRetry(m)} aria-label="Retry"><RotateCcw size={14}/></button>}<button onClick={onShare} aria-label="Share"><Share2 size={14}/></button><button onClick={()=>onDelete(m)} aria-label="Delete"><Trash2 size={14}/></button></div></div></div>)}{loading&&<div className="message-row assistant streaming-row"><div className="message-avatar"><CookieIcon size={23}/></div><div className="message-body"><ActivityTimeline steps={streamEvents||[]} elapsed={streamElapsed||0} live/>{streamText&&<div className="stream-reply"><Rich text={streamText}/><span className="stream-caret" aria-hidden="true"/></div>}</div></div>}</div>}</div></div>;
 }
 
 function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser}){
