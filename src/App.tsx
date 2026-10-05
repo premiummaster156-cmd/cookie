@@ -587,17 +587,38 @@ function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,on
   </div>;
 }
 function SpatialHub({chatCount,model,canCode,onNavigate}:{chatCount:number;model:string;canCode:boolean;onNavigate:(v:string)=>void}){
-  const [tilt,setTilt]=useState({x:0,y:0});
-  return <div className="space-page" onPointerMove={e=>{const r=e.currentTarget.getBoundingClientRect();const x=((e.clientX-r.left)/r.width-.5)*8;const y=((e.clientY-r.top)/r.height-.5)*-6;setTilt({x,y})}} onPointerLeave={()=>setTilt({x:0,y:0})}>
-    <div className="space-header"><div><span className="section-kicker"><Orbit size={15}/>Spatial workspace</span><h1>Cookie Space</h1><p>A spatial command center for moving between your work without losing context.</p></div><span className="space-model">{model}</span></div>
-    <div className="space-stage" style={{"--space-rx":tilt.y+"deg","--space-ry":tilt.x+"deg"} as React.CSSProperties}>
-      <div className="space-grid"/><div className="space-ring ring-a"/><div className="space-ring ring-b"/>
-      <button className="space-node node-core" onClick={()=>onNavigate("chat")}><div className="space-cookie"><CookieIcon size={40}/></div><strong>Chat</strong><small>{chatCount} conversations</small></button>
-      <button className="space-node node-work" onClick={()=>onNavigate("work")}><Zap size={20}/><strong>Work</strong><small>Longer tasks</small></button>
-      <button className="space-node node-projects" onClick={()=>onNavigate("projects")}><FolderKanban size={20}/><strong>Projects</strong><small>Persistent workspace</small></button>
-      {canCode&&<button className="space-node node-code" onClick={()=>onNavigate("code")}><Code2 size={20}/><strong>Code Studio</strong><small>Build & review</small></button>}
+  const [rotation,setRotation]=useState({x:-10,y:0});
+  const [dragging,setDragging]=useState(false);
+  const drag=useRef({x:0,y:0,rx:0,ry:0});
+  const nodes=[
+    {id:"chat",label:"Chat",detail:chatCount+" conversations",icon:<MessageSquare size={21}/>,x:0,y:0,z:90,core:true},
+    {id:"work",label:"Work",detail:"Longer tasks",icon:<Zap size={20}/>,x:-31,y:-22,z:35},
+    {id:"projects",label:"Projects",detail:"Your workspace",icon:<FolderKanban size={20}/>,x:31,y:-18,z:25},
+    {id:"search",label:"Search",detail:"Conversations",icon:<Search size={19}/>,x:-38,y:22,z:5},
+    {id:"library",label:"Library",detail:"Files & saves",icon:<Library size={19}/>,x:38,y:23,z:12},
+    {id:"gpts",label:"GPTs",detail:"Specialists",icon:<Sparkles size={19}/>,x:0,y:39,z:28},
+    ...(canCode?[{id:"code",label:"Code Studio",detail:"Build & review",icon:<Code2 size={20}/>,x:20,y:5,z:55}]:[])
+  ];
+  const onDown=(e:React.PointerEvent<HTMLDivElement>)=>{
+    if((e.target as HTMLElement).closest(".space-marker"))return;
+    drag.current={x:e.clientX,y:e.clientY,rx:rotation.x,ry:rotation.y};
+    setDragging(true); e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onMove=(e:React.PointerEvent<HTMLDivElement>)=>{
+    if(!dragging)return;
+    setRotation({x:Math.max(-48,Math.min(48,drag.current.rx-(e.clientY-drag.current.y)*.22)),y:drag.current.ry+(e.clientX-drag.current.x)*.28});
+  };
+  const onUp=(e:React.PointerEvent<HTMLDivElement>)=>{setDragging(false);try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}};
+  return <div className={"space-page "+(dragging?"is-dragging":"")}>
+    <div className="space-overlay-head"><div><span className="section-kicker"><Orbit size={14}/>Spatial workspace</span><h1>Cookie Space</h1><p>Drag to rotate · scroll to change depth · tap a workspace to open it.</p></div><span className="space-model">{model}</span></div>
+    <div className="space-map" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={e=>setRotation(v=>({...v,x:Math.max(-55,Math.min(55,v.x-e.deltaY*.025))}))} aria-label="Interactive Cookie spatial workspace">
+      <div className="space-stars" aria-hidden="true"/><div className="space-floor" aria-hidden="true"/>
+      <div className="space-scene" style={{"--space-rx":rotation.x+"deg","--space-ry":rotation.y+"deg"} as React.CSSProperties}>
+        <div className="space-orbit orbit-1"/><div className="space-orbit orbit-2"/><div className="space-orbit orbit-3"/><div className="space-axis axis-a"/><div className="space-axis axis-b"/>
+        {nodes.map(n=><button key={n.id} className={"space-marker "+(n.core?"space-core":"")} style={{"--x":n.x+"%","--y":n.y+"%","--z":n.z+"px"} as React.CSSProperties} onClick={()=>onNavigate(n.id)}><span className="space-marker-icon">{n.core?<CookieIcon size={38}/>:n.icon}</span><span className="space-marker-name">{n.label}</span><span className="space-marker-detail">{n.detail}</span></button>)}
+      </div>
+      <div className="space-hint">DRAG MAP</div>
     </div>
-    <div className="space-quick"><button onClick={()=>onNavigate("chat")}><MessageSquare size={16}/><span><b>Chat</b><small>Start a conversation</small></span><ChevronRight size={15}/></button><button onClick={()=>onNavigate("work")}><Zap size={16}/><span><b>Work</b><small>Run a structured task</small></span><ChevronRight size={15}/></button>{canCode&&<button onClick={()=>onNavigate("code")}><Code2 size={16}/><span><b>Code Studio</b><small>Inspect the workspace</small></span><ChevronRight size={15}/></button>}</div>
   </div>;
 }
 function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[]}){
