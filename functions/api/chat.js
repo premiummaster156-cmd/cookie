@@ -819,12 +819,7 @@ export async function onRequestPost({ request, env }) {
 
           try {
             let thinkingShown = false;
-            if (useWebSearch) {
-              push({type:"activity",id:"research",stage:"search",label:"Searching the web",detail:"Looking for current information",tool:"web_search",done:false});
-            }
-            if (requestedTool==="deep-research") {
-              push({type:"activity",id:"research-tool",stage:"search",label:"Starting deep research",detail:"Preparing live sources",tool:"web_search",done:false});
-            }
+
             for (let turn = 0; turn < 12; turn++) {
               push({type:"status",status:turn===0?"Thinking…":"Continuing…"});
               if(!thinkingShown){
