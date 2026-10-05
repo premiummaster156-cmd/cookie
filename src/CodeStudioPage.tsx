@@ -172,7 +172,7 @@ export default function CodeStudioPage({onExit=()=>{}}:{onExit?:()=>void}){
     <div className="cs-activity-spacer"/>
     <button onClick={()=>setMemberOpen(true)} title="Members"><Users size={18}/></button>
     <button onClick={()=>setActivePanel("terminal")} title="Terminal"><SquareTerminal size={18}/></button>
-    {["owner","admin","staff"].includes(String(role||"").toLowerCase())&&<button onClick={()=>setAdminOpen(true)} title="Account control"><SlidersHorizontal size={18}/></button>
+    {["owner","admin","staff"].includes(String(role||"").toLowerCase())&&<button onClick={()=>setAdminOpen(true)} title="Account control"><SlidersHorizontal size={18}/></button>}
    </nav>
    {explorer&&<aside className="cs-explorer">
     <div className="cs-pane-head"><strong>{activity==="search"?"SEARCH":activity==="source"?"SOURCE CONTROL":activity==="run"?"RUN / BUILD":"EXPLORER"}</strong><div><button onClick={()=>setExplorer(false)} className="mobile-only"><X size={15}/></button><button onClick={()=>setNewOpen(true)}><Plus size={15}/></button></div></div>
