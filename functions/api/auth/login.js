@@ -12,6 +12,11 @@ export async function onRequestPost({ request, env }) {
 
   if (!user) return json({ error: "Invalid email or password." }, 401);
 
+  const accountStatus=String(user.account_status||"active").toLowerCase();
+  const suspendedUntil=Number(user.suspended_until||0);
+  if(accountStatus==="banned")return json({error:"This account has been banned."},403);
+  if(accountStatus==="suspended"&&suspendedUntil>now)return json({error:"This account is temporarily suspended."},403);
+
   if (Number(user.locked_until || 0) > now) {
     return json({ error: "Too many unsuccessful attempts. Please try again later." }, 429);
   }
