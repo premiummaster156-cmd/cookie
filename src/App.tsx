@@ -864,7 +864,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
     setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
     const startedAt=Date.now();
-    const initialActivity:ActivityStep={id:"thinking",stage:"thinking",label:"Thinking",detail:"Analyzing the request"};
+    const initialActivity:ActivityStep={id:"thinking",stage:"thinking",label:"Thinking",detail:"Reasoning about the request"};
     streamEventsRef.current=[initialActivity];
     streamStartedAtRef.current=startedAt;
     setStreamEvents([initialActivity]);
@@ -932,9 +932,19 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           }else if(event.type==="status"){
             setStreamStatus(String(event.status||"Working…"));
           }else if(event.type==="activity"){
-            const step:ActivityStep={id:String(event.stage||"step")+"-"+Date.now(),stage:String(event.stage||"work"),label:String(event.label||"Working"),detail:String(event.detail||""),done:false};
-            streamEventsRef.current=[...streamEventsRef.current.map(x=>({...x,done:true})),step];
-            setStreamEvents(streamEventsRef.current);
+            const id=String(event.id||event.stage||"step");
+            const step:ActivityStep={
+              id,stage:String(event.stage||"work"),label:String(event.label||"Working"),
+              detail:String(event.detail||""),done:event.done===true,tool:event.tool?String(event.tool):undefined,
+              command:event.command?String(event.command):undefined,output:event.output?String(event.output):undefined,
+              domain:event.domain?String(event.domain):undefined,meta:event.meta?String(event.meta):undefined
+            };
+            const existing=streamEventsRef.current.findIndex(x=>x.id===id);
+            const next=streamEventsRef.current.slice();
+            if(existing>=0) next[existing]=step;
+            else next.push(step);
+            streamEventsRef.current=next;
+            setStreamEvents(next);
           }else if(event.type==="done"){
             doneData=event;
           }else if(event.type==="error"){
