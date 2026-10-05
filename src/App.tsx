@@ -9,7 +9,7 @@ import {
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound,
-  Volume2, X, Zap, AppWindow, Smartphone, Monitor, TerminalSquare
+  Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal
 } from "lucide-react";
 
 type Role = "user" | "assistant";
