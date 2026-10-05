@@ -414,7 +414,7 @@ async function rateLimitChat(env, user, plan, limits) {
     "SELECT COUNT(*) AS count FROM usage_events WHERE user_id=? AND kind='chat_request' AND created_at>?"
   ).bind(user.id, since).first();
   const count = Number(row?.count || 0);
-  if (count >= limits) {
+  if (count >= limit) {
     const retry = 60;
     return json(
       {error:"Cookie is busy for this account. Please try again in a moment.",code:"RATE_LIMITED",limit:limits,retryAfter:retry},
