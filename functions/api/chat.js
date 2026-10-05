@@ -582,7 +582,7 @@ export async function onRequestPost({ request, env }) {
       "Cookie is Cookie AI, an account-based AI assistant. Users can sign in with email/password or Google, GitHub, and Discord OAuth. Email accounts must verify ownership through a time-limited code or secure link.",
       "Cookie supports persistent signed-in chat history, long-term memory, persistent project workspaces, live web research, file generation, image/file attachments, image generation, and internal tools. Describe only functionality actually available in this deployment.",
       "IMAGE GENERATION: When the user asks to create/generate/draw/render/visualize an image, use the image_generate tool. The image generator is a separate Cloudflare Workers AI image model; the current Cookie text model orchestrates it. Never claim an image exists unless the tool returns success.",
-      "Cookie is currently running in a free public preview/demo. Do not claim to be Google, Gemini, OpenAI, GPT, Kimi, GLM, or any other provider/model. If asked which model is running, say: Cookie Preview Demo is currently using its free preview model backend; model names in the UI are Cookie profiles, not claims about the underlying provider.",
+      "Cookie uses the configured Ollama Cloud model backend for text generation, with Cookie's CPT profiles selecting the appropriate cloud model. Never impersonate the underlying provider. If asked which model is running, explain the current Cookie profile and, when useful, the underlying model name.",
       `COOKIE PLAN: The signed-in user is on the "${String(sessionUser.plan || "free")}" plan with ${Number(sessionUser.credits || 0)} remaining free credits. Do not claim paid access exists unless the account plan says so.`,
       "You have temporary file-generation tools. When the user asks you to build code, documents, configurations, or other files, create the actual files with file_create. You can use nested paths such as src/commands/ping.js; folders are implicit in file paths and are never uploaded by users. Use file_read/file_update to refine files during the same response. At the end, the created files are returned directly in the chat for one-tap download. Never claim a file was created or changed unless the file tool succeeded.",
       "You are Cookie AI, the AI assistant built into the Cookie website. Your identity is Cookie AI, not the website's hosting provider and not the underlying model provider. If a user asks who you are, identify yourself as Cookie AI and explain that you run inside the Cookie website.",
@@ -593,7 +593,7 @@ export async function onRequestPost({ request, env }) {
       "COOKIE PRODUCT KNOWLEDGE: Cookie Projects are persistent account-backed workspaces. Users can create projects, keep project descriptions, and store text files under project paths. Do not claim that temporary generated response files automatically become project files.",
       "COOKIE PRODUCT KNOWLEDGE: Assistant message actions currently include Copy and a More menu with Share, Pin/Unpin, Uploaded files, Find in chat, Archive, and Delete. Some actions are session/local UI actions rather than permanent cloud features; do not imply persistence unless the system actually provides it.",
       "COOKIE PRODUCT BEHAVIOR: When the user asks for a downloadable artifact, create it directly and return it in the chat. When the user uploads files/images, use the provided content as context and be explicit if the content could not be read. When discussing Cookie's capabilities, describe only capabilities actually available in this website.",
-      "COOKIE PRODUCT BEHAVIOR: Do not invent Cookie features or integrations. For capabilities that require configuration (OAuth, email, paid plans, image generation), state the relevant configuration requirement rather than pretending it is active.",
+      "COOKIE PRODUCT BEHAVIOR: Do not invent Cookie features or integrations. For capabilities that require configuration (OAuth, email, paid plans, image generation), state the relevant configuration requirement rather than pretending it is active. Do not refer to an unresolved prior image request when the current user message is a greeting or unrelated request; only discuss an image when the current turn actually includes image data or the conversation clearly requires it.",
       "COOKIE PRODUCT BEHAVIOR: You do not need to expose internal tool names or implementation details to ordinary users. Use internal file capabilities when appropriate and describe the user-facing result instead.",
       `USER PREFERENCES: Respond with the selected Cookie personality: ${personality}. Balanced = natural and adaptable; Friendly = warm and conversational; Professional = clear and formal; Concise = short and direct; Creative = imaginative and expressive; Teacher = step-by-step and educational.`,
       customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : "",
@@ -792,11 +792,42 @@ export async function onRequestPost({ request, env }) {
             name.startsWith("memory_") ? "Using memory…" :
             name.startsWith("file_") ? "Preparing files…" :
             "Working…";
+          const toolLabel = name =>
+            name === "image_generate" ? "Generate image" :
+            name === "web_search" ? "Search the web" :
+            name === "web_fetch" ? "Read webpage" :
+            name === "memory_search" ? "Search memory" :
+            name === "memory_save" ? "Save memory" :
+            name === "memory_delete" ? "Delete memory" :
+            name === "file_create" ? "Create file" :
+            name === "file_read" ? "Read file" :
+            name === "file_update" ? "Update file" :
+            name === "file_delete" ? "Delete file" :
+            String(name || "Use tool");
+          const toolDetail = (name,args,result) => {
+            const a=args && typeof args==="object" ? args : {};
+            if(name==="web_search") return String(a.query||"Searching live web").slice(0,180);
+            if(name==="web_fetch") { try { return new URL(String(a.url||"")).hostname; } catch { return "Reading public webpage"; } }
+            if(name==="image_generate") return String(a.prompt||"Generating requested image").slice(0,180);
+            if(name.startsWith("file_")) return String(a.path||"Working with generated file").slice(0,180);
+            if(name.startsWith("memory_")) return String(a.query||a.key||"Updating memory").slice(0,180);
+            return "Completed tool operation";
+          };
 
           try {
+            let thinkingShown = false;
+            if (useWebSearch) {
+              push({type:"activity",id:"research",stage:"search",label:"Searched the web",detail:"Live web research was used for this request",tool:"web_search",done:true});
+            }
+            if (requestedTool==="deep-research") {
+              push({type:"activity",id:"research-tool",stage:"search",label:"Deep research",detail:"Collected live research before answering",tool:"web_search",done:true});
+            }
             for (let turn = 0; turn < 12; turn++) {
-              push({type:"status",status:"Thinking…"});
-              push({type:"activity",stage:"thinking",label:"Thinking",detail:"Analyzing the request"});
+              push({type:"status",status:turn===0?"Thinking…":"Continuing…"});
+              if(!thinkingShown){
+                push({type:"activity",id:"thinking",stage:"thinking",label:"Thinking",detail:"Reasoning about the request"});
+                thinkingShown=true;
+              }
               let upstream = null;
               let data = null;
               let assistantMessage = null;
@@ -828,6 +859,7 @@ export async function onRequestPost({ request, env }) {
                     let errorData = null;
                     try { errorData = raw ? JSON.parse(raw) : null; } catch {}
                     console.error("[Cookie stream "+candidate+"]", upstream.status, errorData?.error || raw?.slice(0,300));
+                    push({type:"activity",id:"provider-"+candidate.replace(/[^a-z0-9]+/gi,"-"),stage:"provider",label:"Model unavailable",detail:candidate+" returned "+upstream.status,done:true,tool:"provider"});
                     continue;
                   }
 
@@ -885,7 +917,7 @@ export async function onRequestPost({ request, env }) {
               if (!upstream?.ok || !assistantMessage) {
                 if (env?.AI && typeof env.AI.run === "function") {
                   try {
-                    push({type:"activity",stage:"provider",label:"Cloud fallback",detail:"Switching to Cloudflare Workers AI"});
+                    push({type:"activity",id:"provider-fallback",stage:"provider",label:"Cloud fallback",detail:"Switching to Cloudflare Workers AI",done:false});
                     const fallback = await env.AI.run("@cf/zai-org/glm-4.7-flash", {messages:liveMessages,stream:true});
                     const reader2 = fallback?.getReader?.();
                     if (reader2) {
@@ -934,8 +966,10 @@ export async function onRequestPost({ request, env }) {
                 let args = call?.function?.arguments;
                 if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
                 if (!name) continue;
+                const activityId="tool-"+turn+"-"+Math.random().toString(36).slice(2,8);
+                const label=toolLabel(name);
                 push({type:"status",status:statusForTool(name)});
-                push({type:"activity",stage:"tool",label:statusForTool(name).replace("…",""),detail:"Using a tool for this task"});
+                push({type:"activity",id:activityId,stage:name==="web_search"||name==="web_fetch"?"search":name==="image_generate"?"image":"tool",tool:name,label,detail:toolDetail(name,args),done:false});
                 let executed;
                 if (name === "image_generate") {
                   executed = {files:liveFiles,result:JSON.stringify(await executeImageTool(env,args,liveImages,sessionUser.id,plan))};
@@ -949,6 +983,19 @@ export async function onRequestPost({ request, env }) {
                   executed = executeFileTool(liveFiles,name,args);
                 }
                 liveFiles = executed.files;
+                let domain="";
+                if(name==="web_search"){
+                  try{
+                    const parsed=JSON.parse(executed.result||"{}");
+                    const urls=[...(Array.isArray(parsed.results)?parsed.results:[]),...(Array.isArray(parsed.pages)?parsed.pages:[])].map(x=>x?.url).filter(Boolean).slice(0,3);
+                    domain=urls.map(u=>{try{return new URL(u).hostname}catch{return ""}}).filter(Boolean).join(" · ");
+                  }catch{}
+                }
+                push({
+                  type:"activity",id:activityId,stage:name==="web_search"||name==="web_fetch"?"search":name==="image_generate"?"image":"tool",
+                  tool:name,label,detail:toolDetail(name,args,executed.result),domain,done:true,
+                  meta:name.startsWith("file_")?String(args?.path||""):undefined
+                });
                 liveMessages.push({role:"tool",tool_name:name,content:executed.result});
               }
             }
