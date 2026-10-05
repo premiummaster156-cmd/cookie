@@ -665,7 +665,7 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
     setShowSteps(true);
   };
 
-  const primaryLabel=deferredPrompt?"Install Cookie app":ios?"Show iPhone install guide":"View install steps";
+  const primaryLabel=deferredPrompt?"Install Cookie app":ios?"Show iPhone install guide":android?"Install Cookie":"View install steps";
 
   if(installed)return null;
 
