@@ -580,6 +580,7 @@ function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Cha
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
   if(view==="code") return <CodeStudioPage/>;
+  if(view==="moderation") return <ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>;
   if(view==="projects") return <ProjectsPage/>;
   if(view==="gpts") return <GPTsPage onOpen={()=>{}} plan="free"/>;
   if(view==="work") return <WorkPage onStart={onPrompt}/>;
