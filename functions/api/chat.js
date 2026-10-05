@@ -382,7 +382,8 @@ function providerModelFallbacks(model) {
     "qwen3-coder:480b-cloud",
     "gemma4:cloud"
   ];
-  return [model, ...ordered.filter(x => x !== model)];
+  const freeFallback = "gemma4:cloud";
+  return [model, freeFallback, ...ordered.filter(x => x !== model && x !== freeFallback)];
 }
 
 function safeOllamaUrl(value) {
