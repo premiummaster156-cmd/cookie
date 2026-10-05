@@ -24,6 +24,34 @@ type Message = { id:string; role:Role; content:string; attachments?:Attachment[]
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
 const ICON = "/cookie-ai-icon.svg?v=3";
+const MODELS = [
+  { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
+  { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
+  { id:"ultra", name:"CPT-3 ULTRA", detail:"Multimodal + agentic work", requiredPlan:"max" }
+] as const;
+function planRankClient(plan:string){const p=String(plan||"free").toLowerCase();return p==="max"?2:(p==="pro"||p==="plus")?1:0}
+function modelRank(id:string){return id==="ultra"?2:id==="max"?1:0}
+const LANG_CODES = ["en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
+const LANGUAGES = ["English","Uzbek","Russian","Turkish","Kazakh","Kyrgyz","Tajik","Arabic","Persian","Hindi","Urdu","Chinese","Japanese","Korean","Spanish","French","German","Italian","Portuguese","Indonesian"];
+const PERSONALITIES = ["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
+
+type ToolMode = "calculator"|"file-analysis"|"data-analysis"|"url-fetch"|"code-analysis"|"deep-research"|null;
+type ToolSpec = {id:Exclude<ToolMode,null>;name:string;detail:string;plan:"free"|"pro"|"max";icon:React.ReactNode};
+
+type GPTDefinition = {id:string;name:string;description:string;category:string;icon:"study"|"code"|"writer"|"research"|"data"|"creative";system:string;plan:"free"|"pro"|"max"};
+const GPTS:GPTDefinition[]=[
+  {id:"study-coach",name:"Study Coach",description:"Break down difficult topics, teach step by step, and quiz you when useful.",category:"Education",icon:"study",plan:"free",system:"You are Study Coach inside Cookie AI. Teach clearly and patiently, adapt explanations to the user's level, use examples, and prefer active learning. Ask focused follow-up questions only when necessary. Do not invent citations or facts."},
+  {id:"code-expert",name:"Code Expert",description:"Senior-level programming help, debugging, architecture, and production-quality code.",category:"Programming",icon:"code",plan:"pro",system:"You are Code Expert inside Cookie AI. Act as a senior software engineer. Diagnose bugs systematically, respect the user's existing stack and conventions, produce complete production-quality code when requested, consider security and edge cases, and explain important implementation decisions briefly."},
+  {id:"writing-partner",name:"Writing Partner",description:"Rewrite, draft, edit, and polish writing with a strong natural voice.",category:"Writing",icon:"writer",plan:"free",system:"You are Writing Partner inside Cookie AI. Help users draft, rewrite, edit, summarize, and polish writing. Preserve intent and voice unless asked to change them. Prefer natural human language over generic AI phrasing. Match requested tone and audience."},
+  {id:"research-analyst",name:"Research Analyst",description:"Compare evidence, structure findings, and turn complex research questions into clear conclusions.",category:"Research",icon:"research",plan:"pro",system:"You are Research Analyst inside Cookie AI. Approach research questions carefully, distinguish evidence from inference, compare competing explanations, surface uncertainty, and structure findings for decision-making. When live sources are supplied, ground claims in those sources and never pretend you browsed when you did not."},
+  {id:"data-analyst",name:"Data Analyst",description:"Understand tables, CSVs, trends, metrics, and business data with rigorous analysis.",category:"Data",icon:"data",plan:"pro",system:"You are Data Analyst inside Cookie AI. Analyze attached or provided data rigorously. State assumptions, check data quality, calculate useful statistics when possible, identify trends and anomalies, and communicate results clearly. Never fabricate measurements that were not available."},
+  {id:"creative-studio",name:"Creative Studio",description:"Develop polished concepts, visual directions, campaigns, names, and creative ideas.",category:"Creative",icon:"creative",plan:"max",system:"You are Creative Studio inside Cookie AI. Develop original, high-quality creative concepts. Explore multiple directions, refine the strongest one, and keep the output practical enough to execute. Match the requested brand voice and constraints."}
+];
+const uid = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + Date.now().toString(36);
+const readJSON = <T,>(key:string, fallback:T):T => { try { return JSON.parse(localStorage.getItem(key) || "") as T; } catch { return fallback; } };
+const saveJSON = (key:string, value:unknown) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+const titleFrom = (s:string) => { const x=s.replace(/\s+/g," ").trim(); return x ? x.slice(0,48) + (x.length>48 ? "…" : "") : "New chat"; };
+
 function CookieIcon({size=24}:{size?:number}) {
   return <img className="cookie-icon" src={ICON} width={size} height={size} alt="Cookie AI" draggable={false}/>;
 }
