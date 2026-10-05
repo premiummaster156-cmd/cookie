@@ -208,7 +208,9 @@ function normalizeFiles(input) {
 async function executeImageTool(env, args, generatedImages, userId="", plan="free") {
   const prompt = String(args?.prompt || "").trim().slice(0, 2048);
   if (env?.DB && userId) {
-    const imageLimit = plan === "max" ? 50 : planRank(plan) >= 1 ? 20 : 3;
+    const configured = await loadAiLimits(env);
+    const key = plan==="max" ? "image_limit_max" : planRank(plan)>=1 ? "image_limit_pro" : "image_limit_free";
+    const imageLimit = Number(configured[key]||3);
     try {
       const usage = await env.DB.prepare(
         "SELECT COUNT(*) AS count FROM usage_events WHERE user_id=? AND kind='image_generation' AND created_at>?"
@@ -336,11 +338,11 @@ function inferModel({mode, text, attachments, gptProfile, requestedTool}) {
   const hasImages = Array.isArray(attachments) && attachments.some(a => a && a.kind === "image");
   const codeLike = /\b(code|coding|program|programming|debug|bug|stack trace|typescript|javascript|react|next\.js|python|java|swift|kotlin|rust|go|sql|api|sdk|git|github|css|html|regex|function|class|component|repository|repo|pull request|commit)\b/i.test(q);
   const researchLike = requestedTool === "deep-research" || /\b(research|sources?|cite|citation|latest|current|today|news|compare evidence|look up|investigate)\b/i.test(q);
-  if (hasImages) return "kimi-k2.6:cloud";
+  if (hasImages) return "kimi-k2.7-code:cloud";
   if (gptProfile?.id === "code-expert" || codeLike) return "kimi-k2.7-code:cloud";
   if (mode === "ultra") return "kimi-k2.7-code:cloud";
   if (mode === "max" || researchLike) return "deepseek-v4-pro:cloud";
-  return "deepseek-v4-flash:cloud";
+  return "glm-5.3:cloud";
 }
 
 function modelContext(model) {
@@ -390,8 +392,23 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
-async function rateLimitChat(env, user, plan) {
-  const limits = plan === "max" ? 60 : planRank(plan) >= 1 ? 30 : 10;
+async function loadAiLimits(env) {
+  const defaults={chat_limit_free:10,chat_limit_pro:30,chat_limit_max:60,image_limit_free:3,image_limit_pro:20,image_limit_max:50};
+  try{
+    const r=await env.DB.prepare("SELECT key,value FROM codebase_settings WHERE key LIKE 'ai_%'").all();
+    for(const row of (r.results||[])){
+      const key=String(row.key||"").replace(/^ai_/,"");
+      if(Object.prototype.hasOwnProperty.call(defaults,key)){
+        const v=Number(row.value);
+        if(Number.isFinite(v)) defaults[key]=Math.max(1,Math.min(10000,Math.trunc(v)));
+      }
+    }
+  }catch{}
+  return defaults;
+}
+async function rateLimitChat(env, user, plan, limits) {
+  const key=plan === "max" ? "chat_limit_max" : planRank(plan) >= 1 ? "chat_limit_pro" : "chat_limit_free";
+  const limit=Number(limits?.[key]||10);
   const since = nowSeconds() - 60;
   const row = await env.DB.prepare(
     "SELECT COUNT(*) AS count FROM usage_events WHERE user_id=? AND kind='chat_request' AND created_at>?"
@@ -466,7 +483,8 @@ export async function onRequestPost({ request, env }) {
 
     const credits = Number(sessionUser.credits ?? 0);
     const plan = String(sessionUser.plan || "free");
-    const rateLimited = await rateLimitChat(env,sessionUser,plan);
+    const aiLimits = await loadAiLimits(env);
+    const rateLimited = await rateLimitChat(env,sessionUser,plan,aiLimits);
     if (rateLimited) return rateLimited;
     if (plan === "free" && credits <= 0) {
       return json({ error:"Your free Cookie credits are used up. Add a paid plan before continuing." }, 402);
