@@ -8,6 +8,7 @@ const BRANCH="main";
 const MAX_FILE_BYTES=1000000;
 const MAX_REVIEW_CHARS=140000;
 const PROTECTED_PATHS=new Set(["functions/api/admin.js","functions/api/_db.js","functions/api/auth/_auth.js","functions/api/chat.js","functions/api/codebase.js","src/CodeStudioPage.tsx","src/App.tsx","src/main.tsx","src/styles.css","migrations/0007_code_studio_reviews.sql",".github/workflows/code-studio-checks.yml",".github/workflows/build-dist.yml"]);
+const DEVELOPER_MEMBER_ROLES=new Set(["developer","frontend-developer","backend-developer","fullstack-developer","lead-developer","engineer"]);
 function isHiddenPath(path){
   const p=cleanPath(path);
   if(!p)return true;
@@ -53,7 +54,10 @@ async function access(request,env){
     await env.DB.prepare("INSERT OR IGNORE INTO codebase_members (id,email,role,active,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind("illu-developer",ILLU_EMAIL,"frontend-developer",1,t,t).run();
   }
   const effectiveMember=member||await env.DB.prepare("SELECT id,email,role,active FROM codebase_members WHERE email=? LIMIT 1").bind(email).first();
-  if(!privileged)return {error:json({error:"Code Studio is restricted to owner, admin, and staff accounts.",code:"CODEBASE_FORBIDDEN"},403)};
+  const memberRole=String(effectiveMember?.role||"").toLowerCase();
+  const developerMember=Boolean(effectiveMember&&Number(effectiveMember.active||0)!==0&&DEVELOPER_MEMBER_ROLES.has(memberRole));
+  const allowed=(accountRole==="owner"||accountRole==="admin"||developerMember||email===OWNER_EMAIL)&&accountRole!=="staff";
+  if(!allowed)return {error:json({error:"Code Studio is restricted to owner, admin, and explicitly assigned developer accounts.",code:"CODEBASE_FORBIDDEN"},403)};
   return {user,owner:email===OWNER_EMAIL,accountRole,member:{...(effectiveMember||{}),role:email===OWNER_EMAIL?"owner":effectiveMember?.role||accountRole||"developer"}}
 }
 async function githubJson(url,token="",options={}){
