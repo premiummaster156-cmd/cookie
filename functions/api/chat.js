@@ -427,7 +427,7 @@ async function rateLimitChat(env, user, plan, limits) {
   if (count >= limit) {
     const retry = 60;
     return json(
-      {error:"Cookie is busy for this account. Please try again in a moment.",code:"RATE_LIMITED",limit:limits,retryAfter:retry},
+      {error:"Cookie is busy for this account. Please try again in a moment.",code:"RATE_LIMITED",limit,retryAfter:retry},
       429,
       {"Retry-After":String(retry)}
     );
