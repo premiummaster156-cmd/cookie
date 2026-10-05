@@ -240,7 +240,7 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   </div>;
 }
 
-function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus=""}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number}){
+function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,streamText="",streamStatus="",streamEvents=[],streamElapsed=0}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number}){
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const el=ref.current;
@@ -732,6 +732,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [streamEvents,setStreamEvents]=useState<ActivityStep[]>([]);
   const [streamStartedAt,setStreamStartedAt]=useState(0);
   const [streamElapsed,setStreamElapsed]=useState(0);
+  const streamEventsRef=useRef<ActivityStep[]>([]);
+  const streamStartedAtRef=useRef(0);
   const [toolMode,setToolMode]=useState<ToolMode>(null);
   const [selectedGPT,setSelectedGPT]=useState<GPTDefinition|null>(null);
   const [profile,setProfile]=useState({name:authUser.name||"Cookie user",username:authUser.username||"cookie-user",email:authUser.email||""});
@@ -830,8 +832,12 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;
     updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
     setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
-    setStreamEvents([{id:"thinking",stage:"thinking",label:"Thinking",detail:"Analyzing the request"}]);
-    setStreamStartedAt(Date.now());setStreamElapsed(0);
+    const startedAt=Date.now();
+    const initialActivity:ActivityStep={id:"thinking",stage:"thinking",label:"Thinking",detail:"Analyzing the request"};
+    streamEventsRef.current=[initialActivity];
+    streamStartedAtRef.current=startedAt;
+    setStreamEvents([initialActivity]);
+    setStreamStartedAt(startedAt);setStreamElapsed(0);
     const ctl=new AbortController();setAbort(ctl);
     try{
       const languageIndex=LANGUAGES.indexOf(settings.language);
@@ -896,7 +902,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
             setStreamStatus(String(event.status||"Working…"));
           }else if(event.type==="activity"){
             const step:ActivityStep={id:String(event.stage||"step")+"-"+Date.now(),stage:String(event.stage||"work"),label:String(event.label||"Working"),detail:String(event.detail||""),done:false};
-            setStreamEvents(prev=>[...prev.map(x=>({...x,done:true})),step]);
+            streamEventsRef.current=[...streamEventsRef.current.map(x=>({...x,done:true})),step];
+            setStreamEvents(streamEventsRef.current);
           }else if(event.type==="done"){
             doneData=event;
           }else if(event.type==="error"){
@@ -915,8 +922,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         if(buffer.trim())processLine(buffer);
         const finalText=String(doneData?.message||assembled||"").trim();
         if(!finalText)throw new Error("Cookie returned an empty response.");
-        const finalActivity=streamEvents.length?streamEvents.map(x=>({...x,done:true})):[{id:"thinking-final",stage:"thinking",label:"Thinking",detail:"Analyzed the request",done:true}];
-        const finalDuration=streamStartedAt?Date.now()-streamStartedAt:0;
+        const finalActivity=streamEventsRef.current.length?streamEventsRef.current.map(x=>({...x,done:true})):[{id:"thinking-final",stage:"thinking",label:"Thinking",detail:"Analyzed the request",done:true}];
+        const finalDuration=streamStartedAtRef.current?Date.now()-streamStartedAtRef.current:0;
         const a:Message={
           id:uid(),
           role:"assistant",
@@ -956,6 +963,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       }
     }finally{
       setStreamText("");setStreamStatus("");setLoading(false);setAbort(null);setStreamStartedAt(0);setStreamElapsed(0);setStreamEvents([]);
+      streamEventsRef.current=[];streamStartedAtRef.current=0;
     }
   }
   function openGPT(id:string){
@@ -989,7 +997,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>;
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
   if(String(view)==="code"&&canSeeCodeStudio) return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <div className="cookie-app"><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
