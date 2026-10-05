@@ -25,10 +25,12 @@ type Chat = { id:string; title:string; messages:Message[]; model:string; tempora
 
 const ICON = "https://raw.githubusercontent.com/premiummaster156-cmd/cookie/main/cookie-ai-icon.png";
 const MODELS = [
-  { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI" },
-  { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering" },
-  { id:"ultra", name:"CPT-3 ULTRA", detail:"Multimodal + agentic work" }
-];
+  { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
+  { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
+  { id:"ultra", name:"CPT-3 ULTRA", detail:"Multimodal + agentic work", requiredPlan:"max" }
+] as const;
+function planRankClient(plan:string){const p=String(plan||"free").toLowerCase();return p==="max"?2:(p==="pro"||p==="plus")?1:0}
+function modelRank(id:string){return id==="ultra"?2:id==="max"?1:0}
 const LANG_CODES = ["en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
 const LANGUAGES = ["English","Uzbek","Russian","Turkish","Kazakh","Kyrgyz","Tajik","Arabic","Persian","Hindi","Urdu","Chinese","Japanese","Korean","Spanish","French","German","Italian","Portuguese","Indonesian"];
 const PERSONALITIES = ["Balanced","Friendly","Professional","Concise","Creative","Teacher"];
@@ -740,7 +742,11 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   // Code Studio is an owner/developer control surface, not a normal user feature.
   // Keep it out of the main navigation for regular Cookie users.
   const accountRole=String((authUser as any).role||"user").toLowerCase();
-  const canSeeCodeStudio=authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com" || ["owner","admin","staff"].includes(accountRole);
+  const accountPlanRank=planRankClient(authUser.plan);
+  const privileged=accountRole==="owner"||accountRole==="admin"||accountRole==="staff"||authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com";
+  const canUseModel=(id:string)=>privileged||modelRank(id)<=accountPlanRank;
+  const canSeeCodeStudio=privileged;
+  useEffect(()=>{if(!canUseModel(model))setModel("standard")},[model,accountPlanRank,privileged]);
   const [settings,setSettings]=useState(()=>({
     theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",answerLength:"auto",
     animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",
@@ -1009,7 +1015,12 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       <div className="sidebar-foot"><button className="nav-btn" onClick={()=>setNewOpen(v=>!v)}><Plus size={18}/><span>Try something new</span><ChevronDown size={15}/></button>{newOpen&&<div className="new-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/><button onClick={()=>createChat(true)}><Clock3 size={17}/><span><b>Temporary chat</b><small>Don't save this chat to history.</small></span></button><button onClick={()=>{setView("work");setNewOpen(false);setSidebar(false)}}><Zap size={17}/><span><b>Work</b><small>Structured tasks.</small></span></button></div>}<button className={"account "+(view==="settings"&&settingsTab==="account"?"active":"")} aria-label="Open account settings" onClick={()=>{setSettingsTab("account");setView("settings");setProfileOpen(false);setSidebar(false)}}><Avatar/><span><b>{profile.name||"Cookie user"}</b><small>{profile.username?("@"+profile.username):"Cookie account"}</small></span><MoreHorizontal size={17}/></button></div>
     </aside>
     <main className="main-shell">
-      <header className="topbar"><LiquidGlassBackdrop className="topbar-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={19}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/>{MODELS.map(x=><button key={x.id} className={x.id===model?"selected":""} onClick={()=>{setModel(x.id);setModelOpen(false)}}><span><b>{x.name}</b><small>{x.detail}</small></span>{x.id===model&&<Check size={16}/>}</button>)}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
+      <header className="topbar"><LiquidGlassBackdrop className="topbar-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:0}}/><div className="top-left"><button className="mobile-menu" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={19}/></button>{view!=="settings"&&<div className="model-wrap"><button className="model-picker" onClick={()=>setModelOpen(v=>!v)}><span>{MODELS.find(x=>x.id===model)?.name}</span><ChevronDown size={15}/></button>{modelOpen&&<div className="model-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/>{MODELS.map(x=>{
+  const available=canUseModel(x.id);
+  return <button key={x.id} disabled={!available} className={x.id===model?"selected":""} onClick={()=>{if(!available){notify(x.requiredPlan.toUpperCase()+" plan required.");return}setModel(x.id);setModelOpen(false)}}>
+    <span><b>{x.name}</b><small>{available?x.detail:x.detail+" · "+x.requiredPlan.toUpperCase()}</small></span>{x.id===model&&<Check size={16}/>}
+  </button>
+})}</div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><Plus size={19}/></button><button className="top-icon" onClick={()=>notify("More chat options are coming soon.")} aria-label="More options"><MoreHorizontal size={19}/></button></div></header>
       {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify}/></div>}
       {view!=="chat"&&main}
     </main>
