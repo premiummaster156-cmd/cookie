@@ -16,6 +16,9 @@ const SCHEMA = [
     plan_expires_at BIGINT NOT NULL DEFAULT 0,
     role TEXT NOT NULL DEFAULT 'user',
     credits_remaining INTEGER NOT NULL DEFAULT 100,
+    account_status TEXT NOT NULL DEFAULT 'active',
+    suspended_until BIGINT NOT NULL DEFAULT 0,
+    moderation_note TEXT NOT NULL DEFAULT '',
     login_failures INTEGER NOT NULL DEFAULT 0,
     locked_until INTEGER NOT NULL DEFAULT 0,
     created_at BIGINT NOT NULL DEFAULT 0,
@@ -23,6 +26,9 @@ const SCHEMA = [
   )`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires_at BIGINT NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'active'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until BIGINT NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS moderation_note TEXT NOT NULL DEFAULT ''`,
   `CREATE TABLE IF NOT EXISTS oauth_accounts (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -115,6 +121,16 @@ const SCHEMA = [
     payload TEXT NOT NULL DEFAULT '{}',
     created_at BIGINT NOT NULL DEFAULT 0
   )`,
+  `CREATE TABLE IF NOT EXISTS moderation_events (
+    id TEXT PRIMARY KEY,
+    target_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    duration_seconds BIGINT NOT NULL DEFAULT 0,
+    created_at BIGINT NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_moderation_target_created ON moderation_events(target_user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS codebase_members (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
