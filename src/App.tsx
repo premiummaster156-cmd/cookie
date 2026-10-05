@@ -23,7 +23,10 @@ type ActivityStep = { id:string; label:string; detail:string; stage:string; done
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
-const ICON = "/cookie-ai-icon.svg";
+const COOKIE_ICON_PATH = "M36 72c-2-23 15-42 38-44 10-1 19 2 26 8-1 4 1 9 5 12 3 2 7 3 11 2 3 18-7 38-25 46-23 10-52-3-55-24z";
+const COOKIE_ICON_DOTS = [
+  [55,55,5],[76,48,4],[83,70,5],[58,78,4]
+] as const;
 const MODELS = [
   { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
   { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
@@ -54,7 +57,12 @@ const saveJSON = (key:string, value:unknown) => { try { localStorage.setItem(key
 const titleFrom = (s:string) => { const x=s.replace(/\s+/g," ").trim(); return x ? x.slice(0,48) + (x.length>48 ? "…" : "") : "New chat"; };
 
 function CookieIcon({size=24}:{size?:number}) {
-  return <img className="cookie-icon" src={ICON} width={size} height={size} alt="" draggable={false}/>;
+  return <svg className="cookie-icon" width={size} height={size} viewBox="0 0 128 128" role="img" aria-label="Cookie AI" focusable="false">
+    <rect width="128" height="128" rx="28" fill="#fff"/>
+    <path d={COOKIE_ICON_PATH} fill="#111"/>
+    {COOKIE_ICON_DOTS.map(([cx,cy,r])=><circle key={cx+"-"+cy} cx={cx} cy={cy} r={r} fill="#fff"/>)}
+    <path d="M100 48c-5 2-10 0-13-4-3-4-3-9-1-13 7 3 12 9 14 17z" fill="#fff"/>
+  </svg>;
 }
 function Avatar({size="sm"}:{size?:"sm"|"md"|"lg"}) {
   return <div className={"avatar avatar-"+size}><span>CR</span></div>;
