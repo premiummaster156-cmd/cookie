@@ -773,10 +773,20 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   // Keep it out of the main navigation for regular Cookie users.
   const accountRole=String((authUser as any).role||"user").toLowerCase();
   const accountPlanRank=planRankClient(authUser.plan);
-  const privileged=accountRole==="owner"||accountRole==="admin"||accountRole==="staff"||authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com";
+  const privileged=accountRole==="owner"||accountRole==="admin"||authUser.email?.trim().toLowerCase()==="cookie.ai.noreply@gmail.com";
+  const isModerator=privileged||accountRole==="staff";
+  const [codeStudioAllowed,setCodeStudioAllowed]=useState(privileged);
   const canUseModel=(id:string)=>privileged||modelRank(id)<=accountPlanRank;
-  const canSeeCodeStudio=privileged;
+  const canSeeCodeStudio=privileged||codeStudioAllowed;
   useEffect(()=>{if(!canUseModel(model))setModel("standard")},[model,accountPlanRank,privileged]);
+  useEffect(()=>{
+    let cancelled=false;
+    fetch("/api/codebase?action=access",{credentials:"same-origin",cache:"no-store"})
+      .then(r=>{if(!r.ok)throw new Error();return r.json()})
+      .then(d=>{if(!cancelled&&d?.canEdit)setCodeStudioAllowed(true)})
+      .catch(()=>{if(!cancelled&&!privileged)setCodeStudioAllowed(false)});
+    return()=>{cancelled=true};
+  },[authUser.email,accountRole,privileged]);
   const [settings,setSettings]=useState(()=>({
     theme:"Dark",language:"English",accent:"Default",fontSize:"Default",defaultModel:"standard",reasoning:"auto",answerLength:"auto",
     animations:true,compact:false,keyboard:true,sendOnEnter:true,timestamps:false,confirmDelete:true,personality:"Balanced",
@@ -829,6 +839,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   },[loading,streamStartedAt]);
   useEffect(()=>{
     if(view==="code"&&!canSeeCodeStudio)setView("chat");
+    if(view==="moderation"&&!isModerator)setView("chat");
   },[view,canSeeCodeStudio]);
   useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setView("search");setSidebar(false)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
   useEffect(()=>{
