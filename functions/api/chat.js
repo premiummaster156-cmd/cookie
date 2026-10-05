@@ -348,14 +348,13 @@ function inferModel({mode, text, attachments, gptProfile, requestedTool}) {
   const researchLike = requestedTool === "deep-research" || /\b(research|sources?|cite|citation|latest|current|today|news|compare evidence|look up|investigate)\b/i.test(q);
   if (hasImages) return mode==="ultra" ? "kimi-k2.7-code:cloud" : "glm-5.3-flash:cloud";
   if (gptProfile?.id === "code-expert" || codeLike) return "kimi-k2.7-code:cloud";
-  if (mode === "ultra") return "kimi-k2.7-code:cloud";
+  if (mode === "ultra") return "kimi-k3:cloud";
   if (mode === "max" || researchLike) return "deepseek-v4-pro:cloud";
   return "glm-5.3:cloud";
 }
 
 function modelContext(model) {
-  if (/deepseek-v4/i.test(model)) return 1048576;
-  if (/glm-5\.3/i.test(model)) return 1048576;
+  if (/deepseek-v4|glm-5\.3|kimi-k3/i.test(model)) return 1048576;
   if (/kimi-k2\.7|kimi-k2\.6|qwen3\.8/i.test(model)) return 262144;
   if (/gpt-oss/i.test(model)) return 131072;
   return 131072;
@@ -365,6 +364,7 @@ function thinkingFor(mode, reasoning, model) {
   if (reasoning === "fast") return false;
   if (/deepseek-v4-pro/i.test(model) && (reasoning === "deep" || mode === "ultra")) return "max";
   if (/glm-5\.3/i.test(model)) return "max";
+  if (/kimi-k3/i.test(model) && (reasoning === "deep" || mode === "ultra")) return "max";
   if (/kimi-k2\.7|kimi-k2\.6|gpt-oss/i.test(model)) return "high";
   return reasoning === "deep" || mode !== "standard";
 }
@@ -374,8 +374,9 @@ function providerModelFallbacks(model) {
     "glm-5.3-flash:cloud",
     "glm-5.3:cloud",
     "deepseek-v4-pro:cloud",
+    "kimi-k3:cloud",
     "kimi-k2.7-code:cloud",
-    "minimax-m2.7:cloud",
+    "minimax-m3:cloud",
     "gpt-oss:120b-cloud",
     "deepseek-v4-flash:cloud",
     "qwen3-coder:480b-cloud"
@@ -477,7 +478,7 @@ const profiles = {
   },
   ultra: {
     name: "CPT-3 ULTRA",
-    model: "kimi-k2.7-code:cloud",
+    model: "kimi-k3:cloud",
     temperature: 0.58,
     instructions: "Operate as Cookie's highest-capability multimodal and agentic profile. Analyze difficult engineering problems, large codebases, screenshots and visual interfaces carefully. Use long-horizon planning, strong code/design judgment, tool use, and rigorous self-review. Produce polished production-quality solutions and verify assumptions before committing to an answer.",
     thinking: true
