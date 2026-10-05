@@ -597,11 +597,15 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
   const [showSteps,setShowSteps]=useState(false);
   const [installing,setInstalling]=useState(false);
   const [ios,setIos]=useState(false);
+  const [android,setAndroid]=useState(false);
 
   useEffect(()=>{
     setInstalled(isCookieAppInstalled());
     const ua=navigator.userAgent||"";
-    setIos(/iPhone|iPad|iPod/i.test(ua));
+    const isAndroid=/Android/i.test(ua);
+    const isIOS=/iPhone|iPad|iPod/i.test(ua) && !isAndroid;
+    setIos(isIOS);
+    setAndroid(isAndroid);
     const before=(event:Event)=>{
       event.preventDefault();
       setDeferredPrompt(event as InstallPromptEvent);
@@ -647,7 +651,8 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
     }
     if(deferredPrompt){
       try{
-        const result=await deferredPrompt.prompt();
+        await deferredPrompt.prompt();
+        const result=await (deferredPrompt as any).userChoice;
         if(result?.outcome==="accepted"){
           setInstalled(true);
           try{localStorage.setItem("cookie_install_installed","1")}catch{}
@@ -692,13 +697,13 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
       {showSteps&&<div className="install-app-steps">
         <div className="install-app-step">
           <span>1</span>
-          <div><b>{ios?"On iPhone or iPad":"On this device"}</b><p>{ios?"Open Cookie in Safari, tap Share, then choose “Add to Home Screen” and tap Add.":"Use your browser's Install / Add to Home Screen option. Chromium browsers can show an install icon in the address bar or browser menu."}</p></div>
+          <div><b>{ios?"On iPhone or iPad":android?"Install Cookie on Android":"On this device"}</b><p>{ios?"Open Cookie in Safari, tap Share, then choose “Add to Home Screen” and tap Add.":android?"Open Cookie in Chrome and use the browser’s Install option if the native install prompt is unavailable.":"Use your browser's Install / Add to Home Screen option."}</p></div>
         </div>
         <div className="install-app-step">
           <span>2</span>
           <div><b>No app store required</b><p>Cookie can be installed directly from the web as a standalone app. There is no Google Play or App Store download involved.</p></div>
         </div>
-        <button className="install-app-primary" onClick={closeAndRemindLater}>{ios?"Done — I’ll add Cookie from Safari":"Got it"}</button>
+        <button className="install-app-primary" onClick={closeAndRemindLater}>{ios?"Done — I’ll add Cookie from Safari":android?"Got it":"Got it"}</button>
       </div>}
 
       <div className="install-app-foot">{installing&&ios?<><Smartphone size={14}/> Safari controls the final Add to Home Screen step.</>:<><Monitor size={14}/> Install once, then launch Cookie like an app.</>}</div>
