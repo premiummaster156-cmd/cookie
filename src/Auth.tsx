@@ -31,10 +31,71 @@ async function api(path:string, body:Record<string,unknown>) {
   return data;
 }
 
+function CookieLanding({onStart,onSignIn}:{onStart:()=>void;onSignIn:()=>void}) {
+  const features = [
+    {icon:ArrowRight,title:"One place for real work",text:"Write, learn, research, code, analyze files, and build projects without jumping between tools."},
+    {icon:ShieldCheck,title:"Built around your work",text:"Your chats, projects, files, and account stay together instead of feeling like a collection of disconnected AI demos."},
+    {icon:KeyRound,title:"Start simple",text:"No forced subscription wall or complicated setup. Try Cookie first, then decide how you want to use it."}
+  ];
+  return <div className="cookie-landing">
+    <header className="cookie-landing-nav">
+      <button className="cookie-landing-brand" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} aria-label="Cookie home">
+        <img src={ICON} alt="" draggable={false}/><span>Cookie</span>
+      </button>
+      <button className="cookie-landing-signin" onClick={onSignIn}>Sign in</button>
+    </header>
+
+    <main>
+      <section className="cookie-landing-hero">
+        <div className="cookie-landing-eyebrow"><img src={ICON} alt="" draggable={false}/> COOKIE AI</div>
+        <h1>An AI workspace<br/><em>made for doing.</em></h1>
+        <p>Write better. Learn faster. Research deeply. Build real things. Cookie brings the tools together without getting in your way.</p>
+        <div className="cookie-landing-actions">
+          <button className="cookie-landing-primary" onClick={onStart}>Start using Cookie <ArrowRight size={17}/></button>
+          <button className="cookie-landing-text" onClick={onSignIn}>I already have an account</button>
+        </div>
+        <div className="cookie-landing-note">Free to start · Works on iPhone, desktop, and web</div>
+      </section>
+
+      <section className="cookie-landing-showcase" aria-label="Cookie capabilities">
+        <div className="cookie-landing-showcase-copy">
+          <span>ONE WORKSPACE</span>
+          <h2>From a blank page<br/>to something <em>useful.</em></h2>
+          <p>Cookie is designed around the task in front of you—not around a wall of AI buttons.</p>
+        </div>
+        <div className="cookie-landing-activity">
+          <div className="cookie-landing-line"><i/>Ask a question <b>→</b></div>
+          <div className="cookie-landing-line"><i/>Research & compare <b>→</b></div>
+          <div className="cookie-landing-line"><i/>Attach a file <b>→</b></div>
+          <div className="cookie-landing-line"><i/>Build & ship <b>→</b></div>
+        </div>
+      </section>
+
+      <section className="cookie-landing-features">
+        {features.map(({icon:Icon,title,text})=><article key={title}>
+          <div className="cookie-landing-feature-icon"><Icon size={18}/></div>
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>)}
+      </section>
+
+      <section className="cookie-landing-bottom">
+        <img src={ICON} alt="" draggable={false}/>
+        <h2>Ready when you are.</h2>
+        <p>Open Cookie and start with the thing you actually want to do.</p>
+        <button onClick={onStart}>Get started <ArrowRight size={16}/></button>
+      </section>
+    </main>
+
+    <footer className="cookie-landing-footer"><span>© {new Date().getFullYear()} Cookie AI</span><span>Built for people who make things.</span></footer>
+  </div>;
+}
+
 export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:(user:AuthUser)=>void;configError?:string}) {
   const query=useMemo(()=>new URLSearchParams(location.search),[]);
   const initialVerify=query.get("verify")||"";
   const initialReset=query.get("reset")||"";
+  const [showAuth,setShowAuth]=useState(Boolean(initialVerify||initialReset));
   const [mode,setMode]=useState<Mode>(initialVerify?"verify":initialReset?"reset":"login");
   const [email,setEmail]=useState("");
   const [name,setName]=useState("");
@@ -80,15 +141,23 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
   }
   async function resend(){if(!email||busy)return;clearNotice();setBusy(true);try{const d=await api("/api/auth/resend",{email});setMessage(d?.message||"A new verification email is on its way.")}catch(e:any){setError(e?.message||"Could not resend verification email.")}finally{setBusy(false)}}
 
-  const title=mode==="login"?"Sign in":mode==="signup"?"Create your account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
+  if(!showAuth) return <CookieLanding onStart={()=>{setShowAuth(true);setMode("signup")}} onSignIn={()=>{setShowAuth(true);setMode("login")}}/>;
+
+  const title=mode==="login"?mode==="signup"?"Create your account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
   const subtitle=mode==="login"?"Sign in to your Cookie account.":mode==="signup"?"Create an account to keep your chats and projects synced.":mode==="verify"?"Enter the 6-digit code from your email.":"We’ll send a secure link to your email address.";
 
   return <div className="auth-shell">
-    <header className="auth-brand"><img src={ICON} className="auth-brand-icon" alt="" draggable={false}/><span>Cookie</span></header>
+    <header className="auth-brand"><button className="auth-brand-home" onClick={()=>setShowAuth(false)} aria-label="Back to Cookie home"><img src={ICON} className="auth-brand-icon" alt="" draggable={false}/><span>Cookie</span></button></header>
     <main className="auth-layout">
       <section className="auth-card">
         <img className="auth-card-icon" src={ICON} alt="" draggable={false}/>
         <div className="auth-card-head"><h2>{title}</h2><p>{subtitle}</p></div>
+
+        {(mode==="login"||mode==="signup")&&<div className="auth-providers" aria-label="Social sign in options">
+          <a className="auth-provider" href="/api/auth/google"><ProviderMark provider="google"/><span>Google</span></a>
+          <a className="auth-provider" href="/api/auth/github"><ProviderMark provider="github"/><span>GitHub</span></a>
+          <a className="auth-provider" href="/api/auth/discord"><ProviderMark provider="discord"/><span>Discord</span></a>
+        </div>}
 
         {(mode==="login"||mode==="signup")&&<>
           <div className="auth-divider"><span>Email verification</span></div>
