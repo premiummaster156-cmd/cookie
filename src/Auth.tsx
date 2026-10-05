@@ -11,6 +11,8 @@ export type AuthUser = {
   username:string;
   avatarUrl:string;
   plan:string;
+  planExpiresAt:number;
+  role:string;
   credits:number;
 };
 
