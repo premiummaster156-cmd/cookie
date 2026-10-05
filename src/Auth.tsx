@@ -143,7 +143,7 @@ export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:
 
   if(!showAuth) return <CookieLanding onStart={()=>{setShowAuth(true);setMode("signup")}} onSignIn={()=>{setShowAuth(true);setMode("login")}}/>;
 
-  const title=mode==="login"?mode==="signup"?"Create your account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
+  const title=mode==="login"?"Sign in":mode==="signup"?"Create your account":mode==="verify"?"Verify your email":mode==="forgot"?"Reset your password":"Choose a new password";
   const subtitle=mode==="login"?"Sign in to your Cookie account.":mode==="signup"?"Create an account to keep your chats and projects synced.":mode==="verify"?"Enter the 6-digit code from your email.":"We’ll send a secure link to your email address.";
 
   return <div className="auth-shell">
