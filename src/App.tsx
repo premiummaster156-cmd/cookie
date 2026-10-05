@@ -138,7 +138,7 @@ function CookieViz({spec}:{spec:VizSpec}){
   if(rows.length<2)return null;
   const width=620,height=240,pad={l:42,r:18,t:34,b:44},innerW=width-pad.l-pad.r,innerH=height-pad.t-pad.b;
   const min=Math.min(0,...rows.map(x=>x.value)),max=Math.max(0,...rows.map(x=>x.value)),span=max-min||1;
-  const y=v=>pad.t+(max-v)/span*innerH;
+  const y=(v:number)=>pad.t+(max-v)/span*innerH;
   return <figure className="cookie-viz"><figcaption><strong>{String(spec.title||"Visualization").slice(0,120)}</strong>{spec.unit&&<small>{String(spec.unit).slice(0,40)}</small>}</figcaption>
     <div className="cookie-viz-scroll"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={String(spec.title||"Data visualization")}>
       <line x1={pad.l} y1={y(0)} x2={width-pad.r} y2={y(0)} className="viz-axis"/>
