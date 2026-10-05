@@ -5358,3 +5358,95 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
     display:none!important;
   }
 }
+
+/* Cookie AI boot screen + task activity + privileged controls */
+.cookie-boot{
+  position:fixed!important;inset:0!important;z-index:9999!important;
+  display:grid!important;place-items:center!important;
+  background:#fff!important;color:#111!important;
+}
+.cookie-boot.failed{cursor:pointer}
+.cookie-boot-center{width:min(250px,68vw)!important;display:flex!important;flex-direction:column!important;align-items:center!important;gap:19px!important}
+.cookie-boot-icon-wrap{width:78px!important;height:78px!important;display:grid!important;place-items:center!important;background:#fff!important;border-radius:0!important;overflow:hidden!important}
+.cookie-boot-icon-wrap .cookie-icon{width:72px!important;height:72px!important;object-fit:contain!important}
+.cookie-progress-track{width:100%!important;height:6px!important;border-radius:999px!important;background:#e4e4e4!important;overflow:hidden!important}
+.cookie-progress-fill{height:100%!important;border-radius:999px!important;background:#d99135!important;transition:width .22s ease!important}
+
+.activity-timeline{width:min(640px,100%);margin:0 0 11px}
+.activity-summary{
+  width:100%;display:grid;grid-template-columns:17px minmax(0,1fr) 18px;align-items:center;gap:9px;
+  padding:5px 0;background:transparent;color:var(--text);text-align:left;
+}
+.activity-summary>span:nth-child(2){display:flex;flex-direction:column;gap:2px;min-width:0}
+.activity-summary b{font-size:12px;font-weight:700;color:#cfcfcf}
+.activity-summary small{font-size:10px;color:#777}
+.activity-summary svg{transition:transform .18s ease;color:#707070}
+.activity-summary svg.rot{transform:rotate(180deg)}
+.activity-spinner{width:13px;height:13px;border-radius:50%;border:2px solid #4e4e4e;border-top-color:#e8e8e8;animation:cookieActivitySpin .8s linear infinite}
+.activity-spinner.complete{border-color:#777;border-top-color:#777;animation:none}
+@keyframes cookieActivitySpin{to{transform:rotate(360deg)}}
+.activity-steps{margin:2px 0 2px 6px;padding-left:12px;border-left:1px solid var(--line)}
+.activity-step{width:100%;display:grid;grid-template-columns:18px minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;text-align:left}
+.activity-step-icon{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#252525;color:#777}
+.activity-step-icon.done{background:#1f1f1f;color:#aaa}
+.activity-step>span:nth-child(2){display:flex;flex-direction:column;gap:1px;min-width:0}
+.activity-step b{font-size:11px;color:#c5c5c5;font-weight:650}
+.activity-step small{font-size:9px;color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.cs-admin-modal{
+  width:min(960px,calc(100% - 28px));height:min(86vh,760px);overflow:hidden;
+  background:#202020;border:1px solid var(--line2);border-radius:14px;box-shadow:0 24px 90px rgba(0,0,0,.55);
+}
+.cs-admin-panel{width:100%;height:100%;overflow:auto;padding:18px}
+.cs-admin-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:4px 2px 15px;border-bottom:1px solid var(--line)}
+.cs-admin-head h2{margin:5px 0 4px;font-size:20px}
+.cs-admin-head p{margin:0;max-width:650px;color:#777;font-size:10px;line-height:1.5}
+.cs-admin-kicker{display:flex;align-items:center;gap:6px;color:#888;font-size:10px}
+.cs-admin-head-actions{display:flex;align-items:center;gap:8px}
+.cs-admin-head-actions>button{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#888}
+.cs-admin-head-actions>button:hover{background:var(--hover);color:#fff}
+.cs-admin-role{padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:9px;color:#aaa;text-transform:uppercase}
+.cs-admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0}
+.cs-admin-stats>div{padding:10px 4px;border-bottom:1px solid var(--line)}
+.cs-admin-stats span{display:block;color:#777;font-size:9px}
+.cs-admin-stats strong{display:block;margin-top:3px;font-size:20px}
+.cs-admin-section{padding:13px 0;border-top:1px solid var(--line)}
+.cs-admin-section-title{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-size:11px;font-weight:700}
+.cs-admin-form{display:grid;grid-template-columns:2.1fr .8fr .8fr .8fr 1fr;gap:7px}
+.cs-admin-form input,.cs-admin-form select,.cs-admin-limits input,.cs-admin-search{
+  min-width:0;background:#2b2b2b;color:#eee;border:1px solid var(--line);border-radius:8px;
+}
+.cs-admin-form input,.cs-admin-form select{padding:8px 9px}
+.cs-admin-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.cs-admin-actions button,.cs-admin-section>button{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;color:#ccc
+}
+.cs-admin-actions button:hover,.cs-admin-section>button:hover{background:var(--hover);color:#fff}
+.cs-admin-actions button:disabled,.cs-admin-section>button:disabled{opacity:.45;cursor:default}
+.cs-admin-hint,.cs-admin-empty{display:block;margin-top:8px;color:#707070;font-size:9px;line-height:1.45}
+.cs-admin-limits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:9px}
+.cs-admin-limits label{display:flex;flex-direction:column;gap:4px;color:#777;font-size:9px}
+.cs-admin-limits input{padding:7px 8px}
+.cs-admin-search{height:36px;display:flex;align-items:center;gap:7px;padding:0 9px;margin-bottom:6px}
+.cs-admin-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#eee}
+.cs-admin-users{display:flex;flex-direction:column}
+.cs-admin-users button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:9px 4px;text-align:left;border-bottom:1px solid var(--line)}
+.cs-admin-users button:hover{background:var(--hover)}
+.cs-admin-users button>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cs-admin-users strong,.cs-admin-users b{font-size:10px}
+.cs-admin-users small{font-size:8px;color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-admin-loading{display:flex;align-items:center;gap:8px;padding:30px 4px;color:#777}
+@media(max-width:900px){
+  .cs-admin-modal{width:calc(100% - 18px);height:calc(100% - 36px);border-radius:12px}
+  .cs-admin-panel{padding:12px}
+  .cs-admin-form{grid-template-columns:1fr 1fr}
+  .cs-admin-limits{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .cookie-boot-center{width:220px!important}
+  .activity-summary{padding:6px 0}
+  .activity-step{padding:7px 0}
+  .cs-admin-stats{grid-template-columns:repeat(2,1fr)}
+  .cs-admin-form{grid-template-columns:1fr}
+  .cs-admin-limits{grid-template-columns:1fr}
+}
