@@ -153,6 +153,39 @@ function makeDiff(changes){
     return "### "+c.status.toUpperCase()+" "+c.path+"\n"+d.text;
   }).join("\n\n");
 }
+function codeBalanceIssue(source){
+  const s=String(source||"");
+  const stack=[];let quote="";let escape=false;let lineComment=false;let blockComment=false;
+  for(let i=0;i<s.length;i++){
+    const ch=s[i],next=s[i+1];
+    if(lineComment){if(ch==="\n")lineComment=false;continue}
+    if(blockComment){if(ch==="*"&&next==="/"){blockComment=false;i++}continue}
+    if(quote){if(escape){escape=false;continue}if(ch==="\\"){escape=true;continue}if(ch===quote)quote="";continue}
+    if(ch==="/"&&next==="/"){lineComment=true;i++;continue}
+    if(ch==="/"&&next==="*"){blockComment=true;i++;continue}
+    if(ch==="""||ch==="'"||ch==="\x60"){quote=ch;continue}
+    if(ch==="{"||ch==="("||ch==="["){stack.push(ch);continue}
+    if(ch==="}"||ch===")"||ch==="]"){
+      const expected=ch==="}"?"{":ch===")"?"(":"[";
+      if(stack.pop()!==expected)return "Mismatched "+ch+" near character "+i+".";
+    }
+  }
+  if(quote)return "Unterminated string/template literal.";
+  if(blockComment)return "Unterminated block comment.";
+  if(stack.length)return "Unclosed "+stack[stack.length-1]+" delimiter.";
+  return "";
+}
+function syntaxChecks(changes){
+  const checks=[];
+  for(const c of changes){
+    if(c.status==="deleted")continue;
+    const p=String(c.path||""),after=String(c.after||"");
+    if(/\.(?:ts|tsx|js|jsx|mjs|cjs)$/i.test(p)){const issue=codeBalanceIssue(after);if(issue)checks.push({name:"Syntax structure",status:"fail",detail:p+": "+issue});}
+    if(/\.jsonc?$/i.test(p)){try{JSON.parse(after)}catch(error){checks.push({name:"JSON syntax",status:"fail",detail:p+": "+String(error?.message||"Invalid JSON.").slice(0,180)})}}
+  }
+  return checks;
+}
+
 function deterministicChecks(changes){
   const checks=[];const all=changes.map(c=>c.path+"\n"+c.after).join("\n");
   const totalLines=changes.reduce((n,c)=>n+String(c.after||"").split("\n").length,0);
@@ -186,27 +219,34 @@ async function aiReview(env,changes,checks){
     "findings must be an array of objects with file, severity, message.",
     "required_fixes must be an array of strings.",
     "Approve only when the change is coherent, reasonably safe, and deterministic checks below do not fail.",
+    "Never approve a change with a credible syntax, compile, import, control-flow, or behavior regression. Use Needs changes when correctness is uncertain.",
+    "Inspect every changed code file carefully for missing imports/exports, undefined identifiers, invalid JSX/TypeScript/JavaScript, broken branches, accidental deletions, and integration regressions.",
     "Pay special attention to secrets, auth, permissions, destructive migrations, dependency changes, broken imports, unrelated deletions, and dangerous commands.",
     "DETERMINISTIC CHECKS: "+JSON.stringify(checks),
     "EXACT CHANGE:\n"+payload.slice(0,MAX_REVIEW_CHARS)
   ].join("\n\n");
-  const models=["gpt-oss:20b-cloud","deepseek-v4-pro:cloud","qwen3-coder:480b-cloud"];
+  const models=["gemma4:cloud","gpt-oss:20b-cloud","deepseek-v4-pro:cloud","qwen3-coder:480b-cloud"];
+  const valid=[];
   for(const model of models){
     try{
-      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.1,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only."},{role:"user",content:prompt}]})});
+      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.05,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. You are a skeptical production reviewer."},{role:"user",content:prompt}]})});
       const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
       if(!r.ok)continue;
       let out=String(data?.message?.content||data?.response||"").trim();
       out=out.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^\x60\x60\x60(?:json)?/i,"").replace(/\x60\x60\x60$/,"").trim();
       const first=out.indexOf("{"),last=out.lastIndexOf("}");
-      if(first>0&&last>first)out=out.slice(first,last+1);
+      if(first>=0&&last>first)out=out.slice(first,last+1);
       const parsed=JSON.parse(out);
       if(["Approved","Needs changes","Blocked"].includes(parsed.status)){
-        return {ok:true,model,status:parsed.status,risk:parsed.risk||"medium",summary:text(parsed.summary,4000),findings:Array.isArray(parsed.findings)?parsed.findings.slice(0,30):[],required_fixes:Array.isArray(parsed.required_fixes)?parsed.required_fixes.slice(0,30):[]};
+        valid.push({ok:true,model,status:parsed.status,risk:parsed.risk||"medium",summary:text(parsed.summary,4000),findings:Array.isArray(parsed.findings)?parsed.findings.slice(0,30):[],required_fixes:Array.isArray(parsed.required_fixes)?parsed.required_fixes.slice(0,30):[]});
+        if(valid.length>=2)break;
       }
     }catch(error){console.error("[Cookie Code Studio review]",error)}
   }
-  return {ok:false,error:"AI review service did not return a valid review."};
+  if(!valid.length)return {ok:false,error:"AI review service did not return a valid review."};
+  const concern=valid.find(x=>x.status==="Blocked")||valid.find(x=>x.status==="Needs changes");
+  if(concern)return {...concern,model:valid.map(x=>x.model).join(" + ")};
+  return {ok:true,model:valid.map(x=>x.model).join(" + "),status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
 }
 async function deploymentState(sha,token=""){
   if(!sha)return {status:"not_started",checks:[]};
@@ -231,7 +271,7 @@ async function reviewWorkspace(env,user){
   for(const f of candidates){
     const b=await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim());baseline.push({path:f.path,...b});
   }
-  const changes=changedFiles(files,baseline);const checks=deterministicChecks(changes);
+  const changes=changedFiles(files,baseline);const checks=[...deterministicChecks(changes),...syntaxChecks(changes)];
   const branch=await getBranch(String(env.GITHUB_TOKEN||"").trim());const diff=makeDiff(changes);const diffHash=await hashText(JSON.stringify(changes));
   if(!changes.length){
     return {status:"Approved",risk:"low",summary:"No changes are pending.",findings:[],required_fixes:[],checks,changes,baseSha:branch?.object?.sha||null,diffHash};
@@ -296,7 +336,7 @@ async function commitApproved(env,user,reviewId){
   }
   const files=await loadVirtual(env);const baseline=[];for(const f of files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha)))baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
   const changes=changedFiles(files,baseline);if(!changes.length)return {ok:false,error:"There are no changes to commit."};
-  const freshChecks=deterministicChecks(changes);if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety check failed during commit."};
+  const freshChecks=[...deterministicChecks(changes),...syntaxChecks(changes)];if(freshChecks.some(x=>x.status==="fail"))return {ok:false,error:"A deterministic safety or syntax check failed during commit."};
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
   const treeEntries=changes.map(c=>c.status==="deleted"?{path:c.path,mode:"100644",type:"blob",sha:null}:{path:c.path,mode:"100644",type:"blob",content:String(c.after||"")});
   const newTree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_tree:parent.tree.sha,tree:treeEntries})});
