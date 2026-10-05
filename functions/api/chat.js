@@ -489,7 +489,7 @@ const profiles = {
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!dbAvailable(env)) return json({ error:"Cookie account database is not connected." }, 503);
+    if (!dbAvailable(env)) return json({ error:"Cookie accounts are not configured yet. Add NEON_DATABASE_URL as an encrypted Pages secret." }, 503);
     const sessionUser = await getSessionUser(request, env);
     if (!sessionUser) return json({ error:"Please sign in to use Cookie AI." }, 401);
 
