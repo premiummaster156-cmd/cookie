@@ -5816,8 +5816,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 html[data-theme="dark"] .cookie-landing{background:#111;color:#f2f2ef}
 html[data-theme="dark"] .cookie-landing-signin{background:#1d1d1b;border-color:#3a3a36;color:#eee}
 html[data-theme="dark"] .cookie-landing-showcase,html[data-theme="dark"] .cookie-landing-footer{border-color:#30302d}
-html[data-theme="dark"] .cookie-landing-showcase-copy>span,.html[data-theme="dark"] .cookie-landing-note{color:#777}
-html[data-theme="dark"] .cookie-landing-hero p,html[data-theme="dark"] .cookie-landing-showcase p,html[data-theme="dark"] .cookie-landing-features p,.html[data-theme="dark"] .cookie-landing-bottom p{color:#999}
+html[data-theme="dark"] .cookie-landing-showcase-copy>span,.cookie-landing-note{color:#777}
+html[data-theme="dark"] .cookie-landing-hero p,html[data-theme="dark"] .cookie-landing-showcase p,html[data-theme="dark"] .cookie-landing-features p,.cookie-landing-bottom p{color:#999}
 html[data-theme="dark"] .cookie-landing-line{border-color:#30302d;color:#ddd}
 html[data-theme="dark"] .cookie-landing-line i{background:#eee}
 html[data-theme="dark"] .cookie-landing-feature-icon{border-color:#3a3a36}
