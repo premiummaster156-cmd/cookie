@@ -223,9 +223,6 @@ function CookieLanding({onStart,onSignIn}:{onStart:()=>void;onSignIn:()=>void}) 
   </div>;
 }
 
-iv>;
-}
-
 export default function AuthPage({onAuthenticated,configError}:{onAuthenticated:(user:AuthUser)=>void;configError?:string}) {
   const query=useMemo(()=>new URLSearchParams(location.search),[]);
   const initialVerify=query.get("verify")||"";
