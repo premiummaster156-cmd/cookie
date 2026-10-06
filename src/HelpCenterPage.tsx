@@ -1,4 +1,4 @@
-import React,{useMemo,useState} from "react";
+import React,{useEffect,useMemo,useState} from "react";
 import {BookOpen,ChevronRight,CircleHelp,FileText,LockKeyhole,MessageSquare,Search,ShieldCheck,Sparkles,Upload,UserRound,Volume2,Wrench,X} from "lucide-react";
 type Article={id:string;title:string;summary:string;body:React.ReactNode};
 type Topic={id:string;title:string;description:string;icon:React.ReactNode;articles:Article[]};
@@ -63,6 +63,7 @@ const topics:Topic[]=[
 ];
 export default function HelpCenterPage({onClose,onLegal}:{onClose:()=>void;onLegal:(kind:"terms"|"privacy")=>void}){
  const [query,setQuery]=useState("");const [topicId,setTopicId]=useState("start");const [articleId,setArticleId]=useState("start-cookie");
+ useEffect(()=>{const fn=(e:Event)=>onLegal((e as CustomEvent<"terms"|"privacy">).detail);window.addEventListener("cookie:open-legal",fn);return()=>window.removeEventListener("cookie:open-legal",fn)},[onLegal]);
  const topic=topics.find(t=>t.id===topicId)||topics[0];const article=topic.articles.find(a=>a.id===articleId)||topic.articles[0];
  const results=useMemo(()=>{const q=query.trim().toLowerCase();if(!q)return [];return topics.flatMap(t=>t.articles.filter(a=>(t.title+" "+a.title+" "+a.summary).toLowerCase().includes(q)).map(a=>({topic:t,article:a}))).slice(0,12)},[query]);
  const openArticle=(t:Topic,a:Article)=>{setTopicId(t.id);setArticleId(a.id);setQuery("")};
