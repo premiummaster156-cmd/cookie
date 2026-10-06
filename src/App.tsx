@@ -402,164 +402,125 @@ function AdminPage({actorRole,onNotice,onError}:{actorRole:string;onNotice:(x:st
   </div>;
 }
 
-function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser}){
+function SettingsPage({tab,setTab,settings,setSettings,profile,setProfile,setModel,authUser,onNavigate}:{tab:SettingsTab;setTab:(t:SettingsTab)=>void;settings:any;setSettings:React.Dispatch<React.SetStateAction<any>>;profile:any;setProfile:React.Dispatch<React.SetStateAction<any>>;setModel:(m:string)=>void;authUser:AuthUser;onNavigate:(view:View)=>void}){
   const tabs:[SettingsTab,string,React.ReactNode][]=[
-    ["general","General",<SettingsIcon size={17}/>],
-    ["personalization","Personalization",<Brain size={17}/>],
-    ["data","Data controls",<LockKeyhole size={17}/>],
-    ["notifications","Notifications",<Bell size={17}/>],
-    ["voice","Voice",<Volume2 size={17}/>],
-    ["account","Account",<UserRound size={17}/>],
-    ["about","About",<Info size={17}/>]
+    ["general","General",<SettingsIcon size={17}/>],["personalization","Personalization",<Brain size={17}/>],
+    ["data","Data controls",<LockKeyhole size={17}/>],["notifications","Notifications",<Bell size={17}/>],
+    ["voice","Voice",<Volume2 size={17}/>],["account","Account",<UserRound size={17}/>],["about","About",<Info size={17}/>]
   ];
   const [mobileHome,setMobileHome]=useState(tab==="general");
   const [saveState,setSaveState]=useState<""|"saving"|"saved"|"error">("");
+  const [passwords,setPasswords]=useState({current:"",next:"",confirm:""});
+  const [securityState,setSecurityState]=useState("");
   useEffect(()=>{if(tab!=="general")setMobileHome(false)},[tab]);
   const Toggle=({k}:{k:string})=><button type="button" className={"toggle "+(settings[k]?"on":"")} aria-pressed={!!settings[k]} onClick={()=>setSettings((s:any)=>({...s,[k]:!s[k]}))}><span/></button>;
   const openTab=(id:SettingsTab)=>{setTab(id);setMobileHome(false)};
-  const Row=({title,desc,children,icon}:{title:string;desc:string;children:React.ReactNode;icon?:React.ReactNode})=><div className="set-row"><div className="set-row-copy">{icon&&<span className="set-row-icon">{icon}</span>}<div><b>{title}</b><span>{desc}</span></div></div><div className="set-row-control">{children}</div></div>;
+  const Row=({title,desc,children,icon,button}:{title:string;desc:string;children?:React.ReactNode;icon?:React.ReactNode;button?:boolean})=><div className={"set-row "+(button?"set-row-button":"")}><div className="set-row-copy">{icon&&<span className="set-row-icon">{icon}</span>}<div><b>{title}</b><span>{desc}</span></div></div>{children&&<div className="set-row-control">{children}</div>}</div>;
   const GlassCard=({children,className=""}:{children:React.ReactNode;className?:string})=><div className={"settings-card settings-material-card "+className}>{children}</div>;
-  const downloadData=()=>{
-    try{
-      const payload={exportedAt:new Date().toISOString(),profile,settings,chats:readJSON("cookie_chats",[])};
-      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-      const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="cookie-data.json";a.click();URL.revokeObjectURL(url);
-    }catch{setSaveState("error");}
-  };
-  const saveProfile=async()=>{
+
+  const persistSettings=async(next:any)=>{
+    setSettings(next);
     setSaveState("saving");
     try{
-      const r=await fetch("/api/auth/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({name:profile.name,username:profile.username})});
-      const d=await r.json();if(!r.ok)throw new Error(d?.error||"Could not save profile.");
-      setProfile((p:any)=>({...p,name:d.user.name,username:d.user.username}));setSaveState("saved");window.setTimeout(()=>setSaveState(""),1800);
-    }catch{setSaveState("error");}
+      const r=await fetch("/api/settings",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({settings:next})});
+      if(!r.ok)throw new Error();
+      setSaveState("saved");window.setTimeout(()=>setSaveState(""),1400);
+    }catch{setSaveState("error")}
   };
-  const confirmDelete=()=>{
-    if(settings.confirmDelete && !window.confirm("Delete all saved chats from this browser? This cannot be undone.")) return;
-    localStorage.removeItem("cookie_chats");location.reload();
+  const update=(key:string,value:any)=>{const next={...settings,[key]:value};setSettings(next);setSaveState("saving");window.clearTimeout((window as any).__cookieSettingsSave);(window as any).__cookieSettingsSave=window.setTimeout(async()=>{try{const r=await fetch("/api/settings",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({settings:next})});if(!r.ok)throw new Error();setSaveState("saved");window.setTimeout(()=>setSaveState(""),1200)}catch{setSaveState("error")}},350)};
+  const downloadData=async()=>{
+    try{
+      const r=await fetch("/api/settings?action=export",{credentials:"same-origin",cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d?.error||"Could not export data.");
+      const blob=new Blob([JSON.stringify({...d,settings},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="cookie-data.json";a.click();URL.revokeObjectURL(url);
+    }catch{setSaveState("error")}
   };
+  const deleteChats=async()=>{
+    if(settings.confirmDelete&&!window.confirm("Delete all saved Cookie chats from your account and this browser? This cannot be undone."))return;
+    try{
+      const r=await fetch("/api/settings",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete_chats"})});
+      if(!r.ok)throw new Error();localStorage.removeItem("cookie_chats");location.reload();
+    }catch{setSaveState("error")}
+  };
+  const changePassword=async()=>{
+    setSecurityState("saving");
+    if(passwords.next.length<10||passwords.next!==passwords.confirm){setSecurityState("New passwords must match and be at least 10 characters.");return}
+    try{
+      const r=await fetch("/api/settings",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"change_password",currentPassword:passwords.current,newPassword:passwords.next})});
+      const d=await r.json();if(!r.ok)throw new Error(d?.error||"Could not change password.");
+      setPasswords({current:"",next:"",confirm:""});setSecurityState("Password changed.");window.setTimeout(()=>setSecurityState(""),1800);
+    }catch(e:any){setSecurityState(e?.message||"Could not change password.")}
+  };
+  const signOutOtherDevices=async()=>{
+    if(!window.confirm("Sign out Cookie on every other device?"))return;
+    try{const r=await fetch("/api/settings",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"sign_out_other_devices"})});if(!r.ok)throw new Error();setSecurityState("Other sessions signed out.");window.setTimeout(()=>setSecurityState(""),1800)}catch{setSecurityState("Could not sign out other sessions.")}
+  };
+
   return <div className="settings-page">
-    <aside>
-      <h2>Settings</h2>
-      <div className="settings-nav-group">{tabs.map(([id,label,icon])=><button className={tab===id?"selected":""} key={id} onClick={()=>openTab(id)}>{icon}<span>{label}</span><ChevronRight className="settings-nav-chevron" size={16}/></button>)}</div>
-    </aside>
-    <div className={"settings-mobile-home "+(mobileHome?"show":"")}>
-      <div className="settings-home-heading"><div><span className="settings-eyebrow">Cookie AI</span><h1>Settings</h1></div><SettingsIcon size={24}/></div>
-      <div className="settings-home-list">{tabs.map(([id,label,icon])=><button key={id} onClick={()=>openTab(id)}><span className="settings-home-label"><span className={"settings-home-icon settings-home-"+id}>{icon}</span><span>{label}</span></span><ChevronRight size={18}/></button>)}</div>
-    </div>
+    <aside><h2>Settings</h2><div className="settings-nav-group">{tabs.map(([id,label,icon])=><button className={tab===id?"selected":""} key={id} onClick={()=>openTab(id)}>{icon}<span>{label}</span><ChevronRight className="settings-nav-chevron" size={16}/></button>)}</div></aside>
+    <div className={"settings-mobile-home "+(mobileHome?"show":"")}><div className="settings-home-heading"><div><span className="settings-eyebrow">Cookie AI</span><h1>Settings</h1></div><SettingsIcon size={24}/></div><div className="settings-home-list">{tabs.map(([id,label,icon])=><button key={id} onClick={()=>openTab(id)}><span className="settings-home-label"><span className={"settings-home-icon settings-home-"+id}>{icon}</span><span>{label}</span></span><ChevronRight size={18}/></button>)}</div></div>
     <main className={mobileHome?"mobile-hidden":""}>
       <button className="settings-mobile-back" onClick={()=>setMobileHome(true)} aria-label="Back to settings"><ChevronLeft size={18}/><span>{tabs.find(([id])=>id===tab)?.[1]||"Settings"}</span></button>
 
-      {tab==="general"&&<section>
-        <h1>General</h1>
-        <div className="settings-group"><div className="settings-group-title">Appearance</div>
-          <GlassCard>
-            <Row title="Theme" desc="Choose how Cookie looks."><select value={settings.theme} onChange={e=>setSettings((s:any)=>({...s,theme:e.target.value}))}><option>System</option><option>Light</option><option>Dark</option></select></Row>
-            <Row title="Accent color" desc="Choose the highlight color used by Cookie."><select value={settings.accent} onChange={e=>setSettings((s:any)=>({...s,accent:e.target.value}))}><option>Default</option><option>Blue</option><option>Green</option><option>Purple</option><option>Orange</option></select></Row>
-            <Row title="Text size" desc="Adjust reading size in conversations."><select value={settings.fontSize} onChange={e=>setSettings((s:any)=>({...s,fontSize:e.target.value}))}><option>Default</option><option>Small</option><option>Large</option></select></Row>
-            <Row title="Compact mode" desc="Use tighter spacing in chats and lists."><Toggle k="compact"/></Row>
-            <Row title="Animations" desc="Use motion and transitions throughout Cookie."><Toggle k="animations"/></Row>
-          </GlassCard>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Chat behavior</div>
-          <GlassCard>
-            <Row title="Send on Enter" desc="Press Enter to send. Shift + Enter adds a new line."><Toggle k="sendOnEnter"/></Row>
-            <Row title="Show message times" desc="Display the time under each message."><Toggle k="timestamps"/></Row>
-            <Row title="Confirm before deleting" desc="Ask before removing chats or clearing history."><Toggle k="confirmDelete"/></Row>
-          </GlassCard>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Interface</div>
-          <GlassCard>
-            <Row title="Interface language" desc="Choose Cookie's interface language."><select value={settings.language} onChange={e=>setSettings((s:any)=>({...s,language:e.target.value}))}>{LANGUAGES.map(l=><option key={l}>{l}</option>)}</select></Row>
-            <Row title="Keyboard shortcuts" desc="Enable ⌘K / Ctrl+K and other shortcuts."><Toggle k="keyboard"/></Row>
-          </GlassCard>
-        </div>
+      {tab==="general"&&<section><h1>General</h1>
+        <div className="settings-group"><div className="settings-group-title">Appearance</div><GlassCard>
+          <Row title="Theme" desc="Choose how Cookie looks."><select value={settings.theme} onChange={e=>update("theme",e.target.value)}><option>System</option><option>Light</option><option>Dark</option></select></Row>
+          <Row title="Accent color" desc="Choose the highlight color used by Cookie."><select value={settings.accent} onChange={e=>update("accent",e.target.value)}><option>Default</option><option>Blue</option><option>Green</option><option>Purple</option><option>Orange</option></select></Row>
+          <Row title="Text size" desc="Adjust reading size in conversations."><select value={settings.fontSize} onChange={e=>update("fontSize",e.target.value)}><option>Default</option><option>Small</option><option>Large</option></select></Row>
+          <Row title="Compact mode" desc="Use tighter spacing in chats and lists."><Toggle k="compact"/></Row><Row title="Animations" desc="Use motion and transitions throughout Cookie."><Toggle k="animations"/></Row>
+        </GlassCard></div>
+        <div className="settings-group"><div className="settings-group-title">Chat behavior</div><GlassCard>
+          <Row title="Send on Enter" desc="Press Enter to send. Shift + Enter adds a new line."><Toggle k="sendOnEnter"/></Row><Row title="Show message times" desc="Display the time under each message."><Toggle k="timestamps"/></Row><Row title="Confirm before deleting" desc="Ask before removing chats or clearing history."><Toggle k="confirmDelete"/></Row>
+        </GlassCard></div>
+        <div className="settings-group"><div className="settings-group-title">Interface</div><GlassCard>
+          <Row title="Interface language" desc="Choose Cookie's interface language."><select value={settings.language} onChange={e=>update("language",e.target.value)}>{LANGUAGES.map(l=><option key={l}>{l}</option>)}</select></Row>
+          <Row title="Keyboard shortcuts" desc="Enable ⌘K / Ctrl+K and other shortcuts."><Toggle k="keyboard"/></Row>
+          <Row title="Default model" desc="Model Cookie should use for new chats."><select value={settings.defaultModel||"standard"} onChange={e=>{update("defaultModel",e.target.value);setModel(e.target.value)}}>{MODELS.map(m=><option key={m.id} value={m.id} disabled={!((authUser.plan==="max"||authUser.role==="owner"||authUser.role==="admin")||modelRank(m.id)<=planRankClient(authUser.plan))}>{m.name}</option>)}</select></Row>
+        </GlassCard></div>
+        {saveState&&<div className="settings-sync-status">{saveState==="saving"?"Saving…":saveState==="saved"?"Saved to your account":"Couldn’t save changes."}</div>}
       </section>}
 
-      {tab==="personalization"&&<section>
-        <h1>Personalization</h1>
-        <div className="settings-group"><div className="settings-group-title">Response style</div>
-          <GlassCard>
-            <Row title="AI personality" desc="How Cookie should sound."><select value={settings.personality} onChange={e=>setSettings((s:any)=>({...s,personality:e.target.value}))}>{PERSONALITIES.map(p=><option key={p}>{p}</option>)}</select></Row>
-            <Row title="Reasoning effort" desc="Choose how much internal reasoning Cookie should use."><select value={settings.reasoning||"auto"} onChange={e=>setSettings((s:any)=>({...s,reasoning:e.target.value}))}><option value="auto">Auto</option><option value="fast">Fast</option><option value="deep">Deep</option></select></Row>
-            <Row title="Answer length" desc="Control the default response length."><select value={settings.answerLength||"auto"} onChange={e=>setSettings((s:any)=>({...s,answerLength:e.target.value}))}><option value="auto">Auto</option><option value="short">Short</option><option value="detailed">Detailed</option></select></Row>
-            <Row title="Memory" desc="Use relevant saved preferences in conversations."><Toggle k="memory"/></Row>
-          </GlassCard>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Custom instructions</div>
-          <GlassCard className="settings-instructions-card">
-            <label className="settings-field-label">What should Cookie know about you?</label>
-            <textarea value={settings.instructions} onChange={e=>setSettings((s:any)=>({...s,instructions:e.target.value}))} placeholder="Tell Cookie about your preferences, goals, or how you like answers written…"/>
-            <span className="settings-field-hint">These instructions apply to your conversations while enabled.</span>
-          </GlassCard>
-        </div>
+      {tab==="personalization"&&<section><h1>Personalization</h1>
+        <div className="settings-group"><div className="settings-group-title">Response style</div><GlassCard>
+          <Row title="AI personality" desc="How Cookie should sound."><select value={settings.personality} onChange={e=>update("personality",e.target.value)}>{PERSONALITIES.map(p=><option key={p}>{p}</option>)}</select></Row>
+          <Row title="Reasoning effort" desc="Choose the response effort setting."><select value={settings.reasoning||"auto"} onChange={e=>update("reasoning",e.target.value)}><option value="auto">Auto</option><option value="fast">Fast</option><option value="deep">Deep</option></select></Row>
+          <Row title="Answer length" desc="Control the default response length."><select value={settings.answerLength||"auto"} onChange={e=>update("answerLength",e.target.value)}><option value="auto">Auto</option><option value="short">Short</option><option value="detailed">Detailed</option></select></Row>
+          <Row title="Memory" desc="Use relevant saved preferences in conversations."><Toggle k="memory"/></Row>
+        </GlassCard></div>
+        <div className="settings-group"><div className="settings-group-title">Custom instructions</div><GlassCard className="settings-instructions-card"><label className="settings-field-label">What should Cookie know about you?</label><textarea value={settings.instructions} onChange={e=>update("instructions",e.target.value)} placeholder="Tell Cookie about your preferences, goals, or how you like answers written…"/><span className="settings-field-hint">These instructions apply to your conversations while enabled.</span></GlassCard></div>
       </section>}
 
-      {tab==="data"&&<section>
-        <h1>Data controls</h1>
-        <div className="settings-group"><div className="settings-group-title">Your data</div>
-          <GlassCard>
-            <Row title="Chat history" desc="Save conversations locally in this browser."><Toggle k="history"/></Row>
-            <Row title="Improve Cookie" desc="Allow anonymized conversations to help improve Cookie."><Toggle k="improve"/></Row>
-          </GlassCard>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Actions</div>
-          <GlassCard>
-            <Row title="Export data" desc="Download your profile, settings, and locally saved chats."><button className="settings-action-button" onClick={downloadData}><Download size={16}/>Export</button></Row>
-          </GlassCard>
-        </div>
-        <div className="settings-group settings-danger-group"><div className="settings-group-title">Delete data</div>
-          <div className="danger-zone settings-danger-card"><div><b>Delete all chats</b><span>Remove locally saved conversations from this browser.</span></div><button onClick={confirmDelete}>Delete all</button></div>
-        </div>
+      {tab==="data"&&<section><h1>Data controls</h1>
+        <div className="settings-group"><div className="settings-group-title">Storage</div><GlassCard>
+          <Row title="Chat history" desc="Keep conversations in your Cookie account."><Toggle k="history"/></Row>
+          <Row title="Product improvement preference" desc="Save your preference for whether eligible conversations may be considered for future product improvement."><Toggle k="improve"/></Row>
+        </GlassCard></div>
+        <div className="settings-group"><div className="settings-group-title">Your data</div><GlassCard>
+          <Row title="Export account data" desc="Download account, chats, Memory, projects, saved items, and settings."><button className="settings-action-button" onClick={downloadData}><Download size={16}/>Export</button></Row>
+        </GlassCard></div>
+        <div className="settings-group settings-danger-group"><div className="settings-group-title">Delete data</div><div className="danger-zone settings-danger-card"><div><b>Delete all chats</b><span>Remove saved conversations from your Cookie account and this browser.</span></div><button onClick={deleteChats}>Delete all</button></div></div>
       </section>}
 
-      {tab==="notifications"&&<section>
-        <h1>Notifications</h1>
-        <div className="settings-group"><div className="settings-group-title">Updates</div>
-          <GlassCard>
-            <Row title="Responses ready" desc="Get notified when a response finishes."><Toggle k="notifications"/></Row>
-            <Row title="Product updates" desc="Occasional Cookie updates and improvements."><Toggle k="updates"/></Row>
-          </GlassCard>
-        </div>
+      {tab==="notifications"&&<section><h1>Notifications</h1><div className="settings-group"><div className="settings-group-title">Updates</div><GlassCard>
+        <Row title="Responses ready" desc="Control response-completion notifications."><Toggle k="notifications"/></Row><Row title="Product updates" desc="Control optional Cookie update emails and notices."><Toggle k="updates"/></Row>
+      </GlassCard></div></section>}
+
+      {tab==="voice"&&<section><h1>Voice</h1><div className="settings-group"><div className="settings-group-title">Voice settings</div><GlassCard>
+        <Row title="Preferred voice" desc="Voice used by Cookie when available."><select value={settings.voice} onChange={e=>update("voice",e.target.value)}><option>Arbor</option><option>Breeze</option><option>Cove</option><option>Ember</option><option>Juniper</option></select></Row><Row title="Voice captions" desc="Show text while speaking."><Toggle k="captions"/></Row>
+      </GlassCard></div></section>}
+
+      {tab==="account"&&<section><h1>Account</h1>
+        <div className="settings-group"><div className="settings-group-title">Profile</div><div className="account-card settings-material-card"><Avatar size="lg"/><div className="account-identity"><b>{profile.name||"Cookie user"}</b><span>@{profile.username||"cookie-user"}</span><small>{profile.email||"No email saved"}</small></div><div className="account-meta"><span>{authUser.plan==="free"?"Free plan":authUser.plan}</span><b>{authUser.credits} credits</b></div></div></div>
+        <div className="settings-group"><div className="settings-group-title">Profile details</div><GlassCard className="fields settings-fields-card"><label><span>Name</span><input value={profile.name} onChange={e=>setProfile((p:any)=>({...p,name:e.target.value}))}/></label><label><span>Username</span><input value={profile.username} onChange={e=>setProfile((p:any)=>({...p,username:e.target.value}))}/></label><label><span>Email</span><input value={profile.email} readOnly/></label><div className="settings-save-row"><button className="settings-primary-button" onClick={async()=>{setSaveState("saving");try{const r=await fetch("/api/auth/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({name:profile.name,username:profile.username})});const d=await r.json();if(!r.ok)throw new Error(d?.error);setProfile((p:any)=>({...p,name:d.user.name,username:d.user.username}));setSaveState("saved");setTimeout(()=>setSaveState(""),1500)}catch{setSaveState("error")}}} disabled={saveState==="saving"}>{saveState==="saving"?"Saving…":saveState==="saved"?"Saved":"Save profile"}</button>{saveState==="error"&&<span className="settings-save-error">Couldn’t save changes.</span>}</div></GlassCard></div>
+        <div className="settings-group"><div className="settings-group-title">Security</div><GlassCard className="settings-security-card"><label><span>Current password</span><input type="password" value={passwords.current} onChange={e=>setPasswords(p=>({...p,current:e.target.value}))}/></label><label><span>New password</span><input type="password" value={passwords.next} onChange={e=>setPasswords(p=>({...p,next:e.target.value}))}/></label><label><span>Confirm new password</span><input type="password" value={passwords.confirm} onChange={e=>setPasswords(p=>({...p,confirm:e.target.value}))}/></label><div className="settings-security-actions"><button className="settings-primary-button" onClick={changePassword} disabled={securityState==="saving"}>{securityState==="saving"?"Changing…":"Change password"}</button><button className="settings-secondary-button" onClick={signOutOtherDevices}>Sign out other devices</button></div>{securityState&&securityState!=="saving"&&<span className="settings-security-status">{securityState}</span>}</GlassCard></div>
       </section>}
 
-      {tab==="voice"&&<section>
-        <h1>Voice</h1>
-        <div className="settings-group"><div className="settings-group-title">Voice settings</div>
-          <GlassCard>
-            <Row title="Preferred voice" desc="Voice used by Cookie."><select value={settings.voice} onChange={e=>setSettings((s:any)=>({...s,voice:e.target.value}))}><option>Arbor</option><option>Breeze</option><option>Cove</option><option>Ember</option><option>Juniper</option></select></Row>
-            <Row title="Voice captions" desc="Show text while speaking."><Toggle k="captions"/></Row>
-          </GlassCard>
-        </div>
-      </section>}
-
-      {tab==="account"&&<section>
-        <h1>Account</h1>
-        <div className="settings-group"><div className="settings-group-title">Profile</div>
-          <div className="account-card settings-material-card"><Avatar size="lg"/><div className="account-identity"><b>{profile.name||"Cookie user"}</b><span>@{profile.username||"cookie-user"}</span><small>{profile.email||"No email saved"}</small></div><div className="account-meta"><span>{authUser.plan==="free"?"Free plan":authUser.plan}</span><b>{authUser.credits} credits</b></div></div>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Profile details</div>
-          <GlassCard className="fields settings-fields-card">
-            <label><span>Name</span><input value={profile.name} onChange={e=>setProfile((p:any)=>({...p,name:e.target.value}))}/></label>
-            <label><span>Username</span><input value={profile.username} onChange={e=>setProfile((p:any)=>({...p,username:e.target.value}))}/></label>
-            <label><span>Email</span><input value={profile.email} readOnly/></label>
-            <div className="settings-save-row"><button className="settings-primary-button" onClick={saveProfile} disabled={saveState==="saving"}>{saveState==="saving"?"Saving…":saveState==="saved"?"Saved":"Save profile"}</button>{saveState==="error"&&<span className="settings-save-error">Couldn’t save changes.</span>}</div>
-          </GlassCard>
-        </div>
-      </section>}
-
-      {tab==="about"&&<section>
-        <h1>About</h1>
-        <div className="settings-group">
-          <div className="about-card settings-material-card"><CookieIcon size={52}/><div><b>Cookie AI</b><span>AI workspace for chat, files, coding and everyday questions.</span><small>Cookie Preview • v4</small></div></div>
-        </div>
-        <div className="settings-group"><div className="settings-group-title">Support</div>
-          <GlassCard>
-            <Row title="Help center" desc="Learn how Cookie works."><ChevronRight size={19}/></Row>
-            <Row title="Keyboard shortcuts" desc="Search chats with ⌘K / Ctrl+K."><Keyboard size={19}/></Row>
-            <Row title="Privacy" desc="Review local data and controls."><CircleHelp size={19}/></Row>
-          </GlassCard>
-        </div>
+      {tab==="about"&&<section><h1>About</h1><div className="settings-group"><div className="about-card settings-material-card"><CookieIcon size={52}/><div><b>Cookie AI</b><span>AI workspace for chat, files, coding and everyday questions.</span><small>Cookie Preview • v4</small></div></div></div>
+        <div className="settings-group"><div className="settings-group-title">Support & legal</div><GlassCard>
+          <button className="settings-link-row" onClick={()=>onNavigate("help")}><span><CircleHelp size={18}/><b>Help Center</b><small>Browse Cookie help and guides.</small></span><ChevronRight size={19}/></button>
+          <button className="settings-link-row" onClick={()=>window.dispatchEvent(new Event("cookie:open-command-palette"))}><span><Keyboard size={18}/><b>Keyboard shortcuts</b><small>Open ⌘K / Ctrl+K to search and navigate.</small></span><ChevronRight size={19}/></button>
+          <button className="settings-link-row" onClick={()=>onNavigate("privacy")}><span><LockKeyhole size={18}/><b>Privacy Policy</b><small>Review how Cookie handles information.</small></span><ChevronRight size={19}/></button>
+          <button className="settings-link-row" onClick={()=>onNavigate("terms")}><span><FileText size={18}/><b>Terms of Service</b><small>Review the rules for using Cookie.</small></span><ChevronRight size={19}/></button>
+        </GlassCard></div>
       </section>}
     </main>
   </div>;
