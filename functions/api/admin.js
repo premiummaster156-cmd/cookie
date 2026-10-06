@@ -1,6 +1,7 @@
 import { dbAvailable, getSessionUser, normalizeEmail, randomToken, passwordHash } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
-import { sendReleaseAnnouncementEmail } from "./auth/_email.js";
+import { sendReleaseAnnouncementEmail, sendVerificationEmail } from "./auth/_email.js";
+import { issueEmailToken } from "./auth/_tokens.js";
 
 const OWNER_EMAIL = "cookie.ai.noreply@gmail.com";
 const ROLES = new Set(["user","vip","staff","admin","owner"]);
@@ -23,11 +24,6 @@ function canModerateTarget(actor,target){
 }
 function now(){ return Math.floor(Date.now()/1000); }
 function cleanEmail(v){ return normalizeEmail(v).slice(0,240); }
-function temporaryPassword(){
-  const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes=new Uint8Array(16); crypto.getRandomValues(bytes);
-  return Array.from(bytes,b=>chars[b%chars.length]).join("");
-}
 function clampInt(v,min,max,fallback){
   const n=Number(v);
   if(!Number.isFinite(n)) return fallback;
@@ -44,12 +40,41 @@ async function currentLimits(env){
   }catch{}
   return defaults;
 }
+async function writeAudit(env, ctx, { action, target = null, success = true, metadata = {} } = {}) {
+  try {
+    const request = ctx?.request;
+    const ip = String(request?.headers?.get("CF-Connecting-IP") || request?.headers?.get("X-Forwarded-For") || "").split(",")[0].trim().slice(0,120);
+    const userAgent = String(request?.headers?.get("User-Agent") || "").slice(0,500);
+    const cleanMeta = (() => {
+      try { return JSON.stringify(metadata || {}).slice(0,8000); } catch { return "{}"; }
+    })();
+    await env.DB.prepare(
+      "INSERT INTO admin_audit_logs (id,actor_user_id,actor_email,actor_role,action,target_user_id,target_email,success,ip_address,user_agent,metadata_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+    ).bind(
+      randomToken(16),
+      ctx?.user?.id || null,
+      cleanEmail(ctx?.user?.email || ""),
+      String(ctx?.role || "admin"),
+      String(action || "unknown").slice(0,120),
+      target?.id || null,
+      cleanEmail(target?.email || ""),
+      success ? 1 : 0,
+      ip,
+      userAgent,
+      cleanMeta,
+      now()
+    ).run();
+  } catch (error) {
+    console.error("[Cookie admin audit]", error);
+  }
+}
+
 async function requireAdmin(request,env){
   if(!dbAvailable(env)) return {error:json({error:"Cookie database is not connected."},503)};
   const user=await getSessionUser(request,env);
   if(!user) return {error:json({error:"Sign in required."},401)};
   if(!canManage(user)) return {error:json({error:"Staff access required.",code:"ADMIN_FORBIDDEN"},403)};
-  return {user,role:roleOf(user)};
+  return {user,role:roleOf(user),request};
 }
 
 export async function onRequestGet({request,env}){
@@ -57,6 +82,35 @@ export async function onRequestGet({request,env}){
   if(ctx.error)return ctx.error;
   try{
     const mode=new URL(request.url).searchParams.get("mode")||"";
+    if(mode==="audit"){
+      if(!["owner","admin"].includes(ctx.role)) return json({error:"Only admin or owner can access audit logs."},403);
+      const rows=await env.DB.prepare(`
+        SELECT l.id,l.action,l.actor_user_id,l.actor_email,l.actor_role,l.target_user_id,l.target_email,
+               l.success,l.ip_address,l.user_agent,l.metadata_json,l.created_at,
+               COALESCE(a.name,a.username,l.actor_email) AS actor_name,
+               COALESCE(t.name,t.username,l.target_email) AS target_name
+        FROM admin_audit_logs l
+        LEFT JOIN users a ON a.id=l.actor_user_id
+        LEFT JOIN users t ON t.id=l.target_user_id
+        ORDER BY l.created_at DESC
+        LIMIT 500
+      `).all();
+      await writeAudit(env,ctx,{action:"view_audit_log",metadata:{returned:Number((rows?.results||[]).length)}});
+      return json({
+        ok:true,
+        actorRole:ctx.role,
+        logs:(rows?.results||[]).map(x=>({
+          id:x.id,action:x.action,actorUserId:x.actor_user_id||"",actorEmail:x.actor_email||"",
+          actorRole:x.actor_role||"",actorName:x.actor_name||x.actor_email||"",
+          targetUserId:x.target_user_id||"",targetEmail:x.target_email||"",
+          targetName:x.target_name||x.target_email||"",success:Number(x.success||0)===1,
+          ipAddress:x.ip_address||"",userAgent:x.user_agent||"",
+          metadata:(()=>{try{return JSON.parse(x.metadata_json||"{}")}catch{return {}}})(),
+          createdAt:Number(x.created_at||0)
+        }))
+      });
+    }
+    await writeAudit(env,ctx,{action:mode==="moderation"?"view_moderation":"view_admin_dashboard"});
     if(mode==="moderation"){
       const rows=await env.DB.prepare("SELECT id,email,name,username,role,COALESCE(account_status,'active') AS account_status,COALESCE(suspended_until,0) AS suspended_until,COALESCE(moderation_note,'') AS moderation_note,updated_at FROM users ORDER BY updated_at DESC LIMIT 300").all();
       return json({ok:true,actorRole:ctx.role,users:(rows?.results||[]).map(x=>({id:x.id,email:x.email||"",name:x.name||"",username:x.username||"",role:x.role||"user",status:String(x.account_status||"active"),suspendedUntil:Number(x.suspended_until||0),note:x.moderation_note||"",updatedAt:Number(x.updated_at||0)}))});
@@ -129,6 +183,7 @@ export async function onRequestPost({request,env}){
       if(!recipients.length)return json({error:"No registered email addresses are available."},404);
       const result=await sendReleaseAnnouncementEmail(request,env,{recipients,title,intro,features,ctaLabel,ctaUrl});
       await env.DB.prepare("INSERT INTO codebase_settings (key,value,updated_at) VALUES (?,?,?)").bind(markerKey,String(result.sent),now()).run();
+      await writeAudit(env,ctx,{action:"announce_release",metadata:{releaseId,recipients:recipients.length,sent:result.sent,batches:result.batches}});
       return json({ok:true,releaseId,recipients:recipients.length,sent:result.sent,batches:result.batches});
     }
 
@@ -160,20 +215,39 @@ export async function onRequestPost({request,env}){
       }
       await env.DB.prepare("INSERT INTO moderation_events (id,target_user_id,actor_user_id,action,reason,duration_seconds,created_at) VALUES (?,?,?,?,?,?,?)")
         .bind(randomToken(16),target.id,ctx.user.id,action,reason,action==="suspend"?Math.max(0,until-t):0,t).run();
+      await writeAudit(env,ctx,{action, target, metadata:{reason,durationDays:action==="suspend"?Math.max(0,Number(body?.days||1)):0}});
       return json({ok:true,status,until});
     }
 
     if(action==="reset_password"){
-      if(!canManageAccounts(ctx.user))return json({error:"Only owner/admin can reset account passwords."},403);
+      if(!canManageAccounts(ctx.user)){
+        await writeAudit(env,ctx,{action:"reset_password",success:false,metadata:{reason:"forbidden"}});
+        return json({error:"Only owner/admin can reset account passwords."},403);
+      }
       const target=await findUser(env,body?.email);
       if(!target)return json({error:"User not found."},404);
-      if(String(target.email||"").toLowerCase()===OWNER_EMAIL && ctx.role!=="owner")return json({error:"Only the owner can reset the owner account password."},403);
-      const password=temporaryPassword();
-      const hashed=await passwordHash(password);
-      await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,login_failures=0,locked_until=0,updated_at=? WHERE id=?")
-        .bind(hashed.hash,hashed.salt,now(),target.id).run();
+      if(String(target.email||"").toLowerCase()===OWNER_EMAIL && ctx.role!=="owner"){
+        await writeAudit(env,ctx,{action:"reset_password",target,success:false,metadata:{reason:"owner_protected"}});
+        return json({error:"Only the owner can reset the owner account password."},403);
+      }
+      const issued=await issueEmailToken(env,{userId:target.id,email:cleanEmail(target.email),purpose:"reset"});
+      if(!issued.ok){
+        await writeAudit(env,ctx,{action:"reset_password",target,success:false,metadata:{reason:"rate_limited",retryAfter:issued.retryAfter||60}});
+        return json({error:"A reset email was sent recently. Try again in "+Number(issued.retryAfter||60)+" seconds."},429);
+      }
+      try{
+        await sendVerificationEmail(request,env,{email:cleanEmail(target.email),name:target.name||"",code:issued.code,token:issued.token,purpose:"reset"});
+      }catch(error){
+        await env.DB.prepare("UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now(),await (async()=>{ 
+          const { sha256 } = await import("./auth/_auth.js"); 
+          return sha256(issued.token);
+        })()).run().catch(()=>{});
+        await writeAudit(env,ctx,{action:"reset_password",target,success:false,metadata:{reason:"email_send_failed"}});
+        return json({error:"Cookie could not send the password reset email. Check SMTP configuration."},502);
+      }
       await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(target.id).run().catch(()=>{});
-      return json({ok:true,temporaryPassword:password});
+      await writeAudit(env,ctx,{action:"reset_password",target,metadata:{delivery:"secure_reset_link"}});
+      return json({ok:true,email:cleanEmail(target.email)});
     }
 
     if(action==="user"){
@@ -188,6 +262,7 @@ export async function onRequestPost({request,env}){
       if(ctx.role==="staff"&&["admin","owner"].includes(nextRole))return json({error:"Staff cannot promote accounts to admin or owner."},403);
       const expires=body?.planExpiresAt===undefined?Number(user.plan_expires_at||0):clampInt(body.planExpiresAt,0,4102444800,0);
       await env.DB.prepare("UPDATE users SET plan=?,plan_expires_at=?,role=?,credits_remaining=?,updated_at=? WHERE id=?").bind(nextPlan,expires,nextRole,nextCredits,now(),user.id).run();
+      await writeAudit(env,ctx,{action:"user",target:user,metadata:{plan:nextPlan,role:nextRole,credits:nextCredits,planExpiresAt:expires}});
       return json({ok:true});
     }
 
@@ -199,6 +274,7 @@ export async function onRequestPost({request,env}){
       const grantCredits=body?.credits===undefined?0:clampInt(body.credits,0,100000000,0);
       const expires=plan==="free"?0:now()+days*86400;
       await env.DB.prepare("UPDATE users SET plan=?,plan_expires_at=?,credits_remaining=credits_remaining+?,updated_at=? WHERE id=?").bind(plan,expires,grantCredits,now(),user.id).run();
+      await writeAudit(env,ctx,{action:"gift",target:user,metadata:{plan,days,credits:grantCredits}});
       return json({ok:true,plan,days,credits:grantCredits});
     }
 
@@ -209,6 +285,7 @@ export async function onRequestPost({request,env}){
       if(!user)return json({error:"User not found."},404);
       await env.DB.prepare("UPDATE users SET credits_remaining=GREATEST(credits_remaining+?,0),updated_at=? WHERE id=?").bind(delta,now(),user.id).run();
       await env.DB.prepare("INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)").bind(randomToken(16),user.id,"admin_credit",String(delta),delta,now()).run().catch(()=>{});
+      await writeAudit(env,ctx,{action:"credit",target:user,metadata:{delta}});
       return json({ok:true});
     }
 
@@ -218,11 +295,14 @@ export async function onRequestPost({request,env}){
       for(const key of allowed){
         if(body?.limits&&body.limits[key]!==undefined)await writeSetting(env,"ai_"+key,clampInt(body.limits[key],1,10000,10));
       }
-      return json({ok:true,limits:await currentLimits(env)});
+      const nextLimits=await currentLimits(env);
+      await writeAudit(env,ctx,{action:"limits",metadata:nextLimits});
+      return json({ok:true,limits:nextLimits});
     }
 
     return json({error:"Unknown admin action."},400);
   }catch(error){
+    await writeAudit(env,ctx,{action:"admin_error",success:false,metadata:{message:String(error?.message||"Admin action failed.").slice(0,300)}});
     console.error("[Cookie admin POST]",error);
     return json({error:String(error?.message||"Admin action failed.").slice(0,300)},500);
   }
