@@ -5,7 +5,7 @@ import { json, readJson } from "./_lib.js";
 
 function missionMarker(text) {
   const raw=String(text||"");
-  const match=raw.match(/<!--COOKIE_MISSION_PLAN:(\\[[\\s\\S]*?\\])-->/i);
+  const match=raw.match(/<!--COOKIE_MISSION_PLAN:(\[[\s\S]*?\])-->/i);
   if(!match)return {clean:raw,plan:[]};
   let plan=[];
   try {
@@ -892,9 +892,10 @@ export async function onRequestPost({ request, env }) {
             let thinkingShown = false;
 
             for (let turn = 0; turn < (missionMode ? MISSION_MAX_TURNS : 12); turn++) {
-              push({type:"status",status:turn===0?"Thinking…":"Continuing…"});
+              push({type:"status",status:missionMode ? (turn===0?"Planning mission…":"Executing mission…") : (turn===0?"Thinking…":"Continuing…")});
+              if(missionMode && turn===0) push({type:"activity",id:"mission-start",stage:"mission",label:"Planning the mission",detail:"Turning the goal into executable steps",done:true});
               if(!thinkingShown){
-                push({type:"activity",id:"thinking",stage:"thinking",label:"Thinking",detail:"Reasoning about the request"});
+                push({type:"activity",id:"thinking",stage:"thinking",label:"Thinking",detail:missionMode?"Working through the mission":"Reasoning about the request"});
                 thinkingShown=true;
               }
               let upstream = null;
@@ -950,7 +951,8 @@ export async function onRequestPost({ request, env }) {
                     if (typeof msg.role === "string") role = msg.role;
                     if (typeof msg.content === "string" && msg.content) {
                       parts.push(msg.content);
-                      push({type:"delta",delta:msg.content});
+                      // Keep the internal mission-plan marker out of the live UI. The first mission turn is buffered until completion.
+                      if (!(missionMode && turn===0)) push({type:"delta",delta:msg.content});
                     }
                     if (Array.isArray(msg.tool_calls)) {
                       msg.tool_calls.forEach((call, index) => {
@@ -1136,7 +1138,7 @@ export async function onRequestPost({ request, env }) {
       });
     }
 
-    for (let turn = 0; turn < 12; turn++) {
+    for (let turn = 0; turn < (missionMode ? MISSION_MAX_TURNS : 12); turn++) {
       let upstream = null;
       let responseText = "";
       let data = null;
