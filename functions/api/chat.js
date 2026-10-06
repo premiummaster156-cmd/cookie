@@ -617,17 +617,13 @@ export async function onRequestPost({ request, env }) {
     };
     const skillId = typeof body.skill === "string" && Object.prototype.hasOwnProperty.call(skillInstructions, body.skill) ? body.skill : "";
     const activeSkillInstruction = skillId ? skillInstructions[skillId] : "";
-    const useWebSearch = preferences.webSearch === true;
+    const useWebSearch = true;
     const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
     const streamRequested = new URL(request.url).searchParams.get("stream") === "1";
     const missionMode = preferences.mission === true;
     const missionGoal = requestedWebQuery;
     const missionId = missionMode ? await createMissionRecord(env, sessionUser, missionGoal, body?.chatId) : "";
-    const requestedTool = String(preferences.tool || "").trim();
-    const requiredPlan = Object.prototype.hasOwnProperty.call(TOOL_REQUIREMENTS,requestedTool) ? Number(TOOL_REQUIREMENTS[requestedTool]) : 0;
-    if(requiredPlan>planRank(sessionUser.plan)){
-      return json({error:(requiredPlan===2?"MAX":"PRO")+" plan required for the selected tool."},402);
-    }
+    // Cookie chooses capabilities automatically from the request. User-facing tool selection is intentionally disabled.
     const requestedGptId = String(body?.gptId || "").trim();
     const gptProfile = requestedGptId ? GPT_PROFILES[requestedGptId] : null;
     if(requestedGptId && !gptProfile){
@@ -643,7 +639,7 @@ export async function onRequestPost({ request, env }) {
       text: requestedWebQuery,
       attachments,
       gptProfile: requestedGptId ? {...gptProfile, id:requestedGptId} : null,
-      requestedTool
+      requestedTool: ""
     });
 
     const system = [
@@ -829,10 +825,19 @@ export async function onRequestPost({ request, env }) {
         }
       }
     ];
+    const calculatorTools = [{
+      type:"function",
+      function:{
+        name:"calculator",
+        description:"Calculate exact arithmetic when the user asks for a calculation or when exact arithmetic is needed to complete the request. Use this instead of mental arithmetic for non-trivial calculations.",
+        parameters:{type:"object",required:["expression"],properties:{expression:{type:"string",description:"A safe arithmetic expression using numbers, +, -, *, /, %, parentheses, and ^."}}}
+      }
+    }];
     const availableTools = [
       ...imageTools,
       ...fileTools,
-      ...(useWebSearch ? webTools : []),
+      ...calculatorTools,
+      ...webTools,
       ...(memoryEnabled ? memoryTools : [])
     ];
     const think = thinkingFor(mode, reasoning, model);
@@ -858,6 +863,7 @@ export async function onRequestPost({ request, env }) {
           let completed = false;
 
           const statusForTool = name =>
+            name === "calculator" ? "Calculating…" :
             name === "image_generate" ? "Creating image…" :
             name === "web_search" ? "Searching the web…" :
             name === "web_fetch" ? "Reading sources…" :
@@ -866,6 +872,7 @@ export async function onRequestPost({ request, env }) {
             "Working…";
           const toolLabel = (name,args) => {
             const a=args && typeof args==="object" ? args : {};
+            if(name==="calculator") return "Calculating the result";
             if(name==="image_generate") return "Creating the image";
             if(name==="web_search") return "Searching for “"+String(a.query||"what you need").replace(/\s+/g," ").trim().slice(0,110)+"”";
             if(name==="web_fetch") { try { return "Reading "+new URL(String(a.url||"")).hostname.replace(/^www\./i,""); } catch { return "Reading the webpage"; } }
@@ -882,6 +889,7 @@ export async function onRequestPost({ request, env }) {
             const a=args && typeof args==="object" ? args : {};
             if(name==="web_search") return String(a.query||"Searching live web").slice(0,180);
             if(name==="web_fetch") { try { return new URL(String(a.url||"")).hostname; } catch { return "Reading public webpage"; } }
+            if(name==="calculator") return String(a.expression||"Calculating").slice(0,180);
             if(name==="image_generate") return String(a.prompt||"Generating requested image").slice(0,180);
             if(name.startsWith("file_")) return String(a.path||"Working with generated file").slice(0,180);
             if(name.startsWith("memory_")) return String(a.query||a.key||"Updating memory").slice(0,180);
@@ -1042,7 +1050,10 @@ export async function onRequestPost({ request, env }) {
                 push({type:"status",status:statusForTool(name)});
                 push({type:"activity",id:activityId,stage:name==="web_search"||name==="web_fetch"?"search":name==="image_generate"?"image":"tool",tool:name,label,detail:toolDetail(name,args),done:false});
                 let executed;
-                if (name === "image_generate") {
+                if (name === "calculator") {
+                  const calc = safeCalculate(args?.expression);
+                  executed = {files:liveFiles,result:JSON.stringify(calc)};
+                } else if (name === "image_generate") {
                   executed = {files:liveFiles,result:JSON.stringify(await executeImageTool(env,args,liveImages,sessionUser.id,plan))};
                 } else if (name === "web_search" || name === "web_fetch") {
                   const webResult = await executeWebTool(name,args,apiKey);
@@ -1081,6 +1092,8 @@ export async function onRequestPost({ request, env }) {
                   completedLabel="Updated "+String(args?.path||"file").slice(0,120);
                 } else if(name==="file_delete") {
                   completedLabel="Removed "+String(args?.path||"file").slice(0,120);
+                } else if(name==="calculator") {
+                  completedLabel="Calculated the result";
                 } else if(name==="image_generate") {
                   completedLabel="Created the image";
                 }
