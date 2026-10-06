@@ -58,6 +58,12 @@ const SCHEMA = [
     used_at BIGINT,
     created_at BIGINT NOT NULL DEFAULT 0
   )`,
+  `CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    settings_json TEXT NOT NULL DEFAULT '{}',
+    updated_at BIGINT NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_settings_updated ON user_settings(updated_at DESC)`,
   `CREATE TABLE IF NOT EXISTS memories (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
