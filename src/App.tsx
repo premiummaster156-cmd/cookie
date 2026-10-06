@@ -1363,7 +1363,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       {sourceInspect&&<SourceInspector message={sourceInspect} onClose={()=>setSourceInspect(null)} onSave={saveSource}/>}
     </main>
     {voice&&<VoiceOverlay onClose={()=>setVoice(false)}/>}<InstallAppExperience authUser={authUser}/>{toast&&<div className="toast" role="status">{toast}</div>}
-  </div>;
+  </div></>
 }
 
 export default function App(){
