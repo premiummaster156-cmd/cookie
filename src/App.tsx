@@ -155,17 +155,13 @@ function Rich({text}:{text:string}){
   const fence="```";
   return <div className="rich">{text.split(new RegExp("("+fence+"[^]*?"+fence+")","g")).map((part,pi)=>{
     if(part.startsWith(fence)){
-      const nl=part.indexOf("
-");
+      const nl=part.indexOf("\n");
       const lang=nl>3?part.slice(3,nl).trim():"";
-      const code=part.slice(nl>=0?nl+1:3,-3).replace(/^
-|
-$/g,"");
+      const code=part.slice(nl>=0?nl+1:3,-3).replace(/^\n|\n$/g,"");
       if(/^cookie-(?:viz|chart)$/i.test(lang)){try{const spec=JSON.parse(code);if((spec?.type==="bar"||spec?.type==="line")&&Array.isArray(spec?.data))return <CookieViz key={pi} spec={{...spec,type:spec.type,data:spec.data as VizDatum[]}}/>}catch{}}
       return <CodeBlock key={pi} lang={lang} code={code}/>;
     }
-    const lines=part.split("
-"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
+    const lines=part.split("\n"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
     const flush=()=>{if(!listType||!list.length)return;nodes.push(listType==="ol"?<ol key={"ol"+nodes.length}>{list}</ol>:<ul key={"ul"+nodes.length}>{list}</ul>);list=[];listType=null};
     lines.forEach((line,li)=>{
       if(!line.trim()){flush();nodes.push(<div className="md-gap" key={"g"+li}/>);return;}
@@ -268,8 +264,7 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
           {isOpen&&<div className="activity-detail">
             {s.domain&&<div className="activity-domains">{s.domain.split(" · ").filter(Boolean).map((d,j)=><span className="activity-domain" key={j}>{d}</span>)}</div>}
             {s.command&&<pre className="activity-terminal"><code>{s.command}</code></pre>}
-            {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"
-"}{s.output}</pre>}
+            {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"\n"}{s.output}</pre>}
             {s.meta&&<div className="activity-meta">{s.meta}</div>}
           </div>}
         </div>;
@@ -1250,8 +1245,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           const chunk=await reader.read();
           if(chunk.done)break;
           buffer+=decoder.decode(chunk.value,{stream:true});
-          const lines=buffer.split("
-");
+          const lines=buffer.split("\n");
           buffer=lines.pop()||"";
           for(const line of lines){
             processLine(line);
