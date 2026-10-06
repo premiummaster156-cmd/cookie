@@ -20,7 +20,7 @@ export default function LegalPage({kind,onBack,onNavigate}:{kind:Kind;onBack:()=
  const page=pages[index]||pages[0];
  const related=useMemo(()=>privacy?"Read the Terms of Service for the rules that govern accounts, use, moderation, plans and the service.":"Read the Privacy Policy for the information Cookie processes, why it is processed, sharing, retention and privacy controls.",[privacy]);
  const go=(next:number)=>{const target=pages[next];if(target){setPageId(target.id);document.querySelector(".legal-page")?.scrollTo({top:0,behavior:"smooth"})}};
- const onNavigate=(next:Kind)=>{if(next===kind){setPageId(pages[0].id);window.scrollTo({top:0,behavior:"smooth"})}else{window.dispatchEvent(new CustomEvent("cookie:open-legal",{detail:next}))}};
+ const navigate=(next:Kind)=>{if(next===kind){setPageId(pages[0].id);document.querySelector(".legal-page")?.scrollTo({top:0,behavior:"smooth"})}else{onNavigate(next)}};
  const onHtmlClick=(event:React.MouseEvent<HTMLDivElement>)=>{const el=(event.target as HTMLElement)?.closest?.("[data-legal-kind]") as HTMLElement|null;const next=el?.getAttribute("data-legal-kind") as Kind|null;if(next){event.preventDefault();navigate(next)}};
  return <div className="legal-page">
   <header className="legal-head">
