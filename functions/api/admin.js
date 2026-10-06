@@ -1,4 +1,4 @@
-import { dbAvailable, getSessionUser, normalizeEmail, randomToken } from "./auth/_auth.js";
+import { dbAvailable, getSessionUser, normalizeEmail, randomToken, passwordHash } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
 import { sendReleaseAnnouncementEmail } from "./auth/_email.js";
 
@@ -23,6 +23,11 @@ function canModerateTarget(actor,target){
 }
 function now(){ return Math.floor(Date.now()/1000); }
 function cleanEmail(v){ return normalizeEmail(v).slice(0,240); }
+function temporaryPassword(){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes=new Uint8Array(16); crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>chars[b%chars.length]).join("");
+}
 function clampInt(v,min,max,fallback){
   const n=Number(v);
   if(!Number.isFinite(n)) return fallback;
@@ -156,6 +161,19 @@ export async function onRequestPost({request,env}){
       await env.DB.prepare("INSERT INTO moderation_events (id,target_user_id,actor_user_id,action,reason,duration_seconds,created_at) VALUES (?,?,?,?,?,?,?)")
         .bind(randomToken(16),target.id,ctx.user.id,action,reason,action==="suspend"?Math.max(0,until-t):0,t).run();
       return json({ok:true,status,until});
+    }
+
+    if(action==="reset_password"){
+      if(!canManageAccounts(ctx.user))return json({error:"Only owner/admin can reset account passwords."},403);
+      const target=await findUser(env,body?.email);
+      if(!target)return json({error:"User not found."},404);
+      if(String(target.email||"").toLowerCase()===OWNER_EMAIL && ctx.role!=="owner")return json({error:"Only the owner can reset the owner account password."},403);
+      const password=temporaryPassword();
+      const hashed=await passwordHash(password);
+      await env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,login_failures=0,locked_until=0,updated_at=? WHERE id=?")
+        .bind(hashed.hash,hashed.salt,now(),target.id).run();
+      await env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(target.id).run().catch(()=>{});
+      return json({ok:true,temporaryPassword:password});
     }
 
     if(action==="user"){
