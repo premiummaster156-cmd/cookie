@@ -886,6 +886,81 @@ function NotificationFeed({items,onClose,onReadAll}:{items:ModerationNotificatio
     </div>
   </div>;
 }
+
+function CommandPalette({open,query,setQuery,onClose,onRun,chats}:{open:boolean;query:string;setQuery:(v:string)=>void;onClose:()=>void;onRun:(id:string)=>void;chats:Chat[]}){
+  const ref=useRef<HTMLInputElement>(null);
+  useEffect(()=>{if(open)requestAnimationFrame(()=>ref.current?.focus())},[open]);
+  if(!open)return null;
+  const actions=[
+    ["new-chat","New chat","Start a fresh conversation",PenLine,"⌘N"],
+    ["search","Search chats","Find a conversation or message",Search,"⌘K"],
+    ["work","Work","Start a structured task",Zap,""],
+    ["workspace","Saved workspace","Open saved answers and sources",Bookmark,""],
+    ["memory","Memory","Review what Cookie remembers",Brain,""],
+    ["library","Library","Open generated files",Library,""],
+    ["projects","Projects","Open project files",FolderKanban,""],
+    ["gpts","GPTs","Open purpose-built assistants",Sparkles,""],
+    ["space","Space","Open the spatial workspace",Orbit,""],
+    ["settings","Settings","Open Cookie settings",SettingsIcon,""],
+    ["focus","Focus mode","Distraction-free conversation",Maximize2,""]
+  ] as const;
+  const q=query.trim().toLowerCase();
+  const filtered=actions.filter(x=>!q||x[1].toLowerCase().includes(q)||x[2].toLowerCase().includes(q));
+  const chatHits=q?chats.filter(c=>c.title.toLowerCase().includes(q)||c.messages.some(m=>m.content.toLowerCase().includes(q))).slice(0,6):[];
+  return <div className="command-palette-backdrop" role="dialog" aria-modal="true" aria-label="Cookie command center" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}>
+    <div className="command-palette">
+      <div className="command-palette-search"><Command size={17}/><input ref={ref} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search Cookie or jump to…" onKeyDown={e=>{if(e.key==="Escape")onClose()}}/><kbd>ESC</kbd></div>
+      <div className="command-palette-list">
+        {!filtered.length&&!chatHits.length?<div className="command-palette-empty">Nothing matched “{query}”.</div>:null}
+        {!!filtered.length&&<div className="command-palette-label">Actions</div>}
+        {filtered.map(([id,label,detail,Icon,shortcut])=><button key={id} className="command-item" onClick={()=>onRun(id)}><span className="command-item-icon"><Icon size={16}/></span><span><b>{label}</b><small>{detail}</small></span>{shortcut&&<kbd>{shortcut}</kbd>}</button>)}
+        {!!chatHits.length&&<><div className="command-palette-label">Conversations</div>{chatHits.map(c=><button key={c.id} className="command-item" onClick={()=>onRun("chat:"+c.id)}><span className="command-item-icon"><MessageSquare size={16}/></span><span><b>{c.title}</b><small>{c.messages.at(-1)?.content.slice(0,90)||"No messages yet"}</small></span></button>)}</>}
+      </div>
+    </div>
+  </div>;
+}
+
+function SourceInspector({message,onClose,onSave}:{message:Message|null;onClose:()=>void;onSave:(src:SourceRef)=>void}){
+  if(!message)return null;
+  return <div className="source-inspector-backdrop" role="dialog" aria-modal="true" aria-label="Research sources" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}>
+    <aside className="source-inspector"><header><div><span>RESEARCH</span><strong>{message.sources?.length||0} sources</strong></div><button onClick={onClose} aria-label="Close sources"><X size={17}/></button></header>
+      <div className="source-inspector-list">{(message.sources||[]).map((src,i)=><article className="source-inspector-item" key={src.url+i}><div className="source-inspector-top"><span>{String(src.domain||"web")}</span><time>{i+1}</time></div><a href={src.url} target="_blank" rel="noreferrer" className="source-inspector-title">{src.title||src.domain||"Source"}</a>{src.snippet&&<p>{src.snippet}</p>}<div className="source-inspector-actions"><a href={src.url} target="_blank" rel="noreferrer">Open</a><button onClick={()=>onSave(src)}>Save</button></div></article>)}</div>
+    </aside>
+  </div>;
+}
+
+function WorkspaceShelf({items,onClose,onDelete}:{items:SavedItem[];onClose:()=>void;onDelete:(id:string)=>void}){
+  return <section className="workspace-shelf" aria-label="Saved workspace"><div className="workspace-shelf-head"><div><span>SAVED WORKSPACE</span><strong>{items.length?items.length+" saved":"Nothing saved yet"}</strong></div><button onClick={onClose} aria-label="Close workspace"><X size={17}/></button></div>
+    {!items.length?<div className="workspace-empty"><Bookmark size={22}/><span>Save useful answers or sources from any conversation.</span></div>:<div className="workspace-shelf-list">{items.map(item=><article key={item.id} className="workspace-item"><div className="workspace-item-meta"><span>{item.kind==="source"?"SOURCE":"ANSWER"}</span><time>{new Date(item.createdAt*1000).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</time></div>{item.url?<a className="workspace-item-title" href={item.url} target="_blank" rel="noreferrer">{item.title||"Saved source"} <ExternalLink size={12}/></a>:<strong className="workspace-item-title">{item.title||"Saved answer"}</strong>}<p>{item.content.slice(0,520)}{item.content.length>520?"…":""}</p><button className="workspace-item-remove" onClick={()=>onDelete(item.id)}>Remove</button></article>)}</div>}
+  </section>;
+}
+
+function BranchNavigator({chat,chats,onOpen}:{chat:Chat|null;chats:Chat[];onOpen:(id:string)=>void}){
+  if(!chat)return null;
+  const root=chat.branchOf?chats.find(c=>c.id===chat.branchOf)||null:chat;
+  const branches=chats.filter(c=>c.branchOf===root?.id&&!c.archived);
+  if(!chat.branchOf&&!branches.length)return null;
+  return <details className="branch-navigator"><summary><GitBranch size={15}/><span>{chat.branchOf?"Branch":"Branches"}</span><ChevronDown size={13}/></summary>
+    <div className="branch-popover">{root&&<button onClick={()=>onOpen(root.id)} className={root.id===chat.id?"active":""}><span><MessageSquare size={14}/><b>Original</b></span></button>}
+      {branches.map(b=><button key={b.id} onClick={()=>onOpen(b.id)} className={b.id===chat.id?"active":""}><span><GitBranch size={14}/><b>{b.title.replace(/^Branch · /,"")}</b></span></button>)}
+    </div>
+  </details>;
+}
+
+function MemoryPage(){
+  type Memory={id:string;key:string;value:string;createdAt:number;updatedAt:number};
+  const [items,setItems]=useState<Memory[]>([]);
+  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[key,setKey]=useState(""),[value,setValue]=useState("");
+  const load=async()=>{setLoading(true);try{const r=await fetch("/api/memory",{credentials:"same-origin",cache:"no-store"});const d=await r.json();if(r.ok)setItems(Array.isArray(d.memories)?d.memories:[])}catch{}finally{setLoading(false)}};
+  useEffect(()=>{load()},[]);
+  const add=async()=>{if(!key.trim()||!value.trim()||busy)return;setBusy(true);try{const r=await fetch("/api/memory",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,value})});const d=await r.json();if(r.ok&&d?.memory){setKey("");setValue("");setItems(p=>[d.memory,...p.filter(x=>x.key!==d.memory.key)])}}finally{setBusy(false)}};
+  const remove=async(id:string)=>{setItems(p=>p.filter(x=>x.id!==id));try{await fetch("/api/memory",{method:"DELETE",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})})}catch{}};
+  return <div className="memory-page"><div className="memory-head"><div><span>PERSONAL CONTEXT</span><h1>Memory</h1><p>Review and control the details Cookie can carry between conversations.</p></div><button className="memory-refresh" onClick={load} disabled={loading}><RotateCcw size={15}/>Refresh</button></div>
+    <section className="memory-compose"><div><strong>Add a memory</strong><span>Store a preference, project detail, or recurring fact.</span></div><div className="memory-form"><input value={key} onChange={e=>setKey(e.target.value)} placeholder="What should Cookie remember?"/><textarea value={value} onChange={e=>setValue(e.target.value)} placeholder="Details…"/><button onClick={add} disabled={busy||!key.trim()||!value.trim()}>{busy?"Saving…":"Save memory"}</button></div></section>
+    <section className="memory-list"><div className="memory-list-head"><strong>Remembered</strong><span>{loading?"Loading…":items.length+" entries"}</span></div>{loading?<div className="memory-loading">Loading memory…</div>:!items.length?<div className="memory-empty"><Brain size={22}/><span>Nothing is saved yet.</span></div>:items.map(item=><article className="memory-row" key={item.id}><div><strong>{item.key}</strong><p>{item.value}</p><small>Updated {new Date(item.updatedAt*1000).toLocaleDateString(undefined,{dateStyle:"medium"})}</small></div><button onClick={()=>remove(item.id)}>Forget</button></article>)}</section>
+  </div>;
+}
+
 function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>void}){
   const initial=readJSON<Chat[]>("cookie_chats",[]);
   const [chats,setChats]=useState<Chat[]>(initial);
