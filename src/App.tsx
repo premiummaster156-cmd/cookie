@@ -74,7 +74,7 @@ function CookieBootLoader({failed,message,onRetry}:{failed:boolean;message:strin
     if(failed){setProgress(100);return}
     let value=4;
     const timer=window.setInterval(()=>{
-      value=value>=94?8:Math.min(94,value+Math.random()*7+2);
+      value=Math.min(94,value+Math.random()*7+2);
       setProgress(Math.round(value));
     },240);
     return()=>window.clearInterval(timer);
