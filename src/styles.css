@@ -7073,3 +7073,14 @@ html[data-theme="dark"] .cookie-space-core{box-shadow:0 28px 90px rgba(0,0,0,.42
   .admin-audit-main{align-items:flex-start;flex-direction:column;gap:5px}
   .admin-audit-main span{text-align:left;white-space:normal}
 }
+
+
+/* Privileged administration navigation */
+.sidebar-admin-section{
+  margin-top:16px;
+  padding-top:13px;
+  border-top:1px solid rgba(255,255,255,.07);
+}
+.sidebar-admin-section .side-label{
+  padding:0 11px 7px;
+}
