@@ -781,34 +781,8 @@ export async function onRequestPost({ request, env }) {
       "kimi-k2.6:cloud"
     ];
 
-    // When web search is enabled, research public pages directly. This does not
-    // depend on the Ollama API key, so OpenRouter deployments work correctly too.
+    // Web access is available as an internal capability. Cookie should invoke it only when the request benefits from live information.
     const webSources = [];
-    if (useWebSearch && requestedWebQuery) {
-      const directWeb = await researchWeb(requestedWebQuery, apiKey);
-      appendWebSources(webSources, directWeb);
-      if (directWeb?.ok && (directWeb.content || directWeb.pages?.length || directWeb.results?.length)) {
-        let webContext = "";
-        if (Array.isArray(directWeb.pages)) {
-          webContext = directWeb.pages.map((r, i) =>
-            "[Source " + (i + 1) + "] " + (r.title || "Web page") + "\nURL: " + r.url + "\nContent: " + (r.content || "")
-          ).join("\n\n");
-        } else if (Array.isArray(directWeb.results)) {
-          webContext = directWeb.results.map((r, i) =>
-            "[Source " + (i + 1) + "] " + (r.title || "Web result") + "\nURL: " + r.url + "\nContent: " + (r.content || "")
-          ).join("\n\n");
-        }
-        agentMessages.push({
-          role:"system",
-          content:"MANDATORY LIVE WEB RESEARCH RESULTS FOR THIS USER MESSAGE:\n"+webContext+"\n\nUse these actual live results to answer the user. Do not claim anything not supported by the supplied pages. When useful, include source URLs as Markdown links. Avoid redundant searches unless the existing sources are insufficient. Do not create files unless the user explicitly asks for a downloadable file or code artifact."
-        });
-      } else {
-        agentMessages.push({
-          role:"system",
-          content:"LIVE WEB RESEARCH FAILED. Do not pretend that browsing succeeded. Tell the user live web access failed and include this diagnostic: "+String(directWeb?.error||"no usable public page response")
-        });
-      }
-    }
     const imageTools = [
       {
         type:"function",
