@@ -362,8 +362,7 @@ function ModerationPage({actorRole,onNotice,onError}:{actorRole:string;onNotice:
             {selected.status==="suspended"?<button className="moderation-action safe" onClick={()=>act("unsuspend")} disabled={busy}><Check size={15}/><span><b>Restore</b><small>Remove suspension</small></span></button>:<button className="moderation-action" onClick={()=>act("suspend")} disabled={busy}><Archive size={15}/><span><b>Suspend</b><small>Temporarily restrict</small></span></button>}
             {selected.status==="banned"?<button className="moderation-action safe" onClick={()=>act("unban")} disabled={busy}><Check size={15}/><span><b>Restore</b><small>Remove ban</small></span></button>:<button className="moderation-action danger" onClick={()=>act("ban")} disabled={busy}><Trash2 size={15}/><span><b>Ban</b><small>Block the account</small></span></button>}
           </div>
-        </>}
-      </section>
+        </section>}
     </div>
   </div>;
 }
