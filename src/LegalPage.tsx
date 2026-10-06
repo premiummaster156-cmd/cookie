@@ -11,7 +11,7 @@ function LegalLink({kind,label,onNavigate}:{kind:Kind;label:string;onNavigate:(k
  return <button type="button" className="legal-inline-link" onClick={()=>onNavigate(kind)}>{label}</button>;
 }
 
-export default function LegalPage({kind,onBack}:{kind:Kind;onBack:()=>void}){
+export default function LegalPage({kind,onBack,onNavigate}:{kind:Kind;onBack:()=>void;onNavigate:(kind:Kind)=>void}){
  const privacy=kind==="privacy";
  const pages=privacy?PRIVACY:TERMS;
  const [pageId,setPageId]=useState(pages[0].id);
@@ -19,9 +19,9 @@ export default function LegalPage({kind,onBack}:{kind:Kind;onBack:()=>void}){
  const index=Math.max(0,pages.findIndex(p=>p.id===pageId));
  const page=pages[index]||pages[0];
  const related=useMemo(()=>privacy?"Read the Terms of Service for the rules that govern accounts, use, moderation, plans and the service.":"Read the Privacy Policy for the information Cookie processes, why it is processed, sharing, retention and privacy controls.",[privacy]);
- const go=(next:number)=>{const target=pages[next];if(target){setPageId(target.id);window.scrollTo({top:0,behavior:"smooth"})}};
+ const go=(next:number)=>{const target=pages[next];if(target){setPageId(target.id);document.querySelector(".legal-page")?.scrollTo({top:0,behavior:"smooth"})}};
  const onNavigate=(next:Kind)=>{if(next===kind){setPageId(pages[0].id);window.scrollTo({top:0,behavior:"smooth"})}else{window.dispatchEvent(new CustomEvent("cookie:open-legal",{detail:next}))}};
- const onHtmlClick=(event:React.MouseEvent<HTMLDivElement>)=>{const el=(event.target as HTMLElement)?.closest?.("[data-legal-kind]") as HTMLElement|null;const next=el?.getAttribute("data-legal-kind") as Kind|null;if(next){event.preventDefault();onNavigate(next)}};
+ const onHtmlClick=(event:React.MouseEvent<HTMLDivElement>)=>{const el=(event.target as HTMLElement)?.closest?.("[data-legal-kind]") as HTMLElement|null;const next=el?.getAttribute("data-legal-kind") as Kind|null;if(next){event.preventDefault();navigate(next)}};
  return <div className="legal-page">
   <header className="legal-head">
    <button onClick={onBack} className="legal-back"><ArrowLeft size={17}/>Help Center</button>
@@ -39,7 +39,7 @@ export default function LegalPage({kind,onBack}:{kind:Kind;onBack:()=>void}){
     <div className="legal-copy">
       <p className="legal-lead">{page.summary}</p>
       <div className="legal-html" onClick={onHtmlClick} dangerouslySetInnerHTML={{__html:page.bodyHtml}} />
-      <div className="legal-related"><b>Related document</b><p>{related} <LegalLink kind={privacy?"terms":"privacy"} label={privacy?"Terms of Service":"Privacy Policy"} onNavigate={onNavigate} />.</p></div>
+      <div className="legal-related"><b>Related document</b><p>{related} <LegalLink kind={privacy?"terms":"privacy"} label={privacy?"Terms of Service":"Privacy Policy"} onNavigate={navigate} />.</p></div>
     </div>
     <div className="legal-pager">
       <button disabled={index===0} onClick={()=>go(index-1)}><ChevronLeft size={17}/><span><small>Previous</small>{index>0?pages[index-1].title:"Start of document"}</span></button>
