@@ -118,7 +118,7 @@ const SCHEMA = [
     created_at BIGINT NOT NULL DEFAULT 0,
     updated_at BIGINT NOT NULL DEFAULT 0,
     completed_at BIGINT
-  `,
+  )`,
   `CREATE TABLE IF NOT EXISTS usage_events (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
