@@ -106,6 +106,19 @@ const SCHEMA = [
     updated_at BIGINT NOT NULL DEFAULT 0,
     UNIQUE(project_id, path)
   )`,
+  `CREATE TABLE IF NOT EXISTS missions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    chat_id TEXT,
+    goal TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'running',
+    plan_json TEXT NOT NULL DEFAULT '[]',
+    verification_json TEXT NOT NULL DEFAULT '{}',
+    result_summary TEXT NOT NULL DEFAULT '',
+    created_at BIGINT NOT NULL DEFAULT 0,
+    updated_at BIGINT NOT NULL DEFAULT 0,
+    completed_at BIGINT
+  `,
   `CREATE TABLE IF NOT EXISTS usage_events (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -200,6 +213,8 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, updated_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id, updated_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_usage_user_created ON usage_events(user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_missions_user_updated ON missions(user_id, updated_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_missions_chat_updated ON missions(chat_id, updated_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_codebase_files_updated ON codebase_files(updated_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_codebase_revisions_path ON codebase_revisions(path, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_codebase_audit_created ON codebase_audit(created_at DESC)`
