@@ -1,4 +1,4 @@
-import { dbAvailable, getSessionUser, normalizeEmail, randomToken, passwordHash } from "./auth/_auth.js";
+import { dbAvailable, getSessionUser, normalizeEmail, randomToken, sha256 } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
 import { sendReleaseAnnouncementEmail, sendVerificationEmail } from "./auth/_email.js";
 import { issueEmailToken } from "./auth/_tokens.js";
@@ -238,10 +238,7 @@ export async function onRequestPost({request,env}){
       try{
         await sendVerificationEmail(request,env,{email:cleanEmail(target.email),name:target.name||"",code:issued.code,token:issued.token,purpose:"reset"});
       }catch(error){
-        await env.DB.prepare("UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now(),await (async()=>{ 
-          const { sha256 } = await import("./auth/_auth.js"); 
-          return sha256(issued.token);
-        })()).run().catch(()=>{});
+        await env.DB.prepare("UPDATE email_tokens SET used_at=? WHERE token_hash=?").bind(now(),await sha256(issued.token)).run().catch(()=>{});
         await writeAudit(env,ctx,{action:"reset_password",target,success:false,metadata:{reason:"email_send_failed"}});
         return json({error:"Cookie could not send the password reset email. Check SMTP configuration."},502);
       }
