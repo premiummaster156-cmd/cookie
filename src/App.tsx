@@ -155,13 +155,17 @@ function Rich({text}:{text:string}){
   const fence="```";
   return <div className="rich">{text.split(new RegExp("("+fence+"[^]*?"+fence+")","g")).map((part,pi)=>{
     if(part.startsWith(fence)){
-      const nl=part.indexOf("\n");
+      const nl=part.indexOf("
+");
       const lang=nl>3?part.slice(3,nl).trim():"";
-      const code=part.slice(nl>=0?nl+1:3,-3).replace(/^\n|\n$/g,"");
+      const code=part.slice(nl>=0?nl+1:3,-3).replace(/^
+|
+$/g,"");
       if(/^cookie-(?:viz|chart)$/i.test(lang)){try{const spec=JSON.parse(code);if((spec?.type==="bar"||spec?.type==="line")&&Array.isArray(spec?.data))return <CookieViz key={pi} spec={{...spec,type:spec.type,data:spec.data as VizDatum[]}}/>}catch{}}
       return <CodeBlock key={pi} lang={lang} code={code}/>;
     }
-    const lines=part.split("\n"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
+    const lines=part.split("
+"); const nodes:React.ReactNode[]=[]; let list:React.ReactNode[]=[]; let listType:"ul"|"ol"|null=null;
     const flush=()=>{if(!listType||!list.length)return;nodes.push(listType==="ol"?<ol key={"ol"+nodes.length}>{list}</ol>:<ul key={"ul"+nodes.length}>{list}</ul>);list=[];listType=null};
     lines.forEach((line,li)=>{
       if(!line.trim()){flush();nodes.push(<div className="md-gap" key={"g"+li}/>);return;}
@@ -264,7 +268,8 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
           {isOpen&&<div className="activity-detail">
             {s.domain&&<div className="activity-domains">{s.domain.split(" · ").filter(Boolean).map((d,j)=><span className="activity-domain" key={j}>{d}</span>)}</div>}
             {s.command&&<pre className="activity-terminal"><code>{s.command}</code></pre>}
-            {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"\n"}{s.output}</pre>}
+            {s.output&&<pre className="activity-terminal activity-output"><strong>output</strong>{"
+"}{s.output}</pre>}
             {s.meta&&<div className="activity-meta">{s.meta}</div>}
           </div>}
         </div>;
@@ -1005,7 +1010,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     memory:true,instructions:"",history:true,improve:false,notifications:true,updates:false,voice:"Arbor",captions:true,
     ...readJSON("cookie_settings",{})
   }));
-  const [memoryEnabled,setMemoryEnabled]=useState(true);\n  const [settingsServerReady,setSettingsServerReady]=useState(false);
+  const [memoryEnabled,setMemoryEnabled]=useState(true);
+  const [settingsServerReady,setSettingsServerReady]=useState(false);
   useEffect(()=>{
     let cancelled=false;
     fetch("/api/settings",{credentials:"same-origin",cache:"no-store"}).then(async r=>{const d=await r.json();if(!cancelled&&r.ok&&d?.settings){setSettings((s:any)=>({...s,...d.settings}));setSettingsServerReady(true)}}).catch(()=>{if(!cancelled)setSettingsServerReady(true)});
@@ -1244,7 +1250,8 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           const chunk=await reader.read();
           if(chunk.done)break;
           buffer+=decoder.decode(chunk.value,{stream:true});
-          const lines=buffer.split("\n");
+          const lines=buffer.split("
+");
           buffer=lines.pop()||"";
           for(const line of lines){
             processLine(line);
