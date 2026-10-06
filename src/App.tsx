@@ -8,7 +8,7 @@ import {
   Archive, ArrowUp, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Copy, Download,
   File as FileIcon, FilePlus2, FolderOpen, Globe2, Image as ImageIcon, Info, Keyboard, Library,
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
-  Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, Calculator, Link2, FileSearch, LockKeyhole, ArrowLeft, PenLine, Orbit, GitBranch, Pencil,
+  Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, FileSearch, LockKeyhole, ArrowLeft, PenLine, Orbit, GitBranch, Pencil,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound, ShieldAlert, ShieldCheck,
   Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal
 } from "lucide-react";
@@ -46,7 +46,6 @@ const COOKIE_SKILLS = [
 
 type ToolMode = "calculator"|"file-analysis"|"data-analysis"|"url-fetch"|"code-analysis"|"deep-research"|null;
 type SkillId = typeof COOKIE_SKILLS[number]["id"] | null;
-type ToolSpec = {id:Exclude<ToolMode,null>;name:string;detail:string;plan:"free"|"pro"|"max";icon:React.ReactNode};
 
 type GPTDefinition = {id:string;name:string;description:string;category:string;icon:"study"|"code"|"writer"|"research"|"data"|"creative";system:string;plan:"free"|"pro"|"max"};
 const GPTS:GPTDefinition[]=[
@@ -194,26 +193,10 @@ function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:
 function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice,skillId=null,setSkillId,spatialMode=false,onSpatialMode,missionMode=false,onMissionMode}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void;skillId?:SkillId;setSkillId?:(id:SkillId)=>void;spatialMode?:boolean;onSpatialMode?:()=>void;missionMode?:boolean;onMissionMode?:(enabled:boolean)=>void}){
   const [open,setOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
-  const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
-  const tools:ToolSpec[]=[
-    {id:"calculator",name:"Calculator",detail:"Exact arithmetic and quick formulas",plan:"free",icon:<Calculator size={18}/>},
-    {id:"file-analysis",name:"File analysis",detail:"Analyze attached documents and files",plan:"free",icon:<FileSearch size={18}/>},
-    {id:"data-analysis",name:"Data analysis",detail:"Tables, CSVs, trends, and metrics",plan:"pro",icon:<BarChart3 size={18}/>},
-    {id:"url-fetch",name:"Read a URL",detail:"Fetch and inspect a public webpage",plan:"pro",icon:<Link2 size={18}/>},
-    {id:"code-analysis",name:"Code analysis",detail:"Deep code review and debugging",plan:"pro",icon:<Code2 size={18}/>},
-    {id:"deep-research",name:"Deep research",detail:"Broader multi-source research",plan:"max",icon:<Sparkles size={18}/>}
-  ];
   const resizeInput=useCallback(()=>{const t=textRef.current;if(!t)return;t.style.height="52px";const next=Math.min(220,Math.max(52,t.scrollHeight));t.style.height=next+"px"},[]);
   useEffect(()=>{resizeInput()},[value,resizeInput]);
   const submit=useCallback(()=>{const t=textRef.current;if(t)t.style.height="52px";onSend()},[onSend]);
   const add=(list:FileList|null)=>{if(!list)return;Array.from(list).slice(0,10-attachments.length).forEach(file=>{const r=new FileReader();r.onload=()=>setAttachments(p=>[...p,{id:uid(),kind:file.type.startsWith("image/")?"image":"file",name:file.name,mime:file.type,data:String(r.result||""),size:file.size}]);r.readAsDataURL(file)})};
-  const chooseTool=(tool:ToolSpec)=>{
-    const required=tool.plan==="max"?2:tool.plan==="pro"?1:0;
-    if(rank<required){onToolNotice(tool.name+" requires a "+(tool.plan==="max"?"MAX":"PRO")+" plan.");setToolsOpen(false);return}
-    setToolMode(tool.id);setToolsOpen(false);
-    if(tool.id==="file-analysis"&&!attachments.length)onToolNotice("Attach a file or image, then send your request.");
-    
-  };
   return <div className="composer-wrap">
     {!!attachments.length&&<div className="attachment-strip">{attachments.map(a=><div className="attachment-card" key={a.id}>{a.kind==="image"?<img src={a.data} alt=""/>:<div className="file-icon"><FileIcon size={18}/></div>}<div><b>{a.name}</b><span>{Math.max(1,Math.round(a.size/1024))} KB</span></div><button onClick={()=>setAttachments(p=>p.filter(x=>x.id!==a.id))}><X size={14}/></button></div>)}</div>}
     <div className="composer" data-liquid-glass="composer"><LiquidGlassBackdrop className="composer-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:22,backdropSource:".cookie-ambient-scene"}}/>
