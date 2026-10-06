@@ -1,4 +1,4 @@
-import { executeWebTool, researchWeb } from "./web.js";
+import { executeWebTool } from "./web.js";
 import { dbAvailable, getSessionUser, randomToken } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
 
@@ -747,31 +747,6 @@ export async function onRequestPost({ request, env }) {
       const last = apiMessages.at(-1);
       if (last?.role === "user") last.images = imageData;
     }
-
-    const toolContext=[];
-    if(requestedTool==="calculator"){
-      const calc=safeCalculate(requestedWebQuery);
-      toolContext.push("CALCULATOR RESULT:\n"+JSON.stringify(calc));
-    } else if(requestedTool==="file-analysis"){
-      if(!attachments.length) toolContext.push("FILE ANALYSIS MODE: No attachment was provided. Tell the user to attach a file or image.");
-      else toolContext.push("FILE ANALYSIS MODE: Carefully analyze the attached files/images and answer from their contents. Do not claim to have read data that is unavailable.");
-    } else if(requestedTool==="data-analysis"){
-      const summaries=fileAttachments.filter(a=>/\.(csv|tsv)$/i.test(String(a.name||""))).map(a=>csvSummary(a.name, readableFiles.find(f=>f.name===a.name)?.content||""));
-      toolContext.push("DATA ANALYSIS MODE:\n"+(summaries.length?summaries.map(x=>JSON.stringify(x)).join("\n"):"No CSV/TSV attachment was detected. Analyze any clearly tabular text provided by the user and state what is missing."));
-    } else if(requestedTool==="url-fetch"){
-      const match=requestedWebQuery.match(/https?:\/\/[^\s<>"')]+/i);
-      if(!match) toolContext.push("URL FETCH MODE: No public http(s) URL was detected in the user's request.");
-      else {
-        const result=await executeWebTool("web_fetch",{url:match[0]},apiKey);
-        toolContext.push("FETCHED URL CONTENT:\n"+JSON.stringify(result));
-      }
-    } else if(requestedTool==="code-analysis"){
-      toolContext.push("CODE ANALYSIS MODE: Act as a senior reviewer. Inspect supplied code carefully for correctness, security, maintainability, bugs, edge cases, and integration mistakes. Give actionable findings and production-quality fixes.");
-    } else if(requestedTool==="deep-research"){
-      const research=await researchWeb(requestedWebQuery,apiKey);
-      toolContext.push("DEEP RESEARCH RESULTS:\n"+JSON.stringify(research));
-    }
-    if(toolContext.length) apiMessages.push({role:"system",content:toolContext.join("\n\n")});
 
     const agentMessages = apiMessages.slice();
     const modelFallbacks = [
