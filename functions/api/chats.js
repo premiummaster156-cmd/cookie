@@ -45,7 +45,7 @@ export async function onRequestGet({request,env}) {
   const auth=await requireUser(request,env);
   if(auth.error) return auth.error;
   const chats=await env.DB.prepare(
-    "SELECT id,title,model,temporary,pinned,archived,updated_at,created_at FROM chats WHERE user_id=? ORDER BY updated_at DESC LIMIT ?"
+    "SELECT id,title,model,temporary,pinned,archived,branch_of,branch_message_id,updated_at,created_at FROM chats WHERE user_id=? ORDER BY updated_at DESC LIMIT ?"
   ).bind(auth.user.id,MAX_CHATS).all();
   const rows=chats.results||[];
   const ids=rows.map(x=>x.id);
@@ -68,8 +68,10 @@ export async function onRequestGet({request,env}) {
   return json({
     chats:rows.map(row=>({
       id:row.id,title:row.title,model:row.model,temporary:Boolean(row.temporary),
-      pinned:Boolean(row.pinned),archived:Boolean(row.archived),updatedAt:Number(row.updated_at),
-      messages:byChat.get(row.id)||[]
+      pinned:Boolean(row.pinned),archived:Boolean(row.archived),
+      branchOf:row.branch_of?String(row.branch_of):undefined,
+      branchMessageId:row.branch_message_id?String(row.branch_message_id):undefined,
+      updatedAt:Number(row.updated_at),messages:byChat.get(row.id)||[]
     }))
   });
 }
@@ -105,6 +107,8 @@ export async function onRequestPost({request,env}) {
     model:String(chat?.model||"standard").slice(0,60),
     temporary:chat?.temporary?1:0,pinned:chat?.pinned?1:0,archived:chat?.archived?1:0,
     updatedAt:Number(chat?.updatedAt)||Date.now(),createdAt:Number(chat?.createdAt)||Date.now(),
+    branchOf:chat?.branchOf?String(chat.branchOf).slice(0,100):"",
+    branchMessageId:chat?.branchMessageId?String(chat.branchMessageId).slice(0,100):"",
     messages:(Array.isArray(chat?.messages)?chat.messages.slice(-MAX_MESSAGES):[]).map((m,i)=>({
       id:String(m?.id||"").slice(0,100),
       role:m?.role==="assistant"?"assistant":"user",
@@ -120,8 +124,8 @@ export async function onRequestPost({request,env}) {
 
   for(const chat of normalized){
     statements.push(env.DB.prepare(
-      "INSERT INTO chats (id,user_id,title,model,temporary,pinned,archived,updated_at,created_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,model=excluded.model,temporary=excluded.temporary,pinned=excluded.pinned,archived=excluded.archived,updated_at=excluded.updated_at WHERE chats.user_id=excluded.user_id"
-    ).bind(chat.id,auth.user.id,chat.title,chat.model,chat.temporary,chat.pinned,chat.archived,chat.updatedAt,chat.createdAt));
+      "INSERT INTO chats (id,user_id,title,model,temporary,pinned,archived,branch_of,branch_message_id,updated_at,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,model=excluded.model,temporary=excluded.temporary,pinned=excluded.pinned,archived=excluded.archived,branch_of=excluded.branch_of,branch_message_id=excluded.branch_message_id,updated_at=excluded.updated_at WHERE chats.user_id=excluded.user_id"
+    ).bind(chat.id,auth.user.id,chat.title,chat.model,chat.temporary,chat.pinned,chat.archived,chat.branchOf||null,chat.branchMessageId||null,chat.updatedAt,chat.createdAt));
     statements.push(env.DB.prepare("DELETE FROM chat_messages WHERE chat_id=? AND user_id=?").bind(chat.id,auth.user.id));
     for(const m of chat.messages){
       statements.push(env.DB.prepare(
