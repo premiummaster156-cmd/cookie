@@ -66,7 +66,6 @@ export async function onRequestPost({request,env}){
     await env.DB.prepare("DELETE FROM chats WHERE user_id=?").bind(user.id).run();
     await env.DB.prepare("DELETE FROM chat_messages WHERE user_id=?").bind(user.id).run().catch(()=>{});
     await env.DB.prepare("DELETE FROM shared_chats WHERE user_id=?").bind(user.id).run().catch(()=>{});
-    await env.DB.prepare("DELETE FROM saved_items WHERE user_id=?").bind(user.id).run().catch(()=>{});
     return json({ok:true});
   }
 
