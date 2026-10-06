@@ -1,5 +1,6 @@
 import { dbAvailable, getSessionUser, normalizeEmail, randomToken } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
+import { sendReleaseAnnouncementEmail } from "./auth/_email.js";
 
 const OWNER_EMAIL = "cookie.ai.noreply@gmail.com";
 const ROLES = new Set(["user","vip","staff","admin","owner"]);
@@ -105,6 +106,27 @@ export async function onRequestPost({request,env}){
     const action=String(body?.action||"").trim();
 
     if(["user","gift","credit","limits"].includes(action)&&!canManageAccounts(ctx.user))return json({error:"Staff accounts can only perform moderation actions."},403);
+
+    if(action==="announce_release"){
+      if(ctx.role!=="owner")return json({error:"Only the Cookie owner can send a release announcement."},403);
+      const releaseId=String(body?.releaseId||"").trim().slice(0,160);
+      const title=String(body?.title||"New updates are live in Cookie").trim().slice(0,160);
+      const intro=String(body?.intro||"Cookie just got a major update. New features and improvements are now live.").trim().slice(0,600);
+      const features=Array.isArray(body?.features)?body.features.map(x=>String(x||"").trim()).filter(Boolean).slice(0,8):[];
+      const ctaLabel=String(body?.ctaLabel||"Try Cookie").trim().slice(0,60);
+      const ctaUrl=String(body?.ctaUrl||"").trim().slice(0,500);
+      if(!releaseId)return json({error:"releaseId is required."},400);
+      const markerKey="release_email_sent:"+releaseId;
+      const previous=await env.DB.prepare("SELECT value,updated_at FROM codebase_settings WHERE key=? LIMIT 1").bind(markerKey).first();
+      if(previous)return json({error:"This release announcement has already been sent.",releaseId,sentAt:Number(previous.updated_at||0)*1000},409);
+      const rows=await env.DB.prepare("SELECT DISTINCT lower(trim(email)) AS email FROM users WHERE email IS NOT NULL AND trim(email)<>''").all();
+      const recipients=(rows?.results||[]).map(row=>String(row.email||"").trim().toLowerCase()).filter(email=>/^\\S+@\\S+\\.\\S+$/.test(email));
+      if(!recipients.length)return json({error:"No registered email addresses are available."},404);
+      const result=await sendReleaseAnnouncementEmail(request,env,{recipients,title,intro,features,ctaLabel,ctaUrl});
+      await env.DB.prepare("INSERT INTO codebase_settings (key,value,updated_at) VALUES (?,?,?)").bind(markerKey,String(result.sent),now()).run();
+      return json({ok:true,releaseId,recipients:recipients.length,sent:result.sent,batches:result.batches});
+    }
+
 
     if(["warn","suspend","ban","unsuspend","unban"].includes(action)){
       if(!["owner","admin","staff"].includes(ctx.role))return json({error:"Moderation permission required."},403);
