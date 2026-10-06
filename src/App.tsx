@@ -10,11 +10,11 @@ import {
   LogOut, Menu, MessageSquare, MessageSquarePlus, MoreHorizontal, PanelLeft, Pin, Plus, Code2, Clock3,
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, FileSearch, LockKeyhole, ArrowLeft, PenLine, Orbit, GitBranch, Pencil,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound, ShieldAlert, ShieldCheck,
-  Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal
+  Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal, Bookmark, Command, ExternalLink, Maximize2
 } from "lucide-react";
 
 type Role = "user" | "assistant";
-type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "space" | "settings" | "help" | "moderation";
+type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "space" | "memory" | "settings" | "help" | "moderation";
 type SettingsTab = "general" | "personalization" | "data" | "notifications" | "voice" | "account" | "about";
 type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; data:string; size:number };
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
@@ -22,7 +22,8 @@ type GeneratedImage = { dataUrl:string; prompt:string; model?:string };
 type SourceRef = { title:string; url:string; domain?:string; snippet?:string };
 type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean; tool?:string; command?:string; output?:string; domain?:string; meta?:string }; type ModerationNotification = { id:string; action:string; reason:string; createdAt:number; until:number; read:boolean };
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
-type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
+type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number; branchOf?:string; branchMessageId?:string };
+type SavedItem = { id:string; kind:string; title:string; content:string; url?:string; chatId?:string; createdAt:number };
 
 const ICON = cookieIconUrl;
 const MODELS = [
@@ -270,7 +271,7 @@ function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elaps
   </div>;
 }
 
-function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,onEdit,onFork,streamText="",streamStatus="",streamEvents=[],streamElapsed=0,spatialMode=false}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;onEdit:(m:Message)=>void;onFork:(m:Message)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number;spatialMode?:boolean}){
+function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,onShare,onDownload,onEdit,onFork,onSave,onInspectSources,onQuickAction,streamText="",streamStatus="",streamEvents=[],streamElapsed=0,spatialMode=false}:{chat:Chat|null;onSend:(text:string)=>void;loading:boolean;onStop:()=>void;onVoice:()=>void;onCopy:(m:Message)=>void;onRetry:(m:Message)=>void;onDelete:(m:Message)=>void;onShare:()=>void;onDownload:(f:GeneratedFile)=>void;onEdit:(m:Message)=>void;onFork:(m:Message)=>void;onSave:(m:Message)=>void;onInspectSources:(m:Message)=>void;onQuickAction:(prompt:string)=>void;streamText?:string;streamStatus?:string;streamEvents?:ActivityStep[];streamElapsed?:number;activity?:ActivityStep[];activityDuration?:number;spatialMode?:boolean}){
   const ref=useRef<HTMLDivElement>(null);
   const [showJump,setShowJump]=useState(false);
   const jumpToLatest=useCallback(()=>{
