@@ -13,7 +13,7 @@ import {
   Wrench, ImagePlus, FolderKanban, CreditCard, Brain, Sparkles, BookOpen, BarChart3, FileSearch, LockKeyhole, ArrowLeft, PenLine, Orbit, GitBranch, Pencil,
   AlertCircle, RotateCcw, Search, Send, Settings as SettingsIcon, Share2, Square, Trash2, UserRound, ShieldAlert, ShieldCheck,
   Volume2, X, Zap, AppWindow, Smartphone, Monitor, SquareTerminal, Bookmark, Command, ExternalLink, Maximize2, Mail
-} from "lucide-react";
+ ,FileText} from "lucide-react";
 
 type Role = "user" | "assistant";
 type View = "chat" | "search" | "library" | "projects" | "code" | "gpts" | "gpt-chat" | "work" | "space" | "memory" | "settings" | "help" | "terms" | "privacy" | "moderation" | "admin";
