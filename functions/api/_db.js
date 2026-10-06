@@ -144,6 +144,7 @@ const SCHEMA = [
     created_at BIGINT NOT NULL DEFAULT 0
   )`,
   `CREATE INDEX IF NOT EXISTS idx_moderation_target_created ON moderation_events(target_user_id, created_at DESC)`,
+  `ALTER TABLE moderation_events ADD COLUMN IF NOT EXISTS read_at BIGINT`,
   `CREATE TABLE IF NOT EXISTS codebase_members (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
