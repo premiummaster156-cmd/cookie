@@ -20,7 +20,7 @@ type Attachment = { id:string; kind:"image"|"file"; name:string; mime:string; da
 type GeneratedFile = { name:string; path:string; content:string; kind?:string };
 type GeneratedImage = { dataUrl:string; prompt:string; model?:string };
 type SourceRef = { title:string; url:string; domain?:string; snippet?:string };
-type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean; tool?:string; command?:string; output?:string; domain?:string; meta?:string };
+type ActivityStep = { id:string; label:string; detail:string; stage:string; done?:boolean; tool?:string; command?:string; output?:string; domain?:string; meta?:string }; type ModerationNotification = { id:string; action:string; reason:string; createdAt:number; until:number; read:boolean };
 type Message = { id:string; role:Role; content:string; attachments?:Attachment[]; files?:GeneratedFile[]; images?:GeneratedImage[]; sources?:SourceRef[]; activity?:ActivityStep[]; activityDuration?:number; createdAt:number };
 type Chat = { id:string; title:string; messages:Message[]; model:string; temporary?:boolean; pinned?:boolean; archived?:boolean; updatedAt:number };
 
@@ -94,6 +94,7 @@ function PublicShareView({chat,onOpenCookie}:{chat:Chat;onOpenCookie:()=>void}){
         <div className="public-share-brand"><CookieIcon size={30}/><div><strong>Cookie AI</strong><span>Shared conversation</span></div></div>
         <button className="public-share-open" onClick={onOpenCookie}>Open Cookie AI</button>
       </header>
+      {notificationsOpen&&<NotificationFeed items={notifications} onClose={()=>setNotificationsOpen(false)} onReadAll={markNotificationsRead}/>}
       <div className="public-share-title">{chat.title}</div>
       <div className="public-share-messages">
         {chat.messages.map(m=><div className={"public-share-message "+m.role} key={m.id}>
@@ -869,6 +870,22 @@ function InstallAppExperience({authUser}:{authUser:AuthUser}){
   </div>;
 }
 
+function NotificationFeed({items,onClose,onReadAll}:{items:ModerationNotification[];onClose:()=>void;onReadAll:()=>void}){
+  const unread=items.filter(x=>!x.read).length;
+  const titleOf=(action:string)=>action==="warn"?"Account warning":action==="suspend"?"Account suspended":action==="ban"?"Account banned":"Account restored";
+  const detailOf=(item:ModerationNotification)=>{
+    if(item.action==="suspend"&&item.until){return "Access is restricted until "+new Date(item.until).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})+".";}
+    if(item.action==="ban")return "Access to Cookie has been blocked.";
+    if(item.action==="unsuspend"||item.action==="unban")return "Your account restrictions have been removed.";
+    return "A moderation warning was added to your account.";
+  };
+  return <div className="notification-sheet" role="dialog" aria-label="Notifications">
+    <div className="notification-sheet-head"><div><strong>Notifications</strong><span>{unread?unread+" unread":"All caught up"}</span></div><div><button onClick={onReadAll} disabled={!unread}>Mark read</button><button onClick={onClose}>Close</button></div></div>
+    <div className="notification-list">
+      {!items.length?<div className="notification-empty">No notifications.</div>:items.map(item=><button key={item.id} className={"notification-row "+(!item.read?"unread":"")} onClick={()=>{if(!item.read)onReadAll()}}><span className="notification-row-main"><b>{titleOf(item.action)}</b><span>{detailOf(item)}</span>{item.reason&&<small>{item.reason}</small>}</span><time>{new Date(item.createdAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</time></button>)}
+    </div>
+  </div>;
+}
 function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>void}){
   const initial=readJSON<Chat[]>("cookie_chats",[]);
   const [chats,setChats]=useState<Chat[]>(initial);
@@ -879,6 +896,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   const [recentFilter,setRecentFilter]=useState<"all"|"pinned"|"temporary">("all"),[recentQuery,setRecentQuery]=useState(""),[moreOpen,setMoreOpen]=useState(false),[focusMode,setFocusMode]=useState(false);
   const [text,setText]=useState(""),[attachments,setAttachments]=useState<Attachment[]>([]),[webSearch,setWebSearch]=useState(false),[loading,setLoading]=useState(false),[voice,setVoice]=useState(false),[newOpen,setNewOpen]=useState(false),[profileOpen,setProfileOpen]=useState(false);
   const [temporary,setTemporary]=useState(false),[abort,setAbort]=useState<AbortController|null>(null),[toast,setToast]=useState("");
+  const [notifications,setNotifications]=useState<ModerationNotification[]>([]),[notificationsOpen,setNotificationsOpen]=useState(false);
   const [streamText,setStreamText]=useState(""),[streamStatus,setStreamStatus]=useState("");
   const [streamEvents,setStreamEvents]=useState<ActivityStep[]>([]);
   const [streamStartedAt,setStreamStartedAt]=useState(0);
@@ -953,7 +971,31 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     try{webkit?.messageHandlers?.cookieAuth?.postMessage(true)}catch{}
     return()=>{try{webkit?.messageHandlers?.cookieAuth?.postMessage(false)}catch{}};
   },[]);
-  useEffect(()=>{if(view!=="chat")setSidebar(false)},[view]);
+  const loadNotifications=useCallback(async()=>{
+    try{
+      const r=await fetch("/api/notifications",{credentials:"same-origin",cache:"no-store"});
+      if(!r.ok)return;
+      const d=await r.json();
+      if(Array.isArray(d?.items))setNotifications(d.items);
+    }catch{}
+  },[]);
+  useEffect(()=>{
+    loadNotifications();
+    const t=window.setInterval(loadNotifications,60000);
+    return()=>window.clearInterval(t);
+  },[loadNotifications]);
+  const openNotifications=async()=>{
+    setNotificationsOpen(v=>!v);
+    if(notifications.some(x=>!x.read)){
+      try{await fetch("/api/notifications",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})}catch{}
+      setNotifications(items=>items.map(x=>({...x,read:true})));
+    }
+  };
+  const markNotificationsRead=async()=>{
+    try{await fetch("/api/notifications",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})}catch{}
+    setNotifications(items=>items.map(x=>({...x,read:true})));
+  };
+  useEffect(()=>{if(view!=="chat"){setSidebar(false);setNotificationsOpen(false)}},[view]);
   useEffect(()=>{if(!moreOpen)return;const close=(e:Event)=>{const el=e.target as HTMLElement|null;if(!el?.closest(".more-wrap"))setMoreOpen(false)};document.addEventListener("pointerdown",close);return()=>document.removeEventListener("pointerdown",close)},[moreOpen]);
   useEffect(()=>{
     if(!loading||!streamStartedAt)return;
@@ -1228,7 +1270,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   return <button key={x.id} disabled={!available} className={x.id===model?"selected":""} onClick={()=>{if(!available){notify(x.requiredPlan.toUpperCase()+" plan required.");return}setModel(x.id);setModelOpen(false)}}>
     <span><b>{x.name}</b><small>{available?x.detail:x.detail+" · "+x.requiredPlan.toUpperCase()}</small></span>{x.id===model&&<Check size={16}/>}
   </button>
-})}<div className="model-effort-section"><div className="model-effort-head"><span>Effort</span><small>Balance speed and depth</small></div><div className="model-effort-grid">{([["light","Light","Fast"],["standard","Standard","Balanced"],["high","High","Deeper"],["ultra","Ultra","Maximum"]] as const).map(([id,label,detail])=><button key={id} className={effort===id?"selected":""} onClick={()=>{setEffort(id);setModelOpen(false)}}><span><b>{label}</b><small>{detail}</small></span>{effort===id&&<Check size={14}/>}</button>)}</div></div></div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right">{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><PenLine size={19}/></button><div className="more-wrap"><button className="top-icon" onClick={()=>setMoreOpen(v=>!v)} aria-label="More options"><MoreHorizontal size={19}/></button>{moreOpen&&<div className="top-more-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/><button disabled={!chat} onClick={renameActiveChat}><Pencil size={15}/>Rename</button><button disabled={!chat} onClick={toggleActivePin}><Pin size={15}/>{chat?.pinned?"Unpin":"Pin"}</button><button onClick={()=>{setFocusMode(v=>!v);setMoreOpen(false)}}><PanelLeft size={15}/>{focusMode?"Exit focus mode":"Focus mode"}</button><button disabled={!chat} onClick={archiveActiveChat}><Archive size={15}/>Archive</button><button className="danger" disabled={!chat} onClick={deleteActiveChat}><Trash2 size={15}/>Delete</button></div>}</div></div></header>
+})}<div className="model-effort-section"><div className="model-effort-head"><span>Effort</span><small>Balance speed and depth</small></div><div className="model-effort-grid">{([["light","Light","Fast"],["standard","Standard","Balanced"],["high","High","Deeper"],["ultra","Ultra","Maximum"]] as const).map(([id,label,detail])=><button key={id} className={effort===id?"selected":""} onClick={()=>{setEffort(id);setModelOpen(false)}}><span><b>{label}</b><small>{detail}</small></span>{effort===id&&<Check size={14}/>}</button>)}</div></div></div>}</div>}{chat?.temporary&&view==="chat"&&<span className="temporary-chip"><Clock3 size={13}/>Temporary</span>}</div><div className="top-right"><button className={"top-icon notification-trigger "+(notifications.some(x=>!x.read)?"has-unread":"")} onClick={openNotifications} aria-label="Notifications"><Bell size={18}/>{notifications.some(x=>!x.read)&&<span className="notification-dot" aria-hidden="true"/>}</button>{chat&&view==="chat"&&<button className="top-icon" onClick={share}><Share2 size={18}/></button>}<button className="top-icon" onClick={()=>createChat(false)} aria-label="New chat"><PenLine size={19}/></button><div className="more-wrap"><button className="top-icon" onClick={()=>setMoreOpen(v=>!v)} aria-label="More options"><MoreHorizontal size={19}/></button>{moreOpen&&<div className="top-more-menu popover-pop"><LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12}}/><button disabled={!chat} onClick={renameActiveChat}><Pencil size={15}/>Rename</button><button disabled={!chat} onClick={toggleActivePin}><Pin size={15}/>{chat?.pinned?"Unpin":"Pin"}</button><button onClick={()=>{setFocusMode(v=>!v);setMoreOpen(false)}}><PanelLeft size={15}/>{focusMode?"Exit focus mode":"Focus mode"}</button><button disabled={!chat} onClick={archiveActiveChat}><Archive size={15}/>Archive</button><button className="danger" disabled={!chat} onClick={deleteActiveChat}><Trash2 size={15}/>Delete</button></div>}</div></div></header>
       {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify} skillId={skillId} setSkillId={setSkillId} spatialMode={spatialMode} onSpatialMode={()=>setSpatialMode(v=>!v)} missionMode={missionMode} onMissionMode={setMissionMode}/></div>}
       {view!=="chat"&&main}
     </main>
