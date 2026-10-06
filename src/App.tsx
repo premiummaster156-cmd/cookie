@@ -597,7 +597,7 @@ function GPTChatPage({chat,gpt,onBack,onNewChat,onSend,loading,onStop,onVoice,on
       <button className="gpt-chat-new" onClick={onNewChat}><MessageSquarePlus size={17}/><span>New chat</span></button>
     </header>
     <main className="gpt-chat-main">
-      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} onEdit={()=>{}} onFork={()=>{}} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>
+      <ChatView chat={chat} onSend={onSend} loading={loading} onStop={onStop} onVoice={onVoice} onCopy={onCopy} onRetry={onRetry} onDelete={onDelete} onShare={()=>{}} onDownload={onDownload} onEdit={()=>{}} onFork={()=>{}} onSave={()=>{}} onInspectSources={()=>{}} onQuickAction={onSend} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>
       <div className="gpt-chat-composer">
         <Composer value={value} setValue={setValue} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={onSend} onStop={onStop} onVoice={onVoice} sendOnEnter={sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={false} setMemoryEnabled={()=>{}} toolMode={null} setToolMode={()=>{}} plan="free" hideTools hideWebSearch onToolNotice={()=>{}}/>
       </div>
