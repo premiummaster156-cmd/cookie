@@ -87,6 +87,8 @@ const SCHEMA = [
     created_at BIGINT NOT NULL DEFAULT 0,
     position INTEGER NOT NULL
   )`,
+  `ALTER TABLE chats ADD COLUMN IF NOT EXISTS branch_of TEXT`,
+  `ALTER TABLE chats ADD COLUMN IF NOT EXISTS branch_message_id TEXT`,
   `CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
