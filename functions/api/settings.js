@@ -26,6 +26,18 @@ async function current(request,env){
 export async function onRequestGet({request,env}){
   const user=await current(request,env);
   if(!user)return json({error:"Authentication required."},401);
+  if(new URL(request.url).searchParams.get("action")==="export"){
+    const [profile,chats,memory,projects,saved]=await Promise.all([
+      env.DB.prepare("SELECT id,email,email_verified,name,username,avatar_url,plan,plan_expires_at,role,credits_remaining,account_status,created_at,updated_at FROM users WHERE id=? LIMIT 1").bind(user.id).first(),
+      env.DB.prepare("SELECT id,title,model,temporary,pinned,archived,updated_at,created_at FROM chats WHERE user_id=? ORDER BY updated_at DESC").bind(user.id).all(),
+      env.DB.prepare("SELECT id,key,value,created_at,updated_at FROM memories WHERE user_id=? ORDER BY updated_at DESC").bind(user.id).all(),
+      env.DB.prepare("SELECT id,name,description,created_at,updated_at FROM projects WHERE user_id=? ORDER BY updated_at DESC").bind(user.id).all(),
+      env.DB.prepare("SELECT id,kind,title,content,url,chat_id,created_at FROM saved_items WHERE user_id=? ORDER BY created_at DESC").bind(user.id).all()
+    ]);
+    const chatRows=chats.results||[];
+    const messages=chatRows.length?await env.DB.prepare("SELECT chat_id,id,role,content,created_at,position FROM chat_messages WHERE user_id=? ORDER BY created_at ASC,position ASC").bind(user.id).all():{results:[]};
+    return json({ok:true,exportedAt:new Date().toISOString(),profile,chats:chatRows,messages:messages.results||[],memories:memory.results||[],projects:projects.results||[],savedItems:saved.results||[]});
+  }
   const row=await env.DB.prepare("SELECT settings_json,updated_at FROM user_settings WHERE user_id=? LIMIT 1").bind(user.id).first();
   let stored={};
   try{stored=row?.settings_json?JSON.parse(row.settings_json):{}}catch{}
