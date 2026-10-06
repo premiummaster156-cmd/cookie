@@ -134,6 +134,17 @@ const SCHEMA = [
     payload TEXT NOT NULL DEFAULT '{}',
     created_at BIGINT NOT NULL DEFAULT 0
   )`,
+  `CREATE TABLE IF NOT EXISTS saved_items (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL DEFAULT 'message',
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    chat_id TEXT,
+    created_at BIGINT NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_saved_items_user_created ON saved_items(user_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS moderation_events (
     id TEXT PRIMARY KEY,
     target_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
