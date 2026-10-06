@@ -1005,7 +1005,23 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     memory:true,instructions:"",history:true,improve:false,notifications:true,updates:false,voice:"Arbor",captions:true,
     ...readJSON("cookie_settings",{})
   }));
-  const [memoryEnabled,setMemoryEnabled]=useState(true);
+  const [memoryEnabled,setMemoryEnabled]=useState(true);\n  const [settingsServerReady,setSettingsServerReady]=useState(false);
+  useEffect(()=>{
+    let cancelled=false;
+    fetch("/api/settings",{credentials:"same-origin",cache:"no-store"}).then(async r=>{const d=await r.json();if(!cancelled&&r.ok&&d?.settings){setSettings((s:any)=>({...s,...d.settings}));setSettingsServerReady(true)}}).catch(()=>{if(!cancelled)setSettingsServerReady(true)});
+    return()=>{cancelled=true};
+  },[]);
+  useEffect(()=>saveJSON("cookie_settings",settings),[settings]);
+  useEffect(()=>{
+    if(!settingsServerReady)return;
+    const timer=window.setTimeout(()=>fetch("/api/settings",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({settings})}).catch(()=>{}),500);
+    return()=>window.clearTimeout(timer);
+  },[settings,settingsServerReady]);
+  useEffect(()=>{
+    const open=()=>setCommandOpen(true);
+    window.addEventListener("cookie:open-command-palette",open);
+    return()=>window.removeEventListener("cookie:open-command-palette",open);
+  },[]);
   const loadSaved=useCallback(async()=>{try{const r=await fetch("/api/saved",{credentials:"same-origin",cache:"no-store"});const d=await r.json();if(r.ok&&Array.isArray(d?.items))setSavedItems(d.items)}catch{}},[]);
   const [serverSyncReady,setServerSyncReady]=useState(false);
   const [files,setFiles]=useState<GeneratedFile[]>(readJSON("cookie_library",[]));
@@ -1035,7 +1051,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     const t=window.setTimeout(()=>{fetch("/api/chats",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({chats})}).catch(()=>{})},500);
     return()=>window.clearTimeout(t);
   },[chats,serverSyncReady]);
- useEffect(()=>saveJSON("cookie_settings",settings),[settings]); useEffect(()=>saveJSON("cookie_library",files),[files]); useEffect(()=>localStorage.setItem("cookie_model",model),[model]);
+ useEffect(()=>saveJSON("cookie_library",files),[files]); useEffect(()=>localStorage.setItem("cookie_model",model),[model]);
   useEffect(()=>{const theme=settings.theme==="System"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):settings.theme.toLowerCase();document.documentElement.dataset.theme=theme;document.documentElement.dataset.accent=settings.accent||"Default";document.documentElement.dataset.fontSize=settings.fontSize||"Default";document.body.classList.toggle("compact-mode",settings.compact);document.body.classList.toggle("motion-off",!settings.animations);document.body.classList.toggle("hide-timestamps",!settings.timestamps)},[settings]);
   useEffect(()=>{
     if(!(window as any).__COOKIE_NATIVE_APP__)return;
@@ -1332,7 +1348,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>;
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} onEdit={editMessage} onFork={forkMessage} onSave={saveMessage} onInspectSources={setSourceInspect} onQuickAction={runQuickAction} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed} spatialMode={spatialMode}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser}/>:view==="help"?<HelpCenterPage onClose={()=>setView("chat")} onLegal={kind=>setView(kind)}/>:view==="terms"?<LegalPage kind="terms" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="privacy"?<LegalPage kind="privacy" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="moderation"?<ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="admin"&&privileged?<AdminPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="space"?<SpatialHub chatCount={chats.length} model={MODELS.find(x=>x.id===model)?.name||"CPT-1"} canCode={canSeeCodeStudio} canModerate={isModerator} onNavigate={v=>{setView(v as View);setSidebar(false)}}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} onEdit={editMessage} onFork={forkMessage} onSave={saveMessage} onInspectSources={setSourceInspect} onQuickAction={runQuickAction} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed} spatialMode={spatialMode}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser} onNavigate={v=>setView(v)}/>:view==="help"?<HelpCenterPage onClose={()=>setView("chat")} onLegal={kind=>setView(kind)}/>:view==="terms"?<LegalPage kind="terms" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="privacy"?<LegalPage kind="privacy" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="moderation"?<ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="admin"&&privileged?<AdminPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="space"?<SpatialHub chatCount={chats.length} model={MODELS.find(x=>x.id===model)?.name||"CPT-1"} canCode={canSeeCodeStudio} canModerate={isModerator} onNavigate={v=>{setView(v as View);setSidebar(false)}}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{setActiveId(id);setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
   if(String(view)==="code"&&canSeeCodeStudio) return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <><CommandPalette open={commandOpen} query={commandQuery} setQuery={setCommandQuery} onClose={()=>setCommandOpen(false)} onRun={runCommand} chats={chats}/><div className={"cookie-app "+(focusMode&&view==="chat"?"focus-mode":"")}><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
