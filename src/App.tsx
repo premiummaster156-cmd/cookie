@@ -192,7 +192,7 @@ function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:
 }
 
 function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice,skillId=null,setSkillId,spatialMode=false,onSpatialMode,missionMode=false,onMissionMode}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void;skillId?:SkillId;setSkillId?:(id:SkillId)=>void;spatialMode?:boolean;onSpatialMode?:()=>void;missionMode?:boolean;onMissionMode?:(enabled:boolean)=>void}){
-  const [open,setOpen]=useState(false),[toolsOpen,setToolsOpen]=useState(false);
+  const [open,setOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
   const rank=plan.toLowerCase()==="max"?2:plan.toLowerCase()==="pro"||plan.toLowerCase()==="plus"?1:0;
   const tools:ToolSpec[]=[
@@ -215,14 +215,10 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
     
   };
   return <div className="composer-wrap">
-    {!!skillId&&<div className="tool-chip skill-chip"><span><Sparkles size={13}/>{COOKIE_SKILLS.find(x=>x.id===skillId)?.name||"Skill"}</span><button onClick={()=>setSkillId?.(null)} aria-label="Remove skill"><X size={13}/></button></div>}
-      {!!toolMode&&<div className="tool-chip"><span><Wrench size={13}/>{tools.find(x=>x.id===toolMode)?.name||"Tool"}</span><button onClick={()=>setToolMode(null)} aria-label="Remove tool"><X size={13}/></button></div>}
-    {missionMode&&<div className="tool-chip skill-chip"><span><Orbit size={13}/>Mission mode</span><button onClick={()=>onMissionMode?.(false)} aria-label="Turn off mission mode"><X size={13}/></button></div>}
-    {webSearch&&<div className="search-chip"><Globe2 size={13}/><span>Web research enabled</span><button onClick={()=>setWebSearch(false)} aria-label="Turn off web research"><X size={13}/></button></div>}
     {!!attachments.length&&<div className="attachment-strip">{attachments.map(a=><div className="attachment-card" key={a.id}>{a.kind==="image"?<img src={a.data} alt=""/>:<div className="file-icon"><FileIcon size={18}/></div>}<div><b>{a.name}</b><span>{Math.max(1,Math.round(a.size/1024))} KB</span></div><button onClick={()=>setAttachments(p=>p.filter(x=>x.id!==a.id))}><X size={14}/></button></div>)}</div>}
     <div className="composer" data-liquid-glass="composer"><LiquidGlassBackdrop className="composer-glass-layer" options={{profile:"bar",variant:"regular",preset:"balanced",scheme:"adaptive",radius:22,backdropSource:".cookie-ambient-scene"}}/>
       <div className="composer-left">
-      <div className="attach-wrap"><button className="composer-icon" aria-label="Add" onClick={()=>{setOpen(v=>!v);setToolsOpen(false)}}><Plus size={21}/></button>{open&&<div className="attach-menu popover-pop">
+      <div className="attach-wrap"><button className="composer-icon" aria-label="Add" onClick={()=>setOpen(v=>!v)}><Plus size={21}/></button>{open&&<div className="attach-menu popover-pop">
         <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:12,backdropSource:".cookie-ambient-scene"}}/>
         <button onClick={()=>{imageRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Photos & images</span></button>
         <button onClick={()=>{cameraRef.current?.click();setOpen(false)}}><ImageIcon size={18}/><span>Camera</span></button>
@@ -230,18 +226,6 @@ function Composer({value,setValue,attachments,setAttachments,loading,onSend,onSt
         <button onClick={()=>{setOpen(false);setValue("Create an image of ");requestAnimationFrame(()=>textRef.current?.focus())}}><ImagePlus size={18}/><span>Create image</span></button>
         {!hideWebSearch&&<button className={webSearch?"active":""} onClick={()=>{setWebSearch(!webSearch);setOpen(false);textRef.current?.focus()}}><Globe2 size={18}/><span>{webSearch?"Web research on":"Search the web"}</span></button>}
        </div>}</div>
-      {!hideTools&&<div className="tools-wrap attach-wrap">
-        <button className={"composer-icon tool-button "+(toolsOpen?"active":"")} aria-label="Tools" onClick={()=>{setToolsOpen(v=>!v);setOpen(false)}}><Wrench size={18}/></button>
-        {toolsOpen&&<div className="attach-menu tools-menu popover-pop">
-          <LiquidGlassBackdrop className="menu-glass-layer" options={{profile:"panel",variant:"regular",preset:"balanced",scheme:"adaptive",radius:14,backdropSource:".cookie-ambient-scene"}}/>
-          <div className="tools-menu-head"><span>Tools</span><small>Choose an action</small></div><div className="tools-section-label"><span>Skills</span><small>Reusable workflows</small></div>{COOKIE_SKILLS.map(skill=><button key={skill.id} className={skillId===skill.id?"active":""} onClick={()=>{setSkillId?.(skillId===skill.id?null:skill.id);setToolsOpen(false)}}><span className="tool-icon"><Sparkles size={17}/></span><span className="tool-copy"><b>{skill.name}</b><small>{skill.detail}</small></span>{skillId===skill.id?<Check size={14}/>:null}</button>)}<div className="tools-section-label"><span>Interface</span><small>Change how Cookie feels</small></div><button className={spatialMode?"active":""} onClick={()=>{onSpatialMode?.();setToolsOpen(false)}}><span className="tool-icon"><Monitor size={17}/></span><span className="tool-copy"><b>Spatial workspace</b><small>{spatialMode?"3D depth is on":"Use Cookie’s 3D workspace surface"}</small></span>{spatialMode?<Check size={14}/>:null}</button>
-          <button className={missionMode?"active":""} onClick={()=>{onMissionMode?.(!missionMode);setToolsOpen(false)}}><span className="tool-icon"><Orbit size={17}/></span><span className="tool-copy"><b>Mission mode</b><small>{missionMode?"Plan · execute · verify":"Let Cookie complete multi-step work"}</small></span>{missionMode?<Check size={14}/>:null}</button><div className="tools-divider"/>
-          {tools.map(tool=><button key={tool.id} className={toolMode===tool.id?"active":""} onClick={()=>chooseTool(tool)}><span className="tool-icon">{tool.icon}</span><span className="tool-copy"><b>{tool.name}</b><small>{tool.detail}</small></span>{(tool.plan!=="free"&&rank<(tool.plan==="max"?2:1))?<><LockKeyhole size={14}/><em>{tool.plan.toUpperCase()}</em></>:toolMode===tool.id?<Check size={14}/>:null}</button>)}
-          <div className="tools-divider"/>
-          <button className={memoryEnabled?"active":""} onClick={()=>{setMemoryEnabled(!memoryEnabled);setToolsOpen(false)}}><span className="tool-icon"><Brain size={18}/></span><span className="tool-copy"><b>Memory</b><small>{memoryEnabled?"Use saved preferences":"Memory is off"}</small></span></button>
-          <div className="tools-menu-note"><FileSearch size={13}/><span>File analysis works with the files you attach.</span></div>
-        </div>}
-      </div>}
       <textarea ref={textRef} value={value} onChange={e=>{setValue(e.target.value);requestAnimationFrame(resizeInput)}} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sendOnEnter){e.preventDefault();submit()}}} onBlur={()=>requestAnimationFrame(resizeInput)} placeholder="Message Cookie" rows={1}/>
       <div className="composer-right">{loading?<button className="composer-icon stop" onClick={onStop}><Square size={14} fill="currentColor"/></button>:<button className="composer-icon" onClick={onVoice}><Volume2 size={19}/></button>}{loading?<span className="generating-pill">Generating…</span>:<button className={"send-button "+(!(value.trim()||attachments.length)?"disabled":"")} disabled={!value.trim()&&!attachments.length} onClick={submit}><ArrowUp size={19}/></button>}</div>
     </div>
