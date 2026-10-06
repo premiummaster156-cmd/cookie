@@ -45,6 +45,9 @@ async function writeLine(writer, value) {
 }
 
 async function smtpSend(env, { from, to, subject, text, html }) {
+  const recipients = Array.isArray(to) ? [...new Set(to.map(value => String(value || "").trim().toLowerCase()).filter(value => /^\\S+@\\S+\\.\\S+$/.test(value)))] : [String(to || "").trim()];
+  if (!recipients.length) throw new Error("No valid SMTP recipients");
+  const headerTo = recipients.length === 1 ? recipients[0] : "undisclosed-recipients:;";
   const host = String(env.SMTP_HOST || "smtp.gmail.com").trim();
   const port = Number(env.SMTP_PORT || 587);
   const user = required(env, "SMTP_USER");
@@ -88,14 +91,16 @@ async function smtpSend(env, { from, to, subject, text, html }) {
 
       await writeLine(tlsWriter, "MAIL FROM:<" + from + ">");
       await readSmtpResponse(activeReader);
-      await writeLine(tlsWriter, "RCPT TO:<" + to + ">");
-      await readSmtpResponse(activeReader);
+      for (const recipient of recipients) {
+        await writeLine(tlsWriter, "RCPT TO:<" + recipient + ">");
+        await readSmtpResponse(activeReader);
+      }
       await writeLine(tlsWriter, "DATA");
       await readSmtpResponse(activeReader);
 
       const message = [
         "From: Cookie <" + from + ">",
-        "To: " + to,
+        "To: " + headerTo,
         "Subject: " + subject,
         "MIME-Version: 1.0",
         "Content-Type: multipart/alternative; boundary=\"cookie-boundary\"",
@@ -135,14 +140,16 @@ async function smtpSend(env, { from, to, subject, text, html }) {
 
     await writeLine(writer, "MAIL FROM:<" + from + ">");
     await readSmtpResponse(reader);
-    await writeLine(writer, "RCPT TO:<" + to + ">");
-    await readSmtpResponse(reader);
+    for (const recipient of recipients) {
+      await writeLine(writer, "RCPT TO:<" + recipient + ">");
+      await readSmtpResponse(reader);
+    }
     await writeLine(writer, "DATA");
     await readSmtpResponse(reader);
 
     const message = [
       "From: Cookie <" + from + ">",
-      "To: " + to,
+      "To: " + headerTo,
       "Subject: " + subject,
       "MIME-Version: 1.0",
       "Content-Type: multipart/alternative; boundary=\"cookie-boundary\"",
@@ -212,4 +219,72 @@ export async function sendVerificationEmail(request, env, { email, name, code, t
   <p style="font-size:12px;color:#777;line-height:1.6;margin-top:24px">If you did not request this email, you can safely ignore it.</p>
 </div></body></html>`;
   await smtpSend(env, { from, to: email, subject, text, html });
+}
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[char]));
+}
+
+export async function sendReleaseAnnouncementEmail(request, env, {
+  recipients,
+  title,
+  intro,
+  features = [],
+  ctaLabel = "Try Cookie",
+  ctaUrl
+}) {
+  const from = String(env.EMAIL_FROM || env.SMTP_USER || "").trim() || required(env, "EMAIL_FROM");
+  const validRecipients = [...new Set((recipients || []).map(value => String(value || "").trim().toLowerCase()).filter(value => /^\S+@\S+\.\S+$/.test(value)))];
+  if (!validRecipients.length) return { sent: 0, batches: 0 };
+
+  const subject = String(title || "New updates are live in Cookie").trim().slice(0, 160);
+  const safeTitle = escapeHtml(subject);
+  const safeIntro = escapeHtml(intro || "Cookie just got a major update. New features and improvements are now live.");
+  const url = String(ctaUrl || originOf(request, env)).trim();
+  const safeUrl = escapeHtml(url);
+  const safeCta = escapeHtml(ctaLabel || "Try Cookie");
+  const cleanFeatures = Array.isArray(features) ? features.map(value => String(value || "").trim()).filter(Boolean).slice(0, 8) : [];
+  const text = [
+    "Cookie AI",
+    "",
+    subject,
+    "",
+    String(intro || "Cookie just got a major update. New features and improvements are now live."),
+    "",
+    ...(cleanFeatures.length ? cleanFeatures.map(value => "• " + value) : ["• New features, performance improvements, and a more polished experience."]),
+    "",
+    String(ctaLabel || "Try Cookie") + ":",
+    url,
+    "",
+    "You're receiving this because you have a Cookie account.",
+    "",
+    "Cookie AI"
+  ].join("\n");
+  const featureHtml = (cleanFeatures.length ? cleanFeatures : ["New features, performance improvements, and a more polished experience."])
+    .map(value => '<li style="margin:0 0 9px;color:#d5d8dc;line-height:1.55">' + escapeHtml(value) + '</li>').join("");
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#f4f4f2;color:#181818;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
+  <div style="max-width:620px;margin:0 auto;padding:44px 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#757575;margin:0 0 20px">Cookie AI</div>
+    <div style="background:#151515;border-radius:20px;padding:34px 32px">
+      <div style="font-size:34px;line-height:1.05;letter-spacing:-.05em;font-weight:720;color:#fff;margin-bottom:18px">${safeTitle}</div>
+      <p style="font-size:16px;line-height:1.65;color:#cfd1d4;margin:0 0 25px">${safeIntro}</p>
+      <ul style="padding:0 0 0 19px;margin:0 0 27px">${featureHtml}</ul>
+      <a href="${safeUrl}" style="display:inline-block;background:#fff;color:#111;text-decoration:none;padding:12px 17px;border-radius:10px;font-weight:700;font-size:13px">${safeCta}</a>
+    </div>
+    <p style="font-size:11px;line-height:1.6;color:#818181;margin:18px 3px 0">You're receiving this because you have a Cookie account.</p>
+  </div>
+</body></html>`;
+  const batchSize = 50;
+  let sent = 0;
+  let batches = 0;
+  for (let i = 0; i < validRecipients.length; i += batchSize) {
+    const batch = validRecipients.slice(i, i + batchSize);
+    await smtpSend(env, { from, to: batch, subject, text, html });
+    sent += batch.length;
+    batches += 1;
+  }
+  return { sent, batches };
 }
