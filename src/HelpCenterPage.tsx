@@ -75,6 +75,6 @@ export default function HelpCenterPage({onClose,onLegal}:{onClose:()=>void;onLeg
   <div className="help-body"><aside className="help-topics">{topics.map(t=><button key={t.id} className={topic.id===t.id?"active":""} onClick={()=>{setTopicId(t.id);setArticleId(t.articles[0].id)}}><span>{t.icon}<b>{t.title}</b></span><ChevronRight size={14}/></button>)}</aside>
    <main className="help-article"><div className="help-breadcrumb"><button onClick={()=>{setTopicId(topic.id);setArticleId(topic.articles[0].id)}}>{topic.title}</button><ChevronRight size={13}/><span>{article.title}</span></div><div className="help-article-head"><span>{topic.title}</span><h2>{article.title}</h2><p>{article.summary}</p></div><div className="help-article-body">{article.body}</div><div className="help-article-nav">{topic.articles.map(a=><button key={a.id} className={a.id===article.id?"active":""} onClick={()=>setArticleId(a.id)}>{a.title}</button>)}</div></main>
   </div>
-  <footer className="help-foot"><span>Cookie Help Center</span><nav><button onClick={()=>onLegal("terms")}>Terms of Service</button><button onClick={()=>onLegal("privacy")}>Privacy Policy</button></nav></footer>
+  <footer className="help-foot"><span>Cookie Help Center</span><nav><button className="legal-inline-link" onClick={()=>onLegal("terms")}>Terms of Service</button><button className="legal-inline-link" onClick={()=>onLegal("privacy")}>Privacy Policy</button></nav></footer>
  </div>;
 }
