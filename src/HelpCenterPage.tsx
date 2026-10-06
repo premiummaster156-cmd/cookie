@@ -33,14 +33,14 @@ const topics:Topic[]=[
 {id:"sources",title:"Sources and citations",summary:"Understand where research answers come from.",body:<><p>When a response includes sources, use the source links and inspector to review the supporting material. A citation does not guarantee that every statement is correct, so check important facts at the original source.</p></>}
 ]},
 {id:"memory",title:"Memory",description:"How saved preferences and memory work.",icon:<CircleHelp size={18}/>,articles:[
-{id:"memory",title:"How Memory works",summary:"Cookie can retain useful information when Memory is enabled.",body:<><p>Memory can help Cookie use relevant information from previous interactions so you do not have to repeat it.</p><p>Review memory regularly. Do not save passwords, security codes, or other secrets as memory.</p>},
+{id:"memory",title:"How Memory works",summary:"Cookie can retain useful information when Memory is enabled.",body:<><p>Memory can help Cookie use relevant information from previous interactions so you do not have to repeat it.</p><p>Review memory regularly. Do not save passwords, security codes, or other secrets as memory.</p></>},
 {id:"memory-controls",title:"Control your Memory",summary:"Review or remove saved memory.",body:<><p>Use Cookie's Memory settings to review saved items and remove information you no longer want retained as memory. Deleting a memory does not necessarily delete the original conversation or other copies of the information.</p></>}
 ]},
 {id:"voice",title:"Voice",description:"Talk with Cookie using your microphone.",icon:<Volume2 size={18}/>,articles:[
 {id:"voice",title:"Use Voice",summary:"Start and manage a voice conversation.",body:<><p>Open Voice and allow microphone access when your device asks. Speak naturally and pause when you want Cookie to respond.</p><p>Voice availability and limits can vary by device, account, and plan.</p></>}
 ]},
 {id:"code",title:"Code Studio",description:"Build, edit, review, and manage code safely.",icon:<Wrench size={18}/>,articles:[
-{id:"code-studio",title:"Code Studio basics",summary:"Work with a codebase without losing control.",body:<><p>Code Studio is designed for engineering work such as inspecting files, making changes, reviewing revisions, and validating code.</p><p>Review changes before deployment. Never place API keys, passwords, or private tokens in source files.</p>},
+{id:"code-studio",title:"Code Studio basics",summary:"Work with a codebase without losing control.",body:<><p>Code Studio is designed for engineering work such as inspecting files, making changes, reviewing revisions, and validating code.</p><p>Review changes before deployment. Never place API keys, passwords, or private tokens in source files.</p></>},
 {id:"protected",title:"Protected files and revisions",summary:"Why some project files have extra protection.",body:<><p>Some files and configuration areas are protected to reduce accidental damage. Use revisions and review changes before accepting important modifications.</p></>}
 ]},
 {id:"gpts",title:"GPTs",description:"Specialized assistants inside Cookie.",icon:<Sparkles size={18}/>,articles:[
