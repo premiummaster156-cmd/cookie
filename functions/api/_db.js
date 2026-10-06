@@ -157,6 +157,22 @@ const SCHEMA = [
     created_at BIGINT NOT NULL DEFAULT 0
   )`,
   `CREATE INDEX IF NOT EXISTS idx_moderation_target_created ON moderation_events(target_user_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id TEXT PRIMARY KEY,
+    actor_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    actor_email TEXT NOT NULL DEFAULT '',
+    actor_role TEXT NOT NULL DEFAULT 'admin',
+    action TEXT NOT NULL,
+    target_user_id TEXT,
+    target_email TEXT NOT NULL DEFAULT '',
+    success INTEGER NOT NULL DEFAULT 1,
+    ip_address TEXT NOT NULL DEFAULT '',
+    user_agent TEXT NOT NULL DEFAULT '',
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at BIGINT NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_logs(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_audit_actor_created ON admin_audit_logs(actor_user_id, created_at DESC)`,
   `ALTER TABLE moderation_events ADD COLUMN IF NOT EXISTS read_at BIGINT`,
   `CREATE TABLE IF NOT EXISTS codebase_members (
     id TEXT PRIMARY KEY,
