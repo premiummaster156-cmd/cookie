@@ -14,8 +14,14 @@ export async function onRequestPost({ request, env }) {
 
   const accountStatus=String(user.account_status||"active").toLowerCase();
   const suspendedUntil=Number(user.suspended_until||0);
-  if(accountStatus==="banned")return json({error:"This account has been banned."},403);
-  if(accountStatus==="suspended"&&suspendedUntil>now)return json({error:"This account is temporarily suspended."},403);
+  const moderationReason=String(user.moderation_note||"").trim();
+  if(accountStatus==="banned"){
+    return json({error:"This account has been banned."+ (moderationReason?" Reason: "+moderationReason:""),code:"ACCOUNT_BANNED",reason:moderationReason},403);
+  }
+  if(accountStatus==="suspended"&&suspendedUntil>now){
+    const until=new Date(suspendedUntil*1000).toISOString().replace("T"," ").replace(/:\d{2}\.\d{3}Z$/," UTC");
+    return json({error:"This account is temporarily suspended until "+until+"."+ (moderationReason?" Reason: "+moderationReason:""),code:"ACCOUNT_SUSPENDED",reason:moderationReason,suspendedUntil},403);
+  }
 
   if (Number(user.locked_until || 0) > now) {
     return json({ error: "Too many unsuccessful attempts. Please try again later." }, 429);
