@@ -2,6 +2,55 @@ import { executeWebTool, researchWeb } from "./web.js";
 import { dbAvailable, getSessionUser, randomToken } from "./auth/_auth.js";
 import { json, readJson } from "./_lib.js";
 
+
+function missionMarker(text) {
+  const raw=String(text||"");
+  const match=raw.match(/<!--COOKIE_MISSION_PLAN:(\\[[\\s\\S]*?\\])-->/i);
+  if(!match)return {clean:raw,plan:[]};
+  let plan=[];
+  try {
+    const parsed=JSON.parse(match[1]);
+    if(Array.isArray(parsed)) plan=parsed.map(x=>String(x||"").trim()).filter(Boolean).slice(0,10);
+  } catch {}
+  return {clean:raw.replace(match[0],"").trim(),plan};
+}
+
+async function createMissionRecord(env,user,goal,chatId) {
+  if(!env?.DB||!user?.id)return "";
+  const id=randomToken(16), t=nowSeconds();
+  try {
+    await env.DB.prepare(
+      "INSERT INTO missions (id,user_id,chat_id,goal,status,plan_json,verification_json,result_summary,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    ).bind(id,user.id,String(chatId||""),String(goal||"").slice(0,12000),"running","[]","{}","",t,t).run();
+    return id;
+  } catch(error) {
+    console.error("[Cookie mission create]",error);
+    return "";
+  }
+}
+
+async function updateMissionRecord(env,missionId,patch={}) {
+  if(!env?.DB||!missionId)return;
+  const sets=[],values=[];
+  if(patch.status){sets.push("status=?");values.push(String(patch.status).slice(0,40));}
+  if(patch.plan){sets.push("plan_json=?");values.push(JSON.stringify(Array.isArray(patch.plan)?patch.plan:[]).slice(0,12000));}
+  if(patch.verification){sets.push("verification_json=?");values.push(JSON.stringify(patch.verification||{}).slice(0,12000));}
+  if(patch.result){sets.push("result_summary=?");values.push(String(patch.result||"").slice(0,12000));}
+  if(patch.completedAt){sets.push("completed_at=?");values.push(Number(patch.completedAt));}
+  if(!sets.length)return;
+  sets.push("updated_at=?");values.push(nowSeconds());values.push(missionId);
+  try { await env.DB.prepare("UPDATE missions SET "+sets.join(",")+" WHERE id=?").bind(...values).run(); }
+  catch(error){ console.error("[Cookie mission update]",error); }
+}
+
+function appendMissionInstruction(systemParts) {
+  systemParts.push(
+    "MISSION MODE: You are operating as Cookie's task-completion agent. Do not treat the request as a one-shot chat answer when it requires multiple steps. First understand the goal and constraints, then make a concise plan, execute the work with available tools, inspect the intermediate results, and perform a verification pass before finalizing. Keep working until the goal is actually complete or a real blocker prevents completion. Never claim a step is complete unless the relevant tool/result supports it.",
+    "MISSION MODE PLAN MARKER: On your first model turn, include a machine-readable HTML comment exactly in the form <!--COOKIE_MISSION_PLAN:[\"step 1\",\"step 2\"]--> before any user-facing text. Keep it to the actual steps you intend to execute. Cookie removes this marker from the user-facing answer and stores the plan in the mission record.",
+    "MISSION MODE VERIFICATION: Before the final answer, check your output against the original goal, constraints, and tool results. Fix discovered issues before finishing. Do not expose private reasoning; summarize completed work, verification, and any remaining blocker in the final answer."
+  );
+}
+
 function limitResponse(text) {
   const lines = String(text || "").replace(/\r/g, "").split("\n");
   const output = [];
@@ -40,6 +89,9 @@ function limitResponse(text) {
 
 
 const FILE_LIMITS = { maxFiles: 30, maxFileChars: 500000, maxPathChars: 240 };
+const MISSION_MAX_TURNS = 16;
+const MISSION_MAX_TOOL_CALLS = 8;
+
 
 const fileTools = [
   { type:"function", function:{ name:"file_create", description:"Create a downloadable file for the user. Use this whenever the user asks for code, a document, configuration, or any file they can download.", parameters:{type:"object",required:["path","content"],properties:{path:{type:"string"},content:{type:"string"}}} } },
@@ -568,6 +620,9 @@ export async function onRequestPost({ request, env }) {
     const useWebSearch = preferences.webSearch === true;
     const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
     const streamRequested = new URL(request.url).searchParams.get("stream") === "1";
+    const missionMode = preferences.mission === true;
+    const missionGoal = requestedWebQuery;
+    const missionId = missionMode ? await createMissionRecord(env, sessionUser, missionGoal, body?.chatId) : "";
     const requestedTool = String(preferences.tool || "").trim();
     const requiredPlan = Object.prototype.hasOwnProperty.call(TOOL_REQUIREMENTS,requestedTool) ? Number(TOOL_REQUIREMENTS[requestedTool]) : 0;
     if(requiredPlan>planRank(sessionUser.plan)){
@@ -655,7 +710,9 @@ export async function onRequestPost({ request, env }) {
       language === "id" ? "Prefer Indonesian unless the user clearly requests another language." : "",
       length === "short" ? "Keep the response concise." : "",
       length === "detailed" ? "Give a thorough, well-structured response." : ""
-    ].filter(Boolean).join("\n");
+    ];
+    if (missionMode) appendMissionInstruction(system);
+    const finalizedSystem = system.filter(Boolean).join("\n");
 
     const imageData = imageAttachments.slice(0, 4).map(a => {
       const match = a.data.match(/^data:[^;]+;base64,(.+)$/);
@@ -674,7 +731,7 @@ export async function onRequestPost({ request, env }) {
     const attachmentContext = readableFiles.length
       ? "\n\nUSER ATTACHED FILES:\n" + readableFiles.map(f => "\n--- " + f.name + " ---\n" + f.content).join("\n")
       : "";
-    const apiMessages = [{ role: "system", content: system }, ...messages];
+    const apiMessages = [{ role: "system", content: finalizedSystem }, ...messages];
     if (attachmentContext) {
       const lastUser = apiMessages.at(-1);
       if (lastUser?.role === "user") lastUser.content += attachmentContext;
@@ -834,7 +891,7 @@ export async function onRequestPost({ request, env }) {
           try {
             let thinkingShown = false;
 
-            for (let turn = 0; turn < 12; turn++) {
+            for (let turn = 0; turn < (missionMode ? MISSION_MAX_TURNS : 12); turn++) {
               push({type:"status",status:turn===0?"Thinking…":"Continuing…"});
               if(!thinkingShown){
                 push({type:"activity",id:"thinking",stage:"thinking",label:"Thinking",detail:"Reasoning about the request"});
@@ -973,7 +1030,7 @@ export async function onRequestPost({ request, env }) {
                 break;
               }
 
-              for (const call of toolCalls.slice(0,8)) {
+              for (const call of toolCalls.slice(0, MISSION_MAX_TOOL_CALLS)) {
                 const name = call?.function?.name;
                 let args = call?.function?.arguments;
                 if (typeof args === "string") { try { args = JSON.parse(args); } catch { args = {}; } }
@@ -1036,7 +1093,9 @@ export async function onRequestPost({ request, env }) {
 
             if (!completed) throw new Error("The AI agent did not finish within its tool-step budget.");
             push({type:"status",status:"Finishing…"});
-            const output = String(liveMessage || "").trim() || "I couldn't produce a response. Please try again.";
+            const missionParsed = missionMarker(liveMessage || "");
+            const output = missionParsed.clean || "I couldn't produce a response. Please try again.";
+            if (missionMode && missionId) await updateMissionRecord(env,missionId,{status:"completed",plan:missionParsed.plan,result:output,completedAt:nowSeconds()});
 
             if (plan === "free") {
               try {
@@ -1149,7 +1208,9 @@ export async function onRequestPost({ request, env }) {
 
       const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
       if (!toolCalls.length) {
-        finalMessage = typeof assistantMessage.content === "string" ? assistantMessage.content : "";
+          const parsedMission = missionMarker(typeof assistantMessage.content === "string" ? assistantMessage.content : "");
+        finalMessage = parsedMission.clean;
+        if (missionMode && missionId) await updateMissionRecord(env,missionId,{status:"completed",plan:parsedMission.plan,result:finalMessage,completedAt:nowSeconds()});
         break;
       }
 
@@ -1178,10 +1239,13 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
-    if(!finalMessage && lastData?.message?.content) finalMessage=lastData.message.content;
-    if(!finalMessage) finalMessage = useWebSearch
+    if(!finalMessage && lastData?.message?.content) finalMessage=missionMarker(lastData.message.content).clean;
+    if(!finalMessage) {
+      if(missionMode && missionId) await updateMissionRecord(env,missionId,{status:"blocked",result:"Cookie could not complete the mission."});
+      finalMessage = useWebSearch
       ? "I couldn't produce a web-researched answer. The search request did not return a usable response."
       : "I couldn't produce a response. Please try again.";
+    }
 
     if (plan === "free") {
       try {
