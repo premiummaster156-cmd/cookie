@@ -34,6 +34,8 @@ async function ensureSchema(env){
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_reviews (id TEXT PRIMARY KEY,user_email TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'needs_changes',risk TEXT NOT NULL DEFAULT 'unknown',summary TEXT NOT NULL DEFAULT '',findings_json TEXT NOT NULL DEFAULT '[]',checks_json TEXT NOT NULL DEFAULT '[]',diff_hash TEXT NOT NULL DEFAULT '',base_sha TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,commit_sha TEXT,deployment_status TEXT NOT NULL DEFAULT 'not_started')").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_settings (key TEXT PRIMARY KEY,value TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_audit (id TEXT PRIMARY KEY,action TEXT NOT NULL,path TEXT NOT NULL,before_revision_id TEXT,meta_json TEXT NOT NULL DEFAULT '{}',editor_email TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0,undone INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS codebase_backups (id TEXT PRIMARY KEY,base_sha TEXT,commit_sha TEXT,files_json TEXT NOT NULL DEFAULT '[]',created_by TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL DEFAULT 0)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_codebase_backups_created ON codebase_backups(created_at DESC)").run();
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_codebase_audit_created ON codebase_audit(created_at DESC)").run();
   try{await env.DB.prepare("ALTER TABLE codebase_files ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0").run()}catch{}
   const t=now();
@@ -273,7 +275,7 @@ async function aiReview(env,changes,checks){
   if(concern)return {...concern};
   return {ok:true,status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
 }
-async function aiWorkspaceChat(env,user,message,history=[]){
+async function aiWorkspaceChat(env,user,message,history=[],attachments=[]){
   const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"Cookie Dev AI is temporarily unavailable."};
   const endpoint=String(env.OLLAMA_URL||"https://ollama.com/api/chat").trim();
   const files=await loadVirtual(env);
@@ -281,8 +283,11 @@ async function aiWorkspaceChat(env,user,message,history=[]){
   const cleanHistory=Array.isArray(history)?history.slice(-10).map(m=>({role:m?.role==="assistant"?"assistant":"user",content:text(m?.content,6000)})):[];
   const prompt=[
     "You are Cookie Dev AI inside Cookie Code Studio.",
-    "Work from the exact virtual workspace below. You may propose or apply file edits.",
+    "Your default behavior is INSPECT-ONLY. Diagnose the request, inspect the workspace, identify the exact problems and propose precise fixes, but do not imply that anything was changed.",
+    "Only produce edits when they would actually be useful; the server will not apply them until the owner explicitly presses Apply fixes.",
     "Return ONLY valid JSON with keys reply and edits.",
+    "Use only Markdown/plain text supported by Cookie Code Studio. Do not emit LaTeX delimiters, raw HTML, or unsupported formatting.",
+
     "reply is a concise developer-facing message.",
     "edits is an array of {path,content}. Include only files that must change.",
     "Never claim a file was changed unless it appears in edits.",
@@ -290,13 +295,16 @@ async function aiWorkspaceChat(env,user,message,history=[]){
     "Do not modify hidden/protected files, .env files, secrets, or markdown files.",
     "When fixing code, return complete replacement content for each edited file.",
     "WORKSPACE:\n"+context.slice(0,90000),
+    "ATTACHMENTS:\n"+JSON.stringify((Array.isArray(attachments)?attachments:[]).slice(0,10).map(a=>({name:text(a?.name,180),kind:a?.kind==="image"?"image":"file",mime:text(a?.mime,120),data:text(a?.data,120000)}))),
     "CONVERSATION:\n"+JSON.stringify(cleanHistory),
     "REQUEST:\n"+text(message,12000)
   ].join("\n\n");
   const models=["gemma4:cloud","gpt-oss:20b-cloud","qwen3-coder:480b-cloud"];
   for(const model of models){
     try{
-      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:false,format:"json",options:{temperature:0.08,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. Output one JSON object and nothing else."},{role:"user",content:prompt}]})});
+      const attachmentImages=(Array.isArray(attachments)?attachments:[]).filter(a=>a?.kind==="image"&&typeof a?.data==="string").slice(0,4).map(a=>String(a.data).replace(/^data:[^;]+;base64,/,""));
+      const userMessage={role:"user",content:prompt,...(attachmentImages.length?{images:attachmentImages}:{})};
+      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:false,format:"json",options:{temperature:0.08,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. Output one JSON object and nothing else."},userMessage]})});
       const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
       if(!r.ok)continue;
       let out=String(data?.message?.content||data?.response||"").trim();
@@ -309,7 +317,7 @@ async function aiWorkspaceChat(env,user,message,history=[]){
         const p=cleanPath(edit?.path),body=String(edit?.content??"");
         if(p&&!isHiddenPath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
       }
-      return {ok:true,model,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
+      return {ok:true,reply:text(parsed.reply||"I inspected the workspace.",5000),edits};
     }catch(error){console.error("[Cookie Dev AI]",error)}
   }
   if(env?.AI && typeof env.AI.run==="function"){
@@ -328,6 +336,47 @@ async function aiWorkspaceChat(env,user,message,history=[]){
   return {ok:false,error:"Cookie Dev AI could not complete that request right now. Please try again."};
 }
 
+async function createCommitBackup(env,user,baseSha,changes){
+  const snapshot=(changes||[]).map(c=>({
+    path:c.path,
+    status:c.status,
+    beforeExists:c.status!=="added",
+    before:String(c.before||""),
+    mime:mimeFor(c.path)
+  }));
+  const id=randomToken(18);
+  await env.DB.prepare("INSERT INTO codebase_backups (id,base_sha,commit_sha,files_json,created_by,created_at) VALUES (?,?,?,?,?,?)")
+    .bind(id,String(baseSha||""),null,JSON.stringify(snapshot).slice(0,15000000),String(user?.email||""),now()).run();
+  return id;
+}
+async function finalizeCommitBackup(env,backupId,commitSha){
+  if(!backupId||!commitSha)return;
+  await env.DB.prepare("UPDATE codebase_backups SET commit_sha=? WHERE id=?").bind(String(commitSha),backupId).run();
+}
+async function listBackups(env){
+  const r=await env.DB.prepare("SELECT id,base_sha,commit_sha,created_by,created_at,files_json FROM codebase_backups ORDER BY created_at DESC LIMIT 10").all();
+  return (r.results||[]).map(x=>({id:String(x.id),baseSha:String(x.base_sha||""),commitSha:x.commit_sha?String(x.commit_sha):"",createdBy:String(x.created_by||""),createdAt:Number(x.created_at||0),fileCount:(()=>{try{return JSON.parse(x.files_json||"[]").length}catch{return 0}})()}));
+}
+async function restoreBackup(env,user,backupId){
+  const row=await env.DB.prepare("SELECT * FROM codebase_backups WHERE id=? LIMIT 1").bind(String(backupId||"")).first();
+  if(!row)return {ok:false,error:"Backup not found."};
+  let snapshot=[];try{snapshot=JSON.parse(row.files_json||"[]")}catch{}
+  if(!Array.isArray(snapshot)||!snapshot.length)return {ok:false,error:"The backup contains no recoverable files."};
+  const t=now();
+  for(const item of snapshot){
+    const path=cleanPath(item?.path);if(!path||isHiddenPath(path))continue;
+    if(item.beforeExists){
+      const content=String(item.before||"");
+      const size=new TextEncoder().encode(content).byteLength;
+      await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,0,1) ON CONFLICT(path) DO UPDATE SET content=excluded.content,mime=excluded.mime,is_binary=0,size=excluded.size,github_sha=NULL,updated_by=excluded.updated_by,updated_at=excluded.updated_at,deleted=0,dirty=1")
+        .bind(path,content,String(item.mime||mimeFor(path)),0,size,user.email,t,t).run();
+    }else{
+      await env.DB.prepare("INSERT INTO codebase_files (path,content,mime,is_binary,size,github_sha,updated_by,created_at,updated_at,deleted,dirty) VALUES (?,?,?,?,?,?,?,?,?,1,1) ON CONFLICT(path) DO UPDATE SET deleted=1,dirty=1,updated_by=excluded.updated_by,updated_at=excluded.updated_at")
+        .bind(path,"",String(item.mime||mimeFor(path)),0,0,null,user.email,t,t).run();
+    }
+  }
+  return {ok:true,backupId:String(row.id),baseSha:String(row.base_sha||""),restoredFiles:snapshot.length};
+}
 async function deploymentState(sha,token=""){
   if(!sha)return {status:"not_started",checks:[]};
   try{
@@ -424,6 +473,7 @@ async function commitApproved(env,user,reviewId){
   const parent=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits/"+currentSha,token);
   const treeEntries=changes.map(c=>c.status==="deleted"?{path:c.path,mode:"100644",type:"blob",sha:null}:{path:c.path,mode:"100644",type:"blob",content:String(c.after||"")});
   const newTree=await githubJson("https://api.github.com/repos/"+REPO+"/git/trees",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_tree:parent.tree.sha,tree:treeEntries})});
+  const backupId=await createCommitBackup(env,user,currentSha,changes);
   const title=String(changes.length===1?changes[0].path:"multiple files").slice(0,70);
   const commit=await githubJson("https://api.github.com/repos/"+REPO+"/git/commits",token,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"feat(code-studio): "+title,tree:newTree.sha,parents:[currentSha]})});
   await githubJson("https://api.github.com/repos/"+REPO+"/git/refs/heads/"+BRANCH,token,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({sha:commit.sha,force:false})});
@@ -433,8 +483,9 @@ async function commitApproved(env,user,reviewId){
       const entry=(newTree.tree||[]).find(x=>x.path===c.path);await env.DB.prepare("UPDATE codebase_files SET deleted=0,github_sha=?,dirty=0,updated_by=?,updated_at=? WHERE path=?").bind(entry?.sha||null,user.email,now(),c.path).run();
     }
   }
+  await finalizeCommitBackup(env,backupId,commit.sha);
   await env.DB.prepare("UPDATE codebase_reviews SET commit_sha=?,deployment_status='queued',updated_at=? WHERE id=?").bind(commit.sha,now(),reviewId).run();
-  return {ok:true,commitSha:commit.sha,commitUrl:commit.html_url||"https://github.com/"+REPO+"/commit/"+commit.sha,deploymentStatus:"queued"};
+  return {ok:true,commitSha:commit.sha,commitUrl:commit.html_url||"https://github.com/"+REPO+"/commit/"+commit.sha,deploymentStatus:"queued",backupId};
 }
 async function state(env){
   const files=await loadVirtual(env);const changed=[];
@@ -459,7 +510,7 @@ async function handleGet({request,env}){
   // Free's 50 external-subrequest limit. Owner-triggered Sync performs the
   // explicit refresh when the GitHub repository changes.
   if(Number(count?.count||0)===0)await seedFromGithub(env,a.user.email);
-  if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,...await state(env)});
+  if(action==="state")return json({ok:true,owner:a.owner,role:a.member.role,backups:await listBackups(env),...await state(env)});
   if(action==="diff"){
     const files=await loadVirtual(env),baseline=[],candidates=files.filter(x=>!x.deleted&&(Number(x.dirty||0)||!x.github_sha));
     for(const f of candidates)baseline.push({path:f.path,...await githubFile(f.path,String(env.GITHUB_TOKEN||"").trim())});
@@ -540,8 +591,13 @@ async function handlePost({request,env}){
   if(action==="ai-chat"){
     const message=text(body?.message,12000).trim();
     if(!message)return json({error:"Enter a message for Cookie Dev AI."},400);
-    const result=await aiWorkspaceChat(env,a.user,message,body?.history||[]);
+    const result=await aiWorkspaceChat(env,a.user,message,body?.history||[],body?.attachments||[]);
     if(!result.ok)return json(result,503);
+    return json({ok:true,reply:result.reply,edits:result.edits||[]});
+  }
+  if(action==="apply-ai-edits"){
+    const edits=Array.isArray(body?.edits)?body.edits.slice(0,12):[];
+    if(!edits.length)return json({error:"There are no proposed fixes to apply."},400);
     const applied=[];
     for(const edit of result.edits||[]){
       const previous=await env.DB.prepare("SELECT content,mime,github_sha,deleted FROM codebase_files WHERE path=? LIMIT 1").bind(edit.path).first();
@@ -557,7 +613,13 @@ async function handlePost({request,env}){
       await recordAudit(env,{action:previous&&!Number(previous.deleted||0)?"edit":"create",path:edit.path,beforeRevisionId:revisionId,meta:{source:"cookie-dev-ai"},editorEmail:a.user.email});
       applied.push(edit.path);
     }
-    return json({ok:true,model:result.model,reply:result.reply,edits:applied});
+    return json({ok:true,reply:"Applied the approved fixes to the virtual workspace.",edits:applied});
+  }
+  if(action==="backups")return json({ok:true,backups:await listBackups(env)});
+  if(action==="restore-backup"){
+    const backupId=String(body?.backupId||"").trim();
+    const result=await restoreBackup(env,a.user,backupId);
+    return json(result,result.ok?200:409);
   }
   if(action==="undo"){
     const auditId=String(body?.auditId||"").trim();
