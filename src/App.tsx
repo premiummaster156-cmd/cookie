@@ -1017,6 +1017,12 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   useEffect(()=>saveJSON("cookie_settings",settings),[settings]);
   useEffect(()=>{
     if(!settingsServerReady)return;
+    setMemoryEnabled(Boolean(settings.memory));
+    const preferred=String(settings.defaultModel||"standard");
+    if(canUseModel(preferred))setModel(preferred);
+  },[settingsServerReady]);
+  useEffect(()=>{
+    if(!settingsServerReady)return;
     const timer=window.setTimeout(()=>fetch("/api/settings",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({settings})}).catch(()=>{}),500);
     return()=>window.clearTimeout(timer);
   },[settings,settingsServerReady]);
