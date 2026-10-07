@@ -946,7 +946,7 @@ export async function onRequestPost({ request, env }) {
               if (!upstream?.ok || !assistantMessage) {
                 if (env?.AI && typeof env.AI.run === "function") {
                   try {
-                    push({type:"activity",id:"provider-fallback",stage:"provider",label:"Switching to Cookie fallback",detail:"Ollama Cloud was unavailable, so Cookie is switching providers",done:false});
+                    push({type:"activity",id:"provider-fallback",stage:"provider",label:"Retrying securely",detail:"Cookie is retrying the response through another available path",done:false});
                     const fallback = await env.AI.run("@cf/zai-org/glm-4.7-flash", {messages:liveMessages,stream:true});
                     const reader2 = fallback?.getReader?.() || fallback?.body?.getReader?.();
                     if (reader2) {
