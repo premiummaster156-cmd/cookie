@@ -122,7 +122,21 @@ function PublicShareView({chat,onOpenCookie}:{chat:Chat;onOpenCookie:()=>void}){
 
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
 function safeTextParts(text:string){ return [text]; }
+function normalizeChatMarkup(value:string){
+  return String(value||"")
+    .replace(/\\(?:rightarrow|to|Rightarrow|Longrightarrow)/g,"→")
+    .replace(/\\(?:leftarrow|from|Leftarrow|Longleftarrow)/g,"←")
+    .replace(/\\(?:leftrightarrow|Leftrightarrow)/g,"↔")
+    .replace(/\\times/g,"×").replace(/\\cdot/g,"·")
+    .replace(/\\leq/g,"≤").replace(/\\geq/g,"≥").replace(/\\neq/g,"≠")
+    .replace(/\\pm/g,"±").replace(/\\div/g,"÷")
+    .replace(/\\alpha/g,"α").replace(/\\beta/g,"β").replace(/\\gamma/g,"γ")
+    .replace(/\\Delta/g,"Δ").replace(/\\delta/g,"δ")
+    .replace(/\\sqrt\{([^{}]+)\}/g,"√($1)")
+    .replace(/\$([^$\n]+)\$/g,"$1");
+}
 function Inline({text}:{text:string}){
+  text=normalizeChatMarkup(text);
   const token=/(\`[^\`]+\`|\*\*[^*]+\*\*|__[^_]+__|(?<!\*)\*[^*]+\*(?!\*)|(?<!_)_[^_]+_(?!_)|\[[^\]]+\]\([^\)]+\))/g;
   return <>{text.split(token).map((p,i)=>{
     if(/^\`[^\`]+\`$/.test(p)) return <code key={i} className="inline-code">{p.slice(1,-1)}</code>;
@@ -201,7 +215,7 @@ function ChatRow({chat,active,onOpen,onAction}:{chat:Chat;active:boolean;onOpen:
 function Composer({value,setValue,attachments,setAttachments,loading,onSend,onStop,onVoice,sendOnEnter,webSearch,setWebSearch,memoryEnabled,setMemoryEnabled,toolMode,setToolMode,plan,hideTools=false,hideWebSearch=false,onToolNotice,skillId=null,setSkillId,spatialMode=false,onSpatialMode,missionMode=false,onMissionMode}:{value:string;setValue:(v:string)=>void;attachments:Attachment[];setAttachments:React.Dispatch<React.SetStateAction<Attachment[]>>;loading:boolean;onSend:()=>void;onStop:()=>void;onVoice:()=>void;sendOnEnter:boolean;webSearch:boolean;setWebSearch:(v:boolean)=>void;memoryEnabled:boolean;setMemoryEnabled:(v:boolean)=>void;toolMode:ToolMode;setToolMode:(v:ToolMode)=>void;plan:string;hideTools?:boolean;hideWebSearch?:boolean;onToolNotice:(message:string)=>void;skillId?:SkillId;setSkillId?:(id:SkillId)=>void;spatialMode?:boolean;onSpatialMode?:()=>void;missionMode?:boolean;onMissionMode?:(enabled:boolean)=>void}){
   const [open,setOpen]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null), imageRef=useRef<HTMLInputElement>(null), cameraRef=useRef<HTMLInputElement>(null), textRef=useRef<HTMLTextAreaElement>(null);
-  const resizeInput=useCallback(()=>{const t=textRef.current;if(!t)return;t.style.height="52px";const next=Math.min(220,Math.max(52,t.scrollHeight));t.style.height=next+"px"},[]);
+  const resizeInput=useCallback(()=>{const t=textRef.current;if(!t)return;t.style.height="52px";const next=Math.min(140,Math.max(52,t.scrollHeight));t.style.height=next+"px"},[]);
   useEffect(()=>{resizeInput()},[value,resizeInput]);
   const submit=useCallback(()=>{const t=textRef.current;if(t)t.style.height="52px";onSend()},[onSend]);
   const add=(list:FileList|null)=>{if(!list)return;Array.from(list).slice(0,10-attachments.length).forEach(file=>{const r=new FileReader();r.onload=()=>setAttachments(p=>[...p,{id:uid(),kind:file.type.startsWith("image/")?"image":"file",name:file.name,mime:file.type,data:String(r.result||""),size:file.size}]);r.readAsDataURL(file)})};
@@ -301,7 +315,7 @@ function ChatView({chat,onSend,loading,onStop,onVoice,onCopy,onRetry,onDelete,on
     const el=ref.current;
     if(!el)return;
     const nearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<160;
-    if(nearBottom||loading&&!streamText) el.scrollTop=el.scrollHeight;
+    if(nearBottom) el.scrollTop=el.scrollHeight;
   },[chat?.messages.length,loading,streamText]);
   const messages=chat?.messages||[];
   const starters=[
@@ -647,10 +661,17 @@ function SpatialHub({chatCount,model,canCode,canModerate,onNavigate}:{chatCount:
     </div>
   </div>;
 }
-function Page({view,chats,onOpen,onPrompt,onDownload,files}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[]}){
+function Page({view,chats,onOpen,onPrompt,onDownload,files,savedItems}:{view:View;chats:Chat[];onOpen:(id:string)=>void;onPrompt:(p:string)=>void;onDownload:(f:GeneratedFile)=>void;files:GeneratedFile[];savedItems:SavedItem[]}){
   if(view==="search") return <div className="page"><h1>Search</h1><p>Search your conversations.</p><SearchPanel chats={chats} onOpen={onOpen}/></div>;
   if(view==="memory") return <MemoryPage/>;
-  if(view==="library") return <div className="page"><h1>Library</h1><p>Your generated files and saved content.</p>{files.length?<div className="library-grid">{files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}</div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Generated files will appear here.</span></div>}</div>;
+  if(view==="library"){
+    const attachments=savedItems.filter(x=>x.kind==="attachment");
+    return <div className="page"><h1>Library</h1><p>Your generated files, uploaded images, and uploaded files.</p>
+      {(files.length||attachments.length)?<div className="library-grid">
+        {attachments.map(a=><button className="library-item" key={a.id} onClick={()=>{const el=document.createElement("a");el.href=a.content;el.download=a.title||"cookie-file";el.click()}}>{a.content.startsWith("data:image/")?<img className="library-thumb" src={a.content} alt=""/>:<FileIcon size={22}/>}<span><b>{a.title}</b><small>Uploaded attachment</small></span><Download size={16}/></button>)}
+        {files.map(f=><button className="library-item" key={f.path} onClick={()=>onDownload(f)}><FileIcon size={22}/><span><b>{f.name}</b><small>{f.path}</small></span><Download size={16}/></button>)}
+      </div>:<div className="page-empty"><FolderOpen size={40}/><h3>Your Library is empty</h3><span>Uploaded attachments and generated files will appear here.</span></div>}</div>;
+  }
   if(view==="code") return <CodeStudioPage/>;
   if(view==="projects") return <ProjectsPage/>;
   if(view==="gpts") return <GPTsPage onOpen={()=>{}} plan="free"/>;
@@ -1168,8 +1189,12 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       const n:Chat={id:uid(),title:"New chat",messages:[],model,temporary,updatedAt:Date.now()};
       setChats(p=>[n,...p]);setActiveId(n.id);c=n;
     }
-    const user:Message={id:uid(),role:"user",content:body||"Please analyze these files.",attachments,createdAt:Date.now()};
+    const user:Message={id:uid(),role:"user",content:body,attachments,createdAt:Date.now()};
     const msgs=[...c.messages,user];
+     if(attachments.length){
+       const attachmentSaves=attachments.map(a=>fetch("/api/saved",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind:"attachment",title:a.name,content:a.data,chatId:c.id})}).then(async r=>r.ok?r.json():null).catch(()=>null));
+       Promise.all(attachmentSaves).then(rows=>{const saved=rows.map(x=>x?.item).filter(Boolean);if(saved.length)setSavedItems(p=>[...saved,...p.filter(x=>!saved.some((s:any)=>s.id===x.id))].slice(0,120));});
+     }
     const ttl=(c.title==="New chat"||c.title==="Temporary chat")?titleFrom(body||attachments[0]?.name||"New chat"):c.title;
     updateChat(c.id,x=>({...x,title:ttl,messages:msgs,model,updatedAt:Date.now()}));
     setText("");setAttachments([]);setWebSearch(false);setLoading(true);setStreamText("");setStreamStatus("Thinking…");
@@ -1195,7 +1220,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
           creativity:.7,
           memory:activeGptId?false:memoryEnabled,
           personality:settings.personality,
-          reasoning:settings.reasoning||"auto",
+          reasoning:effort==="light"?"fast":effort==="high"||effort==="ultra"?"deep":(settings.reasoning||"auto"),
           effort,
           instructions:settings.instructions||"",
           webSearch,
@@ -1409,7 +1434,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
   async function copy(m:Message){try{await navigator.clipboard.writeText(m.content);notify("Copied to clipboard")}catch{notify("Could not copy this message")}}
   function download(f:GeneratedFile){const url=URL.createObjectURL(new Blob([f.content],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
   if(view==="gpt-chat"&&selectedGPT&&chat) return <GPTChatPage chat={chat} gpt={selectedGPT} onBack={()=>{setSelectedGPT(null);setView("gpts")}} onNewChat={newGPTChat} onSend={()=>send(undefined,selectedGPT.id)} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onDownload={download} sendOnEnter={settings.sendOnEnter} value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} webSearch={webSearch} setWebSearch={setWebSearch} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed}/>;
-  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} onEdit={editMessage} onFork={forkMessage} onSave={saveMessage} onInspectSources={setSourceInspect} onQuickAction={runQuickAction} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed} spatialMode={spatialMode}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser} onNavigate={v=>setView(v)}/>:view==="help"?<HelpCenterPage onClose={()=>setView("chat")} onLegal={kind=>setView(kind)}/>:view==="terms"?<LegalPage kind="terms" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="privacy"?<LegalPage kind="privacy" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="moderation"?<ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="admin"&&privileged?<AdminPage actorRole={accountRole} onNotice={notify} onError={notify} focusAudit={adminAuditFocus}/>:view==="space"?<SpatialHub chatCount={chats.length} model={MODELS.find(x=>x.id===model)?.name||"CPT-1"} canCode={canSeeCodeStudio} canModerate={isModerator} onNavigate={v=>{setView(v as View);setSidebar(false)}}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{const target=chats.find(x=>x.id===id);if(!target)return;setActiveId(target.id);setTemporary(Boolean(target.temporary));setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files}/>;
+  const main=view==="chat"?<ChatView chat={chat} onSend={send} loading={loading} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} onCopy={copy} onRetry={retry} onDelete={m=>chat&&updateChat(chat.id,c=>({...c,messages:c.messages.filter(x=>x.id!==m.id)}))} onShare={share} onDownload={download} onEdit={editMessage} onFork={forkMessage} onSave={saveMessage} onInspectSources={setSourceInspect} onQuickAction={runQuickAction} streamText={streamText} streamStatus={streamStatus} streamEvents={streamEvents} streamElapsed={streamElapsed} spatialMode={spatialMode}/>:view==="settings"?<SettingsPage tab={settingsTab} setTab={setSettingsTab} settings={settings} setSettings={setSettings} profile={profile} setProfile={setProfile} setModel={setModel} authUser={authUser} onNavigate={v=>setView(v)}/>:view==="help"?<HelpCenterPage onClose={()=>setView("chat")} onLegal={kind=>setView(kind)}/>:view==="terms"?<LegalPage kind="terms" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="privacy"?<LegalPage kind="privacy" onBack={()=>setView("help")} onNavigate={kind=>setView(kind)}/>:view==="moderation"?<ModerationPage actorRole={accountRole} onNotice={notify} onError={notify}/>:view==="admin"&&privileged?<AdminPage actorRole={accountRole} onNotice={notify} onError={notify} focusAudit={adminAuditFocus}/>:view==="space"?<SpatialHub chatCount={chats.length} model={MODELS.find(x=>x.id===model)?.name||"CPT-1"} canCode={canSeeCodeStudio} canModerate={isModerator} onNavigate={v=>{setView(v as View);setSidebar(false)}}/>:view==="gpts"?<GPTsPage onOpen={openGPT} plan={authUser.plan}/>:<Page view={view} chats={recent} onOpen={id=>{const target=chats.find(x=>x.id===id);if(!target)return;setActiveId(target.id);setTemporary(Boolean(target.temporary));setView("chat");setSidebar(false)}} onPrompt={p=>{setView("chat");setText(p);setSidebar(false)}} onDownload={download} files={files} savedItems={savedItems}/>;
   if(String(view)==="code"&&canSeeCodeStudio) return <CodeStudioPage onExit={()=>setView("chat")}/>;
   return <><CommandPalette open={commandOpen} query={commandQuery} setQuery={setCommandQuery} onClose={()=>setCommandOpen(false)} onRun={runCommand} chats={chats}/><div className={"cookie-app "+(focusMode&&view==="chat"?"focus-mode":"")}><div className="cookie-ambient-scene" aria-hidden="true"/><button className="mobile-nav-launcher" onClick={()=>setSidebar(true)} aria-label="Open Cookie navigation"><Menu size={20}/></button>
     <div className={"sidebar-overlay "+(sidebar?"show":"")} onClick={()=>setSidebar(false)}/>
