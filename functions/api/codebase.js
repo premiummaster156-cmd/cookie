@@ -599,7 +599,7 @@ async function handlePost({request,env}){
     const edits=Array.isArray(body?.edits)?body.edits.slice(0,12):[];
     if(!edits.length)return json({error:"There are no proposed fixes to apply."},400);
     const applied=[];
-    for(const edit of result.edits||[]){
+    for(const edit of edits){
       const previous=await env.DB.prepare("SELECT content,mime,github_sha,deleted FROM codebase_files WHERE path=? LIMIT 1").bind(edit.path).first();
       if(previous&&!Number(previous.deleted||0)&&String(previous.content)===edit.content)continue;
       const t=now(),size=new TextEncoder().encode(edit.content).byteLength;
