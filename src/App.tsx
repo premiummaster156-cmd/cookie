@@ -1100,7 +1100,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     if(view==="code"&&!canSeeCodeStudio)setView("chat");
     if(view==="moderation"&&!isModerator)setView("chat");
   },[view,canSeeCodeStudio]);
-  useEffect(()=>{const k=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandQuery("");setCommandOpen(true);setSidebar(false)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false);setMoreOpen(false);setCommandOpen(false);setWorkspaceOpen(false);setSourceInspect(null)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
+  useEffect(()=>{const k=(e:KeyboardEvent)=>{if(settings.keyboard&&(e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();setCommandQuery("");setCommandOpen(true);setSidebar(false)}if(settings.keyboard&&(e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="n"){e.preventDefault();createChat(false)}if(e.key==="Escape"){setModelOpen(false);setNewOpen(false);setProfileOpen(false);setVoice(false);setMoreOpen(false);setCommandOpen(false);setWorkspaceOpen(false);setSourceInspect(null)}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
   useEffect(()=>{
     const onNativeCommand=(event:Event)=>{
       const command=(event as CustomEvent<string>).detail;
@@ -1372,7 +1372,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
       {notificationsOpen&&<NotificationFeed items={notifications} onClose={()=>setNotificationsOpen(false)} onReadAll={markNotificationsRead}/>}
       {workspaceOpen&&<WorkspaceShelf items={savedItems} onClose={()=>setWorkspaceOpen(false)} onDelete={removeSaved}/>}
 
-      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={setMemoryEnabled} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify} skillId={skillId} setSkillId={setSkillId} spatialMode={spatialMode} onSpatialMode={()=>setSpatialMode(v=>!v)} missionMode={missionMode} onMissionMode={setMissionMode}/></div>}
+      {view==="chat"&&<div className="chat-layer">{main}<Composer value={text} setValue={setText} attachments={attachments} setAttachments={setAttachments} loading={loading} onSend={()=>send()} onStop={()=>abort?.abort()} onVoice={()=>setVoice(true)} sendOnEnter={settings.sendOnEnter} webSearch={webSearch} setWebSearch={setWebSearch} memoryEnabled={memoryEnabled} setMemoryEnabled={(v)=>{setMemoryEnabled(v);setSettings((s:any)=>({...s,memory:v}))}} toolMode={toolMode} setToolMode={setToolMode} plan={authUser.plan} onToolNotice={notify} skillId={skillId} setSkillId={setSkillId} spatialMode={spatialMode} onSpatialMode={()=>setSpatialMode(v=>!v)} missionMode={missionMode} onMissionMode={setMissionMode}/></div>}
       {view!=="chat"&&main}
       {sourceInspect&&<SourceInspector message={sourceInspect} onClose={()=>setSourceInspect(null)} onSave={saveSource}/>}
     </main>
