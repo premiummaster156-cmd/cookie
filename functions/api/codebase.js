@@ -259,10 +259,10 @@ async function aiReview(env,changes,checks){
       }
     }catch(error){console.error("[Cookie Code Studio review]",error)}
   }
-  if(!valid.length)return {ok:false,error:"AI review service did not return a valid review."};
+  if(!valid.length)return {ok:false,error:"The review service could not complete the safety review."};
   const concern=valid.find(x=>x.status==="Blocked")||valid.find(x=>x.status==="Needs changes");
-  if(concern)return {...concern,model:valid.map(x=>x.model).join(" + ")};
-  return {ok:true,model:valid.map(x=>x.model).join(" + "),status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
+  if(concern)return {...concern};
+  return {ok:true,status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
 }
 async function aiWorkspaceChat(env,user,message,history=[]){
   const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"Cookie Dev AI is temporarily unavailable."};
