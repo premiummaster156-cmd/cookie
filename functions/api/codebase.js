@@ -259,6 +259,15 @@ async function aiReview(env,changes,checks){
       }
     }catch(error){console.error("[Cookie Code Studio review]",error)}
   }
+  if(!valid.length && env?.AI && typeof env.AI.run==="function"){
+    try{
+      const fallback=await env.AI.run("@cf/zai-org/glm-4.7-flash",{messages:[{role:"system",content:"Return strict JSON only. You are a skeptical production reviewer. Output one JSON object and nothing else."},{role:"user",content:prompt}],response_format:{type:"json_object"}});
+      const parsed=JSON.parse(String(fallback?.response||fallback?.result?.response||fallback?.output_text||"").trim());
+      if(["Approved","Needs changes","Blocked"].includes(parsed.status)){
+        valid.push({ok:true,status:parsed.status,risk:parsed.risk||"medium",summary:text(parsed.summary,4000),findings:Array.isArray(parsed.findings)?parsed.findings.slice(0,30):[],required_fixes:Array.isArray(parsed.required_fixes)?parsed.required_fixes.slice(0,30):[]});
+      }
+    }catch(error){console.error("[Cookie review fallback]",error)}
+  }
   if(!valid.length)return {ok:false,error:"The review service could not complete the safety review."};
   const concern=valid.find(x=>x.status==="Blocked")||valid.find(x=>x.status==="Needs changes");
   if(concern)return {...concern};
@@ -302,6 +311,19 @@ async function aiWorkspaceChat(env,user,message,history=[]){
       }
       return {ok:true,model,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
     }catch(error){console.error("[Cookie Dev AI]",error)}
+  }
+  if(env?.AI && typeof env.AI.run==="function"){
+    try{
+      const fallback=await env.AI.run("@cf/zai-org/glm-4.7-flash",{messages:[{role:"system",content:"Return strict JSON only. Output one JSON object and nothing else."},{role:"user",content:prompt}],response_format:{type:"json_object"}});
+      const out=String(fallback?.response||fallback?.result?.response||fallback?.output_text||"").trim();
+      const parsed=JSON.parse(out);
+      const edits=[];
+      for(const edit of (Array.isArray(parsed.edits)?parsed.edits:[]).slice(0,12)){
+        const p=cleanPath(edit?.path),body=String(edit?.content??"");
+        if(p&&!isHiddenPath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
+      }
+      return {ok:true,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
+    }catch(error){console.error("[Cookie Dev AI fallback]",error)}
   }
   return {ok:false,error:"Cookie Dev AI could not complete that request right now. Please try again."};
 }
