@@ -1085,7 +1085,7 @@ export async function onRequestPost({ request, env }) {
             controller.close();
           } catch (error) {
             console.error("[Cookie stream]", error);
-            push({type:"error",error:String(error?.message||"Cookie could not answer right now.")});
+            push({type:"error",error:"Cookie could not complete the response right now. Please try again."});
             controller.close();
           }
         }
