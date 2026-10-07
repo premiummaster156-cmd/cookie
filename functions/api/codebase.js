@@ -287,7 +287,7 @@ async function aiWorkspaceChat(env,user,message,history=[]){
   const models=["gemma4:cloud","gpt-oss:20b-cloud","qwen3-coder:480b-cloud"];
   for(const model of models){
     try{
-      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.08,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only."},{role:"user",content:prompt}]})});
+      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:false,format:"json",options:{temperature:0.08,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. Output one JSON object and nothing else."},{role:"user",content:prompt}]})});
       const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
       if(!r.ok)continue;
       let out=String(data?.message?.content||data?.response||"").trim();
