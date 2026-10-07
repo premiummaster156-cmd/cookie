@@ -122,18 +122,79 @@ function PublicShareView({chat,onOpenCookie}:{chat:Chat;onOpenCookie:()=>void}){
 
 function fmt(ts:number){ try{return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(ts)}catch{return ""} }
 function safeTextParts(text:string){ return [text]; }
+function replaceLatexFractions(input:string){
+  let out="";let i=0;
+  while(i<input.length){
+    if(input.startsWith("\\frac",i)){
+      let p=i+5;
+      while(p<input.length&&/\\s/.test(input[p]))p++;
+      if(input[p]!=="{"){out+="frac";i+=5;continue}
+      const readGroup=(at:number)=>{
+        if(input[at]!=="{")return null;
+        let depth=0;
+        for(let j=at;j<input.length;j++){
+          if(input[j]==="{")depth++;
+          else if(input[j]==="}"){
+            depth--;
+            if(depth===0)return {value:input.slice(at+1,j),next:j+1};
+          }
+        }
+        return null;
+      };
+      const a=readGroup(p);
+      if(!a){out+="frac";i+=5;continue}
+      const b=readGroup(a.next);
+      if(!b){out+="frac("+a.value+")";i=a.next;continue}
+      out+="("+replaceLatexFractions(a.value)+") / ("+replaceLatexFractions(b.value)+")";
+      i=b.next;continue;
+    }
+    out+=input[i];i++;
+  }
+  return out;
+}
+function latexSuperscripts(value:string){
+  return value
+    .replace(/\\sqrt\\{([^{}]+)\\}/g,"√($1)")
+    .replace(/\\sqrt\\s*([A-Za-z0-9]+)/g,"√($1)")
+    .replace(/\\text\\{([^{}]*)\\}/g,"$1")
+    .replace(/\\mathrm\\{([^{}]*)\\}/g,"$1")
+    .replace(/\\left|\\right|\\!|\\,|\\;|\\quad|\\qquad/g,"")
+    .replace(/\\infty/g,"∞").replace(/\\pm/g,"±")
+    .replace(/\\neq/g,"≠").replace(/\\leq/g,"≤").replace(/\\geq/g,"≥")
+    .replace(/\\le/g,"≤").replace(/\\ge/g,"≥").replace(/\\approx/g,"≈")
+    .replace(/\\implies|\\Rightarrow/g,"⇒").replace(/\\rightarrow|\\to/g,"→")
+    .replace(/\\leftarrow|\\from/g,"←").replace(/\\leftrightarrow/g,"↔")
+    .replace(/\\cup/g,"∪").replace(/\\cap/g,"∩").replace(/\\in/g,"∈").replace(/\\notin/g,"∉")
+    .replace(/\\emptyset/g,"∅").replace(/\\times/g,"×").replace(/\\cdot/g,"·")
+    .replace(/\\div/g,"÷").replace(/\\alpha/g,"α").replace(/\\beta/g,"β").replace(/\\gamma/g,"γ")
+    .replace(/\\delta/g,"δ").replace(/\\Delta/g,"Δ").replace(/\\pi/g,"π")
+    .replace(/\\sqrt/g,"√")
+    .replace(/\\([A-Za-z]+)/g,"$1")
+    .replace(/\\/g,"")
+    .replace(/\\{([^{}]*)\\}/g,"($1)")
+    .replace(/\\{/g,"(").replace(/\\}/g,")");
+}
+function unicodePowers(value:string){
+  const powers:Record<string,string>={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾","n":"ⁿ"};
+  return value
+    .replace(/\\^\\{([^{}]+)\\}/g,(_,g)=>String(g).split("").map((x:string)=>powers[x]||x).join(""))
+    .replace(/\\^([A-Za-z0-9])/g,(_,g)=>powers[g]||("^"+g))
+    .replace(/\\_\\{([^{}]+)\\}/g,"_$1")
+    .replace(/\\_([A-Za-z0-9])/g,"_$1")
+    .replace(/\\^/g,"^");
+}
 function normalizeChatMarkup(value:string){
-  return String(value||"")
-    .replace(/\\(?:rightarrow|to|Rightarrow|Longrightarrow)/g,"→")
-    .replace(/\\(?:leftarrow|from|Leftarrow|Longleftarrow)/g,"←")
-    .replace(/\\(?:leftrightarrow|Leftrightarrow)/g,"↔")
-    .replace(/\\times/g,"×").replace(/\\cdot/g,"·")
-    .replace(/\\leq/g,"≤").replace(/\\geq/g,"≥").replace(/\\neq/g,"≠")
-    .replace(/\\pm/g,"±").replace(/\\div/g,"÷")
-    .replace(/\\alpha/g,"α").replace(/\\beta/g,"β").replace(/\\gamma/g,"γ")
-    .replace(/\\Delta/g,"Δ").replace(/\\delta/g,"δ")
-    .replace(/\\sqrt\{([^{}]+)\}/g,"√($1)")
-    .replace(/\$([^$\n]+)\$/g,"$1");
+  let text=String(value||"");
+  text=replaceLatexFractions(text);
+  text=text.replace(/\\\(|\\\)|\\\[|\\\]/g,"").replace(/\\\$/g,"$");
+  text=text.replace(/\$([^$\n]+)\$/g,"$1");
+  text=text.replace(/\\\\/g,"\\");
+  text=latexSuperscripts(text);
+  text=unicodePowers(text);
+  // Remaining TeX grouping should read like ordinary mathematics, never raw TeX.
+  text=text.replace(/[{}]/g,"");
+  text=text.replace(/\$+/g,"");
+  return text;
 }
 function Inline({text}:{text:string}){
   text=normalizeChatMarkup(text);
