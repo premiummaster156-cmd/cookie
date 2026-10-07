@@ -239,7 +239,7 @@ function activityIcon(stage:string,tool?:string){
   return <Wrench size={13}/>;
 }
 function ActivityTimeline({steps,elapsed,live=false}:{steps:ActivityStep[];elapsed:number;live?:boolean}){
-  const [open,setOpen]=useState(true);
+  const [open,setOpen]=useState(false);
   const [expanded,setExpanded]=useState<string|null>(null);
   if(!steps.length)return null;
   const mins=Math.floor(elapsed/60000);
