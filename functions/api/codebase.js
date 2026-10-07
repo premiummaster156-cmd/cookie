@@ -223,7 +223,7 @@ function deterministicChecks(changes){
   return checks;
 }
 async function aiReview(env,changes,checks){
-  const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"OLLAMA_API_KEY is not configured."};
+  const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"The review service is temporarily unavailable."};
   const endpoint=String(env.OLLAMA_URL||"https://ollama.com/api/chat").trim();
   const payload=changes.map(c=>"FILE: "+c.path+"\nSTATUS: "+c.status+"\nBEFORE:\n"+text(c.before,18000)+"\nAFTER:\n"+text(c.after,18000)).join("\n\n");
   const prompt=[
