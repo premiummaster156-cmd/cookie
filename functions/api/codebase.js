@@ -245,7 +245,7 @@ async function aiReview(env,changes,checks){
   const valid=[];
   for(const model of models){
     try{
-      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:true,options:{temperature:0.05,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. You are a skeptical production reviewer."},{role:"user",content:prompt}]})});
+      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model,stream:false,think:false,format:"json",options:{temperature:0.05,num_ctx:64000},messages:[{role:"system",content:"Return strict JSON only. You are a skeptical production reviewer. Output one JSON object and nothing else."},{role:"user",content:prompt}]})});
       const raw=await r.text();let data=null;try{data=JSON.parse(raw)}catch{}
       if(!r.ok)continue;
       let out=String(data?.message?.content||data?.response||"").trim();
