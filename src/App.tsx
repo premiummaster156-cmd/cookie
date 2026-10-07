@@ -1205,6 +1205,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     setStreamEvents([initialActivity]);
     setStreamStartedAt(startedAt);setStreamElapsed(0);
     const ctl=new AbortController();setAbort(ctl);
+    let payload:any=null;
     try{
       const languageIndex=LANGUAGES.indexOf(settings.language);
       payload={
