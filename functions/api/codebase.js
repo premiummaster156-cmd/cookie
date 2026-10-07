@@ -361,10 +361,14 @@ async function reviewWorkspace(env,user){
   }
   const ai=await aiReview(env,changes,checks);
   if(!ai.ok){
-    return {status:"Blocked",risk:"high",summary:"AI review could not be completed, so the safety gate failed closed.",findings:[{file:"",severity:"high",message:ai.error}],required_fixes:[ai.error],checks,changes,baseSha:branch?.object?.sha||null,diffHash,diff};
+    const gatedChecks=[...checks,{name:"AI review gate",status:"fail",detail:"The AI safety review did not complete, so this change set cannot be approved."}];
+    return {status:"Blocked",risk:"high",summary:"The safety gate failed closed because the AI review could not be completed.",findings:[{file:"",severity:"high",message:"The safety review could not be completed."}],required_fixes:["Complete a successful safety review before committing."],checks:gatedChecks,changes,baseSha:branch?.object?.sha||null,diffHash,diff};
   }
   const status=ai.status==="Approved"&&!checks.some(x=>x.status==="fail")?"Approved":ai.status;
-  return {...ai,status,checks,changes,baseSha:branch?.object?.sha||null,diffHash,diff};
+  const finalChecks=status==="Blocked"
+    ? [...checks,{name:"AI review gate",status:"fail",detail:"AI review blocked this change set. Review the findings before approving."}]
+    : checks;
+  return {...ai,status,checks:finalChecks,changes,baseSha:branch?.object?.sha||null,diffHash,diff};
 }
 async function recordAudit(env,{action,path,beforeRevisionId=null,meta={},editorEmail}) {
   const id=randomToken(16);
