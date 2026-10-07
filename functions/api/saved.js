@@ -3,7 +3,7 @@ import { json, readJson } from "./_lib.js";
 
 const MAX_ITEMS = 120;
 const MAX_TITLE = 180;
-const MAX_CONTENT = 30000;
+const MAX_CONTENT = 8000000;
 const MAX_URL = 4000;
 
 async function auth(request, env) {
