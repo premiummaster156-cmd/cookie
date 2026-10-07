@@ -21,6 +21,10 @@ function isHiddenPath(path){
 function mimeFor(path){const e=String(path).toLowerCase().split(".").pop();return ({ts:"text/typescript",tsx:"text/tsx",js:"text/javascript",jsx:"text/jsx",css:"text/css",html:"text/html",json:"application/json",md:"text/markdown",sql:"application/sql",yml:"text/yaml",yaml:"text/yaml",toml:"text/plain",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",webp:"image/webp"}[e]||"text/plain")}
 function cleanPath(v){const p=String(v||"").replace(/\\/g,"/").replace(/^\/+/,"").trim();return !p||p.length>500||p.includes("..")||p.includes("//")?"" : p}
 function text(v,max=20000){return String(v??"").slice(0,max)}
+function isAiEditablePath(path){
+  const p=cleanPath(path);
+  return Boolean(p)&&!/^\.env(?:\.|$)/i.test(p)&&!/^\.dev\.vars(?:\.|$)/i.test(p)&&!/\.md$/i.test(p);
+}
 function now(){return Math.floor(Date.now()/1000)}
 async function hashText(value){const bytes=new TextEncoder().encode(String(value));const digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,"0")).join("")}
 async function ensureSchema(env){
@@ -315,7 +319,7 @@ async function aiWorkspaceChat(env,user,message,history=[],attachments=[]){
       const edits=[];
       for(const edit of (Array.isArray(parsed.edits)?parsed.edits:[]).slice(0,12)){
         const p=cleanPath(edit?.path),body=String(edit?.content??"");
-        if(p&&!isHiddenPath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
+        if(p&&isAiEditablePath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
       }
       return {ok:true,reply:text(parsed.reply||"I inspected the workspace.",5000),edits};
     }catch(error){console.error("[Cookie Dev AI]",error)}
@@ -328,7 +332,7 @@ async function aiWorkspaceChat(env,user,message,history=[],attachments=[]){
       const edits=[];
       for(const edit of (Array.isArray(parsed.edits)?parsed.edits:[]).slice(0,12)){
         const p=cleanPath(edit?.path),body=String(edit?.content??"");
-        if(p&&!isHiddenPath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
+        if(p&&isAiEditablePath(p)&&body.length<=MAX_FILE_BYTES)edits.push({path:p,content:body});
       }
       return {ok:true,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
     }catch(error){console.error("[Cookie Dev AI fallback]",error)}
