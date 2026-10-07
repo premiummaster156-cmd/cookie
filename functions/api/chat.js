@@ -980,7 +980,7 @@ export async function onRequestPost({ request, env }) {
                 }
               }
               if (!upstream?.ok || !assistantMessage) {
-                throw new Error("AI provider unavailable. Ollama Cloud and the Cloudflare AI fallback both failed.");}
+                throw new Error("Cookie could not complete the response right now.");}
 
               liveMessages.push(assistantMessage);
               const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
