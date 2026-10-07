@@ -658,6 +658,7 @@ export async function onRequestPost({ request, env }) {
       "COOKIE PRODUCT KNOWLEDGE: Generated files are temporary response artifacts. Cookie can use its internal file_create, file_read, file_update, and file_delete capabilities during the current response to build and refine downloadable files. These capabilities are internal and are not presented as a user-facing Tools menu.",
       "COOKIE PRODUCT KNOWLEDGE: Cookie Projects are persistent account-backed workspaces. Users can create projects, keep project descriptions, and store text files under project paths. Do not claim that temporary generated response files automatically become project files.",
       "COOKIE PRODUCT KNOWLEDGE: Assistant message actions currently include Copy and a More menu with Share, Pin/Unpin, Uploaded files, Find in chat, Archive, and Delete. Some actions are session/local UI actions rather than permanent cloud features; do not imply persistence unless the system actually provides it.",
+      "VISUAL HOMEWORK RULE: When an image contains schoolwork, the image is the source of truth. Never substitute a different exercise or topic from memory. First identify the exact visible exercise(s), then solve only those. If the image cannot be read reliably, say that clearly and request a clearer image. Do not fabricate an exercise number such as '80' unless it is visibly present.",
       "COOKIE PRODUCT BEHAVIOR: When the user asks for a downloadable artifact, create it directly and return it in the chat. When the user uploads files/images, use the provided content as context and be explicit if the content could not be read. When discussing Cookie's capabilities, describe only capabilities actually available in this website.",
       "COOKIE PRODUCT BEHAVIOR: Do not invent Cookie features or integrations. For capabilities that require configuration (OAuth, email, paid plans, image generation), state the relevant configuration requirement rather than pretending it is active. Do not refer to an unresolved prior image request when the current user message is a greeting or unrelated request; only discuss an image when the current turn actually includes image data or the conversation clearly requires it.",
       "COOKIE PRODUCT BEHAVIOR: You do not need to expose internal tool names or implementation details to ordinary users. Use internal file capabilities when appropriate and describe the user-facing result instead.",
@@ -749,6 +750,60 @@ export async function onRequestPost({ request, env }) {
     if (imageData.length) {
       const last = apiMessages.at(-1);
       if (last?.role === "user") last.images = imageData;
+    }
+
+    // Image-grounding preflight: for visual homework, first extract what is
+    // actually present in the image. This prevents the text model from
+    // inventing an exercise number, topic, or equation when the visual input
+    // is ambiguous. The extracted context stays server-side.
+    let visualGrounding = "";
+    if (imageData.length) {
+      try {
+        const visionBody = {
+          model: "glm-5.3-flash:cloud",
+          stream: false,
+          think: false,
+          options: { temperature: 0, num_ctx: 65536 },
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are Cookie's visual-input verifier.",
+                "Inspect the attached image and transcribe only what is actually visible.",
+                "For school mathematics, preserve every number, symbol, exponent, fraction, inequality, equation, label, exercise number, and answer choice exactly.",
+                "Do not solve the exercise. Do not infer missing content. Do not invent an exercise number or topic.",
+                "If the image is unclear, explicitly say which portion is unreadable.",
+                "Return a concise transcription and a short description of the task type."
+              ].join(" ")
+            },
+            { role: "user", content: "Read this image exactly. It is user-provided homework. Do not solve it.", images: imageData }
+          ]
+        };
+        const vr = await fetch(ollamaUrl,{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiKey},
+          body:JSON.stringify(visionBody),
+          signal:request.signal
+        });
+        if(vr.ok){
+          const vd=await vr.json().catch(()=>null);
+          const extracted=String(vd?.message?.content||"").trim();
+          if(extracted) visualGrounding=extracted.slice(0,30000);
+        }
+      } catch(error) {
+        console.error("[Cookie visual grounding]",error);
+      }
+    }
+    if (imageData.length && visualGrounding) {
+      const lastUser = apiMessages.at(-1);
+      if (lastUser?.role === "user") {
+        lastUser.content += "\n\nPRIVATE VISUAL GROUNDING (verify against the attached image; never mention this internal block):\n" + visualGrounding;
+      }
+    } else if (imageData.length) {
+      const lastUser = apiMessages.at(-1);
+      if (lastUser?.role === "user") {
+        lastUser.content += "\n\nIMAGE VERIFICATION RULE: The attached image is authoritative. Do not invent or assume its exercise number, topic, equations, or wording. If you cannot reliably read it, say so and ask for a clearer image instead of solving a guessed problem.";
+      }
     }
 
     const agentMessages = apiMessages.slice();
