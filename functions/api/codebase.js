@@ -303,7 +303,7 @@ async function aiWorkspaceChat(env,user,message,history=[]){
       return {ok:true,model,reply:text(parsed.reply||"I reviewed the workspace.",5000),edits};
     }catch(error){console.error("[Cookie Dev AI]",error)}
   }
-  return {ok:false,error:"Cookie Dev AI could not return a valid response."};
+  return {ok:false,error:"Cookie Dev AI could not complete that request right now. Please try again."};
 }
 
 async function deploymentState(sha,token=""){
