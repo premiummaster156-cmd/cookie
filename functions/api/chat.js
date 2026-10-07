@@ -617,8 +617,9 @@ export async function onRequestPost({ request, env }) {
     };
     const skillId = typeof body.skill === "string" && Object.prototype.hasOwnProperty.call(skillInstructions, body.skill) ? body.skill : "";
     const activeSkillInstruction = skillId ? skillInstructions[skillId] : "";
-    const useWebSearch = true;
     const requestedWebQuery = String(messages.at(-1)?.content || "").trim();
+    const researchRequested = /(research|sources?|cite|citation|latest|current|today|news|look up|investigate|verify)/i.test(requestedWebQuery);
+    const useWebSearch = preferences.webSearch === true || researchRequested;
     const streamRequested = new URL(request.url).searchParams.get("stream") === "1";
     const missionMode = preferences.mission === true;
     const missionGoal = requestedWebQuery;
@@ -786,7 +787,7 @@ export async function onRequestPost({ request, env }) {
       ...imageTools,
       ...fileTools,
       ...calculatorTools,
-      ...webTools,
+      ...(useWebSearch ? webTools : []),
       ...(memoryEnabled ? memoryTools : [])
     ];
     const think = thinkingFor(mode, reasoning, model);

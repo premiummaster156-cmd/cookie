@@ -45,7 +45,7 @@ export async function onRequestGet({request,env}) {
   const auth=await requireUser(request,env);
   if(auth.error) return auth.error;
   const chats=await env.DB.prepare(
-    "SELECT id,title,model,temporary,pinned,archived,branch_of,branch_message_id,updated_at,created_at FROM chats WHERE user_id=? ORDER BY updated_at DESC LIMIT ?"
+    "SELECT id,title,model,temporary,pinned,archived,branch_of,branch_message_id,updated_at,created_at FROM chats WHERE user_id=? AND temporary=0 ORDER BY updated_at DESC LIMIT ?"
   ).bind(auth.user.id,MAX_CHATS).all();
   const rows=chats.results||[];
   const ids=rows.map(x=>x.id);
@@ -117,9 +117,9 @@ export async function onRequestPost({request,env}) {
     })).filter(m=>m.id)
   })).filter(c=>c.id);
 
-  const current=await env.DB.prepare("SELECT id FROM chats WHERE user_id=?").bind(auth.user.id).all();
-  const currentIds=new Set((current.results||[]).map(r=>r.id));
-  const nextIds=new Set(normalized.map(c=>c.id));
+  const deletedChatIds=Array.isArray(body?.deletedChatIds)
+    ? [...new Set(body.deletedChatIds.map(id=>String(id||"").slice(0,100)).filter(Boolean))].slice(0,MAX_CHATS)
+    : [];
   const statements=[];
 
   for(const chat of normalized){
@@ -133,13 +133,11 @@ export async function onRequestPost({request,env}) {
       ).bind(m.id,chat.id,auth.user.id,m.role,m.content,m.createdAt,m.position));
     }
   }
-  for(const id of currentIds){
-    if(!nextIds.has(id)) {
-      statements.push(env.DB.prepare("DELETE FROM chats WHERE id=? AND user_id=?").bind(id,auth.user.id));
-    }
+  for(const id of deletedChatIds){
+    statements.push(env.DB.prepare("DELETE FROM chats WHERE id=? AND user_id=?").bind(id,auth.user.id));
   }
   if(statements.length) await env.DB.batch(statements);
-  return json({ok:true,count:normalized.length});
+  return json({ok:true,count:normalized.length,deleted:deletedChatIds.length});
 }
 
 export async function onRequestDelete({request,env}) {
