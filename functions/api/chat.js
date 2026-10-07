@@ -561,7 +561,7 @@ export async function onRequestPost({ request, env }) {
     const ollamaUrl = safeOllamaUrl(env.OLLAMA_URL);
 
     if (!apiKey) {
-      return json({ error: "Cookie AI is not configured yet. Add OLLAMA_API_KEY in Pages secrets." }, 503);
+      return json({ error: "Cookie AI is temporarily unavailable. Please try again later." }, 503);
     }
 
     const body = await readJson(request);
