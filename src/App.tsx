@@ -1318,14 +1318,47 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
         if(a.files?.length)setFiles(p=>[...a.files!,...p].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80));
       }
     }catch(e:any){
-      setStreamText("");setStreamStatus("");
       if(e?.name!=="AbortError"){
         const raw=String(e?.message||"Unknown error.");
-        const message=/load failed|failed to fetch|networkerror|network request failed/i.test(raw)
-          ?"Unable to connect to Cookie AI. The server connection failed. Please try again."
-          :raw;
-        const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};
-        updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+        const networkFailure=/load failed|failed to fetch|networkerror|network request failed|stream/i.test(raw);
+        let recovered=false;
+        // Some mobile/proxy paths can drop a long-lived SSE connection even
+        // though the same request works normally. Retry once through the
+        // non-streaming API path before surfacing an error to the user.
+        if(networkFailure){
+          try{
+            const fallback=await fetch("/api/chat",{
+              method:"POST",
+              signal:ctl.signal,
+              cache:"no-store",
+              headers:{"Content-Type":"application/json","Accept":"application/json"},
+              body:JSON.stringify(payload)
+            });
+            const fallbackData=await fallback.json().catch(()=>null);
+            if(fallback.ok&&fallbackData?.message){
+              const a:Message={
+                id:uid(),role:"assistant",content:String(fallbackData.message),
+                files:Array.isArray(fallbackData.generatedFiles)?fallbackData.generatedFiles:[],
+                images:Array.isArray(fallbackData.generatedImages)?fallbackData.generatedImages:[],
+                sources:Array.isArray(fallbackData.sources)?fallbackData.sources:[],
+                createdAt:Date.now()
+              };
+              updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+              if(a.files?.length)setFiles(p=>[...p,...a.files!].filter((f,i,a)=>a.findIndex(x=>x.path===f.path)===i).slice(0,80));
+              recovered=true;
+            }
+          }catch{}
+        }
+        if(!recovered){
+          setStreamText("");setStreamStatus("");
+          const message=networkFailure
+            ?"Cookie could not connect right now. Please try again."
+            :"Cookie could not complete the response right now. Please try again.";
+          const a:Message={id:uid(),role:"assistant",content:"I ran into a problem: "+message,createdAt:Date.now()};
+          updateChat(c.id,x=>({...x,messages:[...msgs,a],updatedAt:Date.now()}));
+        }else{
+          setStreamText("");setStreamStatus("");
+        }
       }
     }finally{
       setStreamText("");setStreamStatus("");setLoading(false);setAbort(null);setStreamStartedAt(0);setStreamElapsed(0);setStreamEvents([]);
