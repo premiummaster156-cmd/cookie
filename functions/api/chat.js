@@ -1078,7 +1078,6 @@ export async function onRequestPost({ request, env }) {
             push({
               type:"done",
               message:limitResponse(output),
-              model:profile.name,
               generatedFiles:liveFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
               generatedImages:liveImages,
               sources:liveSources.slice(0,10),
@@ -1227,7 +1226,6 @@ export async function onRequestPost({ request, env }) {
 
     return json({
       message: limitResponse(String(finalMessage).trim()),
-      model: profile.name,
       demo: true,
       generatedFiles: generatedFiles.map(f=>({name:f.path.split("/").pop()||f.path,path:f.path,content:f.content,kind:f.kind||"file"})),
       generatedImages: generatedImages,
@@ -1236,6 +1234,6 @@ export async function onRequestPost({ request, env }) {
     });
   } catch (error) {
     console.error("[Cookie chat]", error);
-    return json({ error: "Cookie could not answer right now. Check the Pages Function logs." }, 502);
+    return json({ error: "Cookie could not complete the response right now. Please try again." }, 502);
   }
 }
