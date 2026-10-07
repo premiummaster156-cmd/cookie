@@ -25,6 +25,20 @@ function isAiEditablePath(path){
   const p=cleanPath(path);
   return Boolean(p)&&!/^\.env(?:\.|$)/i.test(p)&&!/^\.dev\.vars(?:\.|$)/i.test(p)&&!/\.md$/i.test(p);
 }
+function attachmentForPrompt(a){
+  const name=text(a?.name,180),kind=a?.kind==="image"?"image":"file",mime=text(a?.mime,120),data=String(a?.data||"");
+  if(kind==="image")return {name,kind,mime};
+  const match=data.match(/^data:[^;]+;base64,(.+)$/);
+  if(match){
+    try{
+      const raw=atob(match[1]);
+      const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+      const decoded=new TextDecoder().decode(bytes);
+      if(decoded&&!/\u0000/.test(decoded))return {name,kind,mime,content:decoded.slice(0,120000)};
+    }catch{}
+  }
+  return {name,kind,mime,content:"[Binary or non-text attachment]"};
+}
 function now(){return Math.floor(Date.now()/1000)}
 async function hashText(value){const bytes=new TextEncoder().encode(String(value));const digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,"0")).join("")}
 async function ensureSchema(env){
@@ -299,7 +313,7 @@ async function aiWorkspaceChat(env,user,message,history=[],attachments=[]){
     "Do not modify hidden/protected files, .env files, secrets, or markdown files.",
     "When fixing code, return complete replacement content for each edited file.",
     "WORKSPACE:\n"+context.slice(0,90000),
-    "ATTACHMENTS:\n"+JSON.stringify((Array.isArray(attachments)?attachments:[]).slice(0,10).map(a=>({name:text(a?.name,180),kind:a?.kind==="image"?"image":"file",mime:text(a?.mime,120),data:text(a?.data,120000)}))),
+    "ATTACHMENTS:\n"+JSON.stringify((Array.isArray(attachments)?attachments:[]).slice(0,10).map(attachmentForPrompt)),
     "CONVERSATION:\n"+JSON.stringify(cleanHistory),
     "REQUEST:\n"+text(message,12000)
   ].join("\n\n");
