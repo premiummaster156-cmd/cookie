@@ -1159,7 +1159,7 @@ export async function onRequestPost({ request, env }) {
         }
       }
       if (!upstream?.ok) {
-        return json({error:"AI provider unavailable. Ollama Cloud and the Cloudflare AI fallback both failed."},502);
+        return json({error:"Cookie could not complete the response right now. Please try again."},502);
       }
 
       model = successfulModel;
