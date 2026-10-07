@@ -265,7 +265,7 @@ async function aiReview(env,changes,checks){
   return {ok:true,model:valid.map(x=>x.model).join(" + "),status:"Approved",risk:valid.some(x=>["high","critical"].includes(x.risk))?"high":"low",summary:valid.map(x=>x.summary).filter(Boolean).join(" "),findings:valid.flatMap(x=>x.findings).slice(0,30),required_fixes:[]};
 }
 async function aiWorkspaceChat(env,user,message,history=[]){
-  const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"OLLAMA_API_KEY is not configured."};
+  const key=String(env.OLLAMA_API_KEY||"").trim();if(!key)return {ok:false,error:"Cookie Dev AI is temporarily unavailable."};
   const endpoint=String(env.OLLAMA_URL||"https://ollama.com/api/chat").trim();
   const files=await loadVirtual(env);
   const context=files.filter(x=>!x.deleted&&!isHiddenPath(x.path)).slice(0,220).map(f=>"FILE "+f.path+"\n"+text(f.content,9000)).join("\n\n");
