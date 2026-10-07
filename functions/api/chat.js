@@ -554,8 +554,8 @@ export async function onRequestPost({ request, env }) {
     const rateLimited = await rateLimitChat(env,sessionUser,plan,aiLimits);
     if (rateLimited) return rateLimited;
 
-    // Cookie runs directly on Ollama Cloud. OpenRouter is intentionally not used.
-    const provider = "ollama";
+    // Provider routing and credentials are server-internal.
+    const provider = "internal";
     const apiKey = String(env.OLLAMA_API_KEY || "").trim();
     let model = "gpt-oss:20b-cloud";
     const ollamaUrl = safeOllamaUrl(env.OLLAMA_URL);
