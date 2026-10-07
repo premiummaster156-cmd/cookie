@@ -1207,7 +1207,7 @@ function AuthenticatedApp({authUser,onLogout}:{authUser:AuthUser;onLogout:()=>vo
     const ctl=new AbortController();setAbort(ctl);
     try{
       const languageIndex=LANGUAGES.indexOf(settings.language);
-      const payload={
+      payload={
         model,
         chatId:c.id,
         gptId:activeGptId,
