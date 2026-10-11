@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "include": [
+    "/api/security-config",
+    "/v1/chat/completions"
+  ],
+  "exclude": []
+}
