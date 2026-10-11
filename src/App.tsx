@@ -30,6 +30,7 @@ type SavedItem = { id:string; kind:string; title:string; content:string; url?:st
 const ICON = cookieIconUrl;
 const MODELS = [
   { id:"standard", name:"CPT-1", detail:"Fast adaptive everyday AI", requiredPlan:"free" },
+  { id:"kuki", name:"Kuki 0.3 · Research Preview", detail:"Cookie AI's independently trained model · experimental", requiredPlan:"free" },
   { id:"max", name:"CPT-2 MAX", detail:"Deep reasoning + engineering", requiredPlan:"pro" },
   { id:"ultra", name:"CPT-3 ULTRA", detail:"Multimodal + agentic work", requiredPlan:"max" }
 ] as const;
