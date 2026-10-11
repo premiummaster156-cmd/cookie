@@ -627,6 +627,25 @@ export async function onRequestPost({ request, env }) {
         }, 503);
       }
 
+      // The research origin caps requests at 20 turns, 12,000 characters per
+      // message and 32,000 combined characters. Preserve the current user turn
+      // and drop oldest complete history before sending it to the model.
+      const kukiMessages = messages.slice(-20);
+      if (kukiMessages[0]?.role === "assistant") kukiMessages.shift();
+      if (kukiMessages.some(message => message.content.length > 12_000)) {
+        return json({
+          error: "Kuki's research preview supports up to 12,000 characters per message. Please shorten the message.",
+          code: "KUKI_MESSAGE_TOO_LARGE"
+        }, 413);
+      }
+      while (
+        kukiMessages.reduce((total, message) => total + message.content.length, 0) > 32_000 &&
+        kukiMessages.length > 1
+      ) {
+        kukiMessages.shift();
+        if (kukiMessages[0]?.role === "assistant") kukiMessages.shift();
+      }
+
       let upstream;
       try {
         upstream = await fetch(origin + "/v1/chat/completions", {
@@ -637,7 +656,7 @@ export async function onRequestPost({ request, env }) {
             "Authorization": "Bearer " + upstreamToken
           },
           body: JSON.stringify({
-            messages,
+            messages: kukiMessages,
             max_tokens: 128,
             temperature: 0.45,
             top_p: 0.95,
@@ -671,13 +690,32 @@ export async function onRequestPost({ request, env }) {
         }, 502);
       }
 
+      // Account for successful model use with the same free-credit accounting
+      // and usage ledger used by the regular Cookie chat endpoint.
+      try {
+        if (plan === "free") {
+          await env.DB.batch([
+            env.DB.prepare("UPDATE users SET credits_remaining=MAX(credits_remaining-1,0),updated_at=? WHERE id=?")
+              .bind(nowSeconds(), sessionUser.id),
+            env.DB.prepare("INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)")
+              .bind(randomToken(16), sessionUser.id, "chat", "kuki-0.3-research", 1, nowSeconds())
+          ]);
+        } else {
+          await env.DB.prepare("INSERT INTO usage_events (id,user_id,kind,model,units,created_at) VALUES (?,?,?,?,?,?)")
+            .bind(randomToken(16), sessionUser.id, "chat", "kuki-0.3-research", 1, nowSeconds()).run();
+        }
+      } catch (usageError) {
+        console.error("[Kuki research usage accounting]", usageError);
+      }
+
       return json({
         message: answer.trim(),
         model: "Kuki 0.3 · Research Preview",
         researchPreview: true,
         sources: [],
         generatedFiles: [],
-        generatedImages: []
+        generatedImages: [],
+        creditsRemaining: plan === "free" ? Math.max(0, credits - 1) : null
       });
     }
 
