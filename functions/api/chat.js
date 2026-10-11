@@ -560,14 +560,13 @@ export async function onRequestPost({ request, env }) {
     let model = "gpt-oss:20b-cloud";
     const ollamaUrl = safeOllamaUrl(env.OLLAMA_URL);
 
-    if (!apiKey) {
-      return json({ error: "Cookie AI is temporarily unavailable. Please try again later." }, 503);
-    }
-
     const body = await readJson(request);
     const preferences = body?.preferences || {};
-    const mode = ["standard", "max", "ultra"].includes(preferences.responseMode)
-      ? preferences.responseMode
+    const requestedMode = String(preferences.responseMode || "standard");
+    const isKukiRequest = requestedMode === "kuki" && !String(body?.gptId || "").trim();
+    // Kuki is handled by its own private origin below; do not route it through Ollama.
+    const mode = ["standard", "max", "ultra"].includes(requestedMode)
+      ? requestedMode
       : "standard";
     const profile = profiles[mode];
     if(!isPrivilegedUser(sessionUser) && modelRequiredRank(mode)>planRank(plan)){
@@ -590,6 +589,100 @@ export async function onRequestPost({ request, env }) {
 
     if (!messages.length || messages.at(-1).role !== "user") {
       return json({ error: "A user message is required." }, 400);
+    }
+
+    if (isKukiRequest) {
+      if (attachments.length) {
+        return json({
+          error: "Kuki 0.3 Research Preview currently accepts text-only chat. Remove attachments or switch to a Cookie model profile.",
+          code: "KUKI_TEXT_ONLY_PREVIEW"
+        }, 400);
+      }
+
+      const configuredOrigin = String(env.KUKI_API_ORIGIN || "").trim();
+      const upstreamToken = String(env.KUKI_UPSTREAM_TOKEN || "").trim();
+      if (!configuredOrigin || upstreamToken.length < 32) {
+        return json({
+          error: "Kuki is not connected to a model server yet. The administrator must configure KUKI_API_ORIGIN and the private KUKI_UPSTREAM_TOKEN.",
+          code: "KUKI_ORIGIN_NOT_CONFIGURED"
+        }, 503);
+      }
+
+      let origin;
+      try {
+        const parsed = new URL(configuredOrigin);
+        if (
+          parsed.protocol !== "https:" ||
+          parsed.username ||
+          parsed.password ||
+          parsed.pathname !== "/" ||
+          parsed.search ||
+          parsed.hash
+        ) throw new Error("invalid origin");
+        origin = parsed.origin;
+      } catch {
+        return json({
+          error: "Kuki's model-origin configuration is invalid. It must be an HTTPS origin without a path or credentials.",
+          code: "KUKI_ORIGIN_INVALID"
+        }, 503);
+      }
+
+      let upstream;
+      try {
+        upstream = await fetch(origin + "/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer " + upstreamToken
+          },
+          body: JSON.stringify({
+            messages,
+            max_tokens: 128,
+            temperature: 0.45,
+            top_p: 0.95,
+            top_k: 40
+          }),
+          signal: request.signal
+        });
+      } catch {
+        return json({
+          error: "Kuki's model server could not be reached. Check the deployed origin and its health endpoint.",
+          code: "KUKI_ORIGIN_UNREACHABLE"
+        }, 503);
+      }
+
+      const result = await upstream.json().catch(() => null);
+      if (!upstream.ok) {
+        const status = upstream.status === 400 ? 400 : 503;
+        return json({
+          error: upstream.status === 400
+            ? String(result?.error?.message || "Kuki rejected this request. Try a shorter message.")
+            : "Kuki's model server is unavailable or its private credential does not match.",
+          code: upstream.status === 400 ? "KUKI_REQUEST_REJECTED" : "KUKI_ORIGIN_UNAVAILABLE"
+        }, status);
+      }
+
+      const answer = result?.choices?.[0]?.message?.content;
+      if (typeof answer !== "string" || !answer.trim()) {
+        return json({
+          error: "Kuki returned an empty response. Please retry after checking the model server.",
+          code: "KUKI_EMPTY_RESPONSE"
+        }, 502);
+      }
+
+      return json({
+        message: answer.trim(),
+        model: "Kuki 0.3 · Research Preview",
+        researchPreview: true,
+        sources: [],
+        generatedFiles: [],
+        generatedImages: []
+      });
+    }
+
+    if (!apiKey) {
+      return json({ error: "Cookie AI is temporarily unavailable. Please try again later." }, 503);
     }
 
     const supportedLanguages = ["auto","en","uz","ru","tr","kk","ky","tg","ar","fa","hi","ur","zh","ja","ko","es","fr","de","it","pt","id"];
