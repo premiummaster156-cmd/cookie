@@ -11,7 +11,7 @@ html,body{height:100%;margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#212121;color:#ececec}
 .app{height:100%;display:flex;flex-direction:column}
 .header{height:58px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.08)}
-.brand{font-size:17px;font-weight:600}
+.brand{font-size:17px;font-weight:600}.preview-note{margin:8px 12px 0;text-align:center;color:#9b9b9b;font-size:11px;line-height:1.5}
 .chat{flex:1;overflow-y:auto;padding:28px 16px 120px}
 .messages{max-width:760px;margin:0 auto}
 .empty{min-height:55vh;display:flex;align-items:center;justify-content:center;text-align:center;font-size:30px;font-weight:600;letter-spacing:-1px}
@@ -37,7 +37,7 @@ textarea::placeholder{color:#9b9b9b}
 </head>
 <body>
 <div class="app">
-<header class="header"><div class="brand">Kuki</div></header>
+<header class="header"><div class="brand">Kuki</div></header><div class="preview-note">Independently trained research preview · May produce incorrect answers</div>
 <main id="chat" class="chat"><div id="messages" class="messages"><div id="empty" class="empty">How can I help you?</div></div></main>
 <div class="composer-wrap">
 <form id="composer" class="composer">
