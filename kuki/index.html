@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#212121">
+<title>Kuki</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#212121;color:#ececec}
+.app{height:100%;display:flex;flex-direction:column}
+.header{height:58px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand{font-size:17px;font-weight:600}
+.chat{flex:1;overflow-y:auto;padding:28px 16px 120px}
+.messages{max-width:760px;margin:0 auto}
+.empty{min-height:55vh;display:flex;align-items:center;justify-content:center;text-align:center;font-size:30px;font-weight:600;letter-spacing:-1px}
+.message{display:flex;width:100%;margin-bottom:28px}
+.message.user{justify-content:flex-end}
+.bubble{max-width:min(78%,680px);padding:11px 15px;border-radius:18px;font-size:16px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.user .bubble{background:#303030;border-bottom-right-radius:5px}
+.assistant .bubble{background:transparent;padding-left:0;padding-right:0}
+.composer-wrap{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,#212121 70%,rgba(33,33,33,0))}
+.composer{max-width:760px;margin:auto;display:flex;align-items:flex-end;gap:8px;background:#2f2f2f;border:1px solid rgba(255,255,255,.12);border-radius:26px;padding:7px 8px 7px 16px;box-shadow:0 2px 14px rgba(0,0,0,.2)}
+textarea{flex:1;resize:none;outline:none;border:0;background:transparent;color:#fff;font:16px/1.45 inherit;max-height:140px;padding:7px 0}
+textarea::placeholder{color:#9b9b9b}
+.send{width:38px;height:38px;border:0;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;cursor:pointer}
+.send:disabled{opacity:.35}
+.typing{opacity:.6;font-style:italic}
+@media(max-width:600px){.chat{padding:22px 14px 112px}.bubble{max-width:88%}.empty{font-size:27px}}
+
+#security-gate{max-width:760px;margin:0 auto 8px;padding:0 10px;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+#security-gate[hidden]{display:none}
+#turnstile-widget{min-height:65px}
+.security-caption{font:10px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:#8193a8}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="header"><div class="brand">Kuki</div></header>
+<main id="chat" class="chat"><div id="messages" class="messages"><div id="empty" class="empty">How can I help you?</div></div></main>
+<div class="composer-wrap">
+<form id="composer" class="composer">
+<textarea id="input" rows="1" autocomplete="off" placeholder="Message Kuki"></textarea>
+<button id="send" class="send" type="submit" aria-label="Send">↑</button>
+</form>
+
+<div id="security-gate" hidden>
+  <div id="turnstile-widget"></div>
+  <div class="security-caption">CLOUDFLARE CHECK · required before model access</div>
+</div>
+</div>
+</div>
+<script>
+const API_URL = "/v1/chat/completions";
+const messages = [];
+const box = document.getElementById("messages");
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const sendButton = document.getElementById("send");
+let securityConfigured = false;
+let securityError = "Secure chat is locked until the site security setup is completed.";
+let turnstileToken = "";
+let turnstileWidgetId = null;
+
+function addMessage(role, text) {
+  document.getElementById("empty")?.remove();
+  const row = document.createElement("div");
+  row.className = "message " + role;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  box.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return bubble;
+}
+
+function resize() {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 140) + "px";
+}
+input.addEventListener("input", resize);
+input.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById("composer").requestSubmit();
+  }
+});
+
+async function setupSecurity() {
+  try {
+    const response = await fetch("/api/security-config", {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" }
+    });
+    const config = await response.json();
+    if (!response.ok || !config.ready || !config.turnstileSiteKey) {
+      securityError = "Secure chat is temporarily locked. The site's owner must finish the Cloudflare security configuration before Kuki can accept requests.";
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!window.turnstile) {
+        securityError = "The Cloudflare security check could not start. Please reload and try again.";
+        return;
+      }
+      document.getElementById("security-gate").hidden = false;
+      turnstileWidgetId = window.turnstile.render("#turnstile-widget", {
+        sitekey: config.turnstileSiteKey,
+        theme: "dark",
+        action: "cookie_chat",
+        callback: token => { turnstileToken = token; securityError = ""; },
+        "expired-callback": () => { turnstileToken = ""; },
+        "error-callback": () => {
+          turnstileToken = "";
+          securityError = "The security check could not be completed. Please retry it.";
+          return true;
+        }
+      });
+      securityConfigured = true;
+    };
+    script.onerror = () => {
+      securityError = "Cloudflare's security check could not load. Check your connection and reload the page.";
+    };
+    document.head.appendChild(script);
+  } catch {
+    securityError = "Cookie AI could not load its security configuration. Please reload the page.";
+  }
+}
+void setupSecurity();
+
+document.getElementById("composer").addEventListener("submit", async event => {
+  event.preventDefault();
+  const text = input.value.trim();
+  if (!text || sendButton.disabled) return;
+
+  if (!securityConfigured) {
+    addMessage("assistant", securityError || "Secure chat is not ready yet. Please try again shortly.");
+    return;
+  }
+  if (!turnstileToken) {
+    addMessage("assistant", "Please complete the Cloudflare security check before sending your message.");
+    return;
+  }
+
+  // Keep a bounded conversation context without breaking user/assistant turn pairs.
+  while (messages.length >= 18) messages.splice(0, 2);
+  messages.push({ role: "user", content: text });
+  addMessage("user", text);
+  input.value = "";
+  resize();
+  sendButton.disabled = true;
+  const token = turnstileToken;
+  turnstileToken = "";
+  const typing = addMessage("assistant", "Thinking…");
+  typing.classList.add("typing");
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        messages,
+        turnstile_token: token,
+        max_tokens: 256,
+        temperature: 0.7,
+        top_p: 0.95,
+        top_k: 40
+      })
+    });
+    let data;
+    try { data = await response.json(); }
+    catch { throw new Error("The secure model endpoint returned an invalid response."); }
+    if (!response.ok) {
+      const message = data && data.error && typeof data.error.message === "string"
+        ? data.error.message
+        : "The request was rejected by the secure model endpoint.";
+      throw new Error(message);
+    }
+    const answer = data && data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content
+      : "";
+    if (typeof answer !== "string" || !answer.trim()) throw new Error("Kuki returned an empty response.");
+    typing.classList.remove("typing");
+    typing.textContent = answer;
+    messages.push({ role: "assistant", content: answer });
+  } catch (error) {
+    if (messages.length && messages[messages.length - 1].role === "user") messages.pop();
+    typing.classList.remove("typing");
+    typing.textContent = "Kuki could not complete that request: " +
+      (error && typeof error.message === "string" ? error.message : "Please try again.");
+  } finally {
+    sendButton.disabled = false;
+    input.focus();
+    chat.scrollTop = chat.scrollHeight;
+    if (window.turnstile && turnstileWidgetId !== null) {
+      try { window.turnstile.reset(turnstileWidgetId); } catch { /* allow reload if widget reset fails */ }
+    }
+  }
+});
+</script>
+</body>
+</html>
